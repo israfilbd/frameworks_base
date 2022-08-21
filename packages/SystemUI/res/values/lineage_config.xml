@@ -21,6 +21,9 @@
     <!-- Whether to enable framework dimming for UDFPS -->
     <bool name="config_udfpsFrameworkDimming">false</bool>
 
+    <!-- Udfps vendor code -->
+    <integer name="config_udfpsVendorCode">0</integer>
+
     <!-- Brightness-to-alpha lookup table (LUT) for UDFPS framework dimming.
          Each entry is in the format <brightness>,<alpha> where:
            - brightness = panel backlight level
