@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+
+    
+    <string name="aerr_copy">Az összeomlási napló URL-jének másolása</string>
+    <string name="url_copy_success">Az URL sikeresen másolva</string>
+    <string name="url_copy_failed">Hiba történt a napló feltöltése során</string>
+
+    
+    <string name="systemui_restart_title">Rendszerfelület-újraindítás szükséges</string>
+    <string name="systemui_restart_message">Az összes módosítás érvénybe léptetéséhez szükséges a rendszerfelület újraindítása. Újraindítja most?</string>
+
+    
+    <string name="reboot_to_recovery_title">Recovery</string>
+    <string name="reboot_to_recovery_message">Újraindítás Recovery módba</string>
+    <string name="reboot_to_bootloader_title">Bootloader</string>
+    <string name="reboot_to_bootloader_message">Újraindítás Bootloader módba</string>
+    <string name="reboot_title">Újraindítás</string>
+    <string name="reboot_message">Rendszer-újraindítás</string>
+    
+    
+    <string name="gesture_locked_warning">A vezérlők feloldásához csúsztasson újból</string>
+
+    
+    <string name="alert_slider_state_path" />
+    <string name="alert_slider_uevent_match_path" />
+
+    
+    <string name="charging_control_notification_channel">Kontrollált töltés</string>
+    <string name="charging_control_notification_title">Kontrollált töltés</string>
+    <string name="charging_control_notification_cancel_once">Mégse</string>
+    <string name="charging_control_notification_content_limit">Az akkumulátor %1$d%% -ig lesz feltöltve</string>
+    <string name="charging_control_notification_content_limit_reached">Az akkumulátor feltöltődött %1$d%% -ig</string>
+    <string name="charging_control_notification_content_target">Az akkumulátor teljesen feltöltődik ekkorra %1$s</string>
+    <string name="charging_control_notification_content_target_reached">Az akku feltöltve</string>
+
+    
+    <string name="live_display_title" translatable="false">LiveDisplay</string>
+    <string name="live_display_auto">Automatikus</string>
+    <string name="live_display_auto_summary">Automatikusan beállítja a képernyő színhőmérsékletét naplemente és napkelte után</string>
+    <string name="live_display_off">Ki</string>
+    <string name="live_display_off_summary">Az összes módosítás letiltása</string>
+    <string name="live_display_day">Nappali</string>
+    <string name="live_display_day_summary">Csak a nappali beállítások használata</string>
+    <string name="live_display_night">Éjszakai</string>
+    <string name="live_display_night_summary">Csak az éjszakai beállítások használata</string>
+    <string name="live_display_outdoor">Kültéri (erős napfény)</string>
+    <string name="live_display_outdoor_summary">Csak a kültéri beállítások használata</string>
+    <string name="live_display_hint">A LiveDisplay segíthet a szemek terhelésének csökkentésében és a jobb éjszakai alvásban. Kattintson ide, hogy kipróbálja!</string>
+    <string name="accessibility_quick_settings_live_display_off">LiveDisplay ki.</string>
+    <string name="accessibility_quick_settings_live_display_auto">LiveDisplay: automatikus mód.</string>
+    <string name="accessibility_quick_settings_live_display_day">LiveDisplay: nappali mód.</string>
+    <string name="accessibility_quick_settings_live_display_night">LiveDisplay: éjszakai mód.</string>
+    <string name="accessibility_quick_settings_live_display_outdoor">LiveDisplay: kültéri mód.</string>
+    <string name="accessibility_quick_settings_live_display_changed_off">LiveDisplay kikapcsolva.</string>
+    <string name="accessibility_quick_settings_live_display_changed_auto">A LiveDisplay automatikus módra változtatva.</string>
+    <string name="accessibility_quick_settings_live_display_changed_day">A LiveDisplay nappali módra változtatva.</string>
+    <string name="accessibility_quick_settings_live_display_changed_night">A LiveDisplay éjszakai módra változtatva.</string>
+    <string name="accessibility_quick_settings_live_display_changed_outdoor">A LiveDisplay kültéri módra változtatva.</string>
+</resources>

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2024 Project Infinity X
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+
+     <!-- Notification light mappings -->
+    <java-symbol type="array" name="notification_light_package_mapping" />
+    <!-- On-device lights (LED) capabilities -->
+    <java-symbol type="integer" name="config_deviceLightCapabilities" />
+    
+    <!-- Whether Pixel props is enabled -->
+    <java-symbol type="bool" name="config_enablePixelProps" />
+
+    <!-- Whether to cancel fingerprint operation if not idle -->
+    <java-symbol type="bool" name="config_fpCancelIfNotIdle" />
+    
+    <!-- Location indicator -->
+    <java-symbol type="drawable" name="stat_sys_location" />
+
+    <!-- Whether device supports an alt. ambient display -->
+     <java-symbol type="bool" name="config_alt_ambient_display" />
+
+     <!-- SystemUI Restart -->
+     <java-symbol type="string" name="systemui_restart_title" />
+     <java-symbol type="string" name="systemui_restart_message" />
+     
+     <!-- Define device configs on boot -->
+     <java-symbol type="array" name="global_device_configs_override" />
+     <java-symbol type="array" name="device_configs_override" />
+
+    <!-- Light / Regular style fonts -->
+    <java-symbol type="string" name="config_lightFontFamily" />
+    <java-symbol type="string" name="config_regularFontFamily" />
+    
+    <!-- App error dialog -->
+    <java-symbol type="id" name="aerr_copy" />
+    <java-symbol type="string" name="url_copy_success" />
+    <java-symbol type="string" name="url_copy_failed" />
+    
+    <!-- Camera -->
+    <java-symbol type="array" name="config_cameraAuxPackageAllowList" />
+    <java-symbol type="array" name="config_cameraAuxPackageExcludeList" />
+    <java-symbol type="array" name="config_cameraHFRPrivAppList" />
+    
+    <!-- Whether to force enable multi resolution configuration for camera -->
+    <java-symbol type="bool" name="config_forceMultiResolution" />
+
+    <!-- Whether devices suports in-display fingerprint when screen is off -->
+    <java-symbol type="bool" name="config_supportScreenOffUdfps" />
+
+    <!-- Whether to use Richtap vibration -->
+    <java-symbol type="bool" name="config_usesRichtapVibration" />
+
+     <!-- Proximity check on screen on -->
+     <java-symbol type="bool" name="config_proximityCheckOnWake" />
+
+     <!-- Proximity check timeout -->
+     <java-symbol type="integer" name="config_proximityCheckTimeout" />
+
+     <!-- Proximity check on screen on default -->
+     <java-symbol type="bool" name="config_proximityCheckOnWakeEnabledByDefault" />
+
+     <!-- Advanced reboot -->
+     <java-symbol type="string" name="reboot_to_recovery_title" />
+     <java-symbol type="string" name="reboot_to_recovery_message" />
+     <java-symbol type="string" name="reboot_to_bootloader_title" />
+     <java-symbol type="string" name="reboot_to_bootloader_message" />
+     <java-symbol type="string" name="reboot_title" />
+     <java-symbol type="string" name="reboot_message" />
+
+     <!-- Global Actions pref list -->
+     <java-symbol type="array" name="custom_config_globalActionsList" />
+     
+     <!-- Lock gesture -->
+     <java-symbol type="string" name="gesture_locked_warning" />
+    
+     <!-- Custom logo color -->
+     <java-symbol type="color" name="logo_accent_color" />
+     
+     <!-- Status bar paddings -->
+     <java-symbol type="dimen" name="status_bar_padding_start" />
+     <java-symbol type="dimen" name="status_bar_padding_end" />
+     <java-symbol type="dimen" name="status_bar_padding_top" />
+     
+     <!-- Default line spacing multiplier between hours and minutes of the keyguard clock-->
+    <java-symbol type="dimen" format="float" name="keyguard_clock_line_spacing_scale" />
+    
+     <!-- Device hardware keys -->
+     <java-symbol type="integer" name="config_deviceHardwareWakeKeys" />
+     
+     <!-- Alert Slider -->
+     <java-symbol type="string" name="alert_slider_state_path" />
+     <java-symbol type="string" name="alert_slider_uevent_match_path" />
+     <java-symbol type="bool" name="config_hasAlertSlider" />
+     
+     <!-- Should we listen for fingerprints when the screen is off?  Devices
+         with a rear-mounted sensor want this, but certain devices have
+         the sensor embedded in the power key and listening all the time
+         causes a poor experience. -->
+    <java-symbol type="bool" name="config_fingerprintWakeAndUnlock" />
+    
+    <!-- Whether the device supports Smart Pixels -->
+    <java-symbol type="bool" name="config_supportSmartPixels" />
+
+    <!-- Health interface -->
+    <java-symbol type="bool" name="config_chargingControlEnabled" />
+    <java-symbol type="integer" name="config_defaultChargingControlMode" />
+    <java-symbol type="integer" name="config_defaultChargingControlStartTime" />
+    <java-symbol type="integer" name="config_defaultChargingControlTargetTime" />
+    <java-symbol type="integer" name="config_defaultChargingControlLimit" />
+    <java-symbol type="drawable" name="ic_charging_control" />
+    <java-symbol type="integer" name="config_chargingControlTimeMargin" />
+    <java-symbol type="integer" name="config_chargingControlBatteryRechargeMargin" />
+    <java-symbol type="string" name="charging_control_notification_channel" />
+    <java-symbol type="string" name="charging_control_notification_title" />
+    <java-symbol type="string" name="charging_control_notification_cancel_once" />
+    <java-symbol type="string" name="charging_control_notification_content_limit" />
+    <java-symbol type="string" name="charging_control_notification_content_limit_reached" />
+    <java-symbol type="string" name="charging_control_notification_content_target" />
+    <java-symbol type="string" name="charging_control_notification_content_target_reached" />
+     
+     <!-- Colored ls clock -->
+    <java-symbol type="color" name="primary_text_material_light" />
+    <java-symbol type="color" name="primary_text_material_dark" />
+    
+    <!-- Default line spacing multiplier between hours and minutes of the keyguard clock-->
+    <java-symbol type="dimen" format="float" name="keyguard_clock_line_spacing_scale" />
+
+    <!-- DC Dimming -->
+    <java-symbol type="string" name="config_deviceDcDimmingSysfsNode" />
+    <java-symbol type="string" name="config_deviceDcDimmingEnableValue" />
+    <java-symbol type="string" name="config_deviceDcDimmingDisableValue" />
+
+    <!-- Bootleg unneccesary gradient declaration | Just for our shishu bars -->
+    <java-symbol type="color" name="bootleg_accent_gradient_end_color" />
+
+    <!-- Device keyhandlers -->
+    <java-symbol type="array" name="config_deviceKeyHandlerLibs" />
+    <java-symbol type="array" name="config_deviceKeyHandlerClasses" />
+
+    <!-- LiveDisplay -->
+    <java-symbol type="string" name="live_display_title" />
+    <java-symbol type="string" name="live_display_hint" />
+    <java-symbol type="string" name="live_display_auto" />
+    <java-symbol type="string" name="live_display_auto_summary" />
+    <java-symbol type="string" name="live_display_day" />
+    <java-symbol type="string" name="live_display_day_summary" />
+    <java-symbol type="string" name="live_display_night" />
+    <java-symbol type="string" name="live_display_night_summary" />
+    <java-symbol type="string" name="live_display_outdoor" />
+    <java-symbol type="string" name="live_display_outdoor_summary" />
+    <java-symbol type="drawable" name="ic_livedisplay_notif" />
+    <java-symbol type="array" name="live_display_announcement" />
+    <java-symbol type="array" name="live_display_description" />
+    <java-symbol type="array" name="live_display_drawables" />
+    <java-symbol type="array" name="live_display_entries" />
+    <java-symbol type="array" name="live_display_summaries" />
+    <java-symbol type="array" name="live_display_values" />
+    <java-symbol type="integer" name="config_dayColorTemperature" />
+    <java-symbol type="integer" name="config_nightColorTemperature" />
+    <java-symbol type="integer" name="config_outdoorAmbientLux" />
+    <java-symbol type="integer" name="config_outdoorAmbientLuxHysteresis" />
+    <java-symbol type="integer" name="config_defaultLiveDisplayMode" />
+    <java-symbol type="integer" name="config_minColorTemperature" />
+    <java-symbol type="integer" name="config_maxColorTemperature" />
+    <java-symbol type="bool" name="config_enableLiveDisplay" />
+    <java-symbol type="bool" name="config_defaultAutoContrast" />
+    <java-symbol type="bool" name="config_defaultAutoOutdoorMode" />
+    <java-symbol type="bool" name="config_defaultColorEnhancement" />
+    <java-symbol type="bool" name="config_defaultAntiFlicker" />
+    <java-symbol type="bool" name="config_defaultCABC" />
+    <java-symbol type="bool" name="config_filterDisplayModes" />
+    <java-symbol type="array" name="config_displayModeMappings" />
+    
+    <!-- Sleep Mode -->
+    <java-symbol type="drawable" name="ic_sleep" />
+    <java-symbol type="string" name="notification_channel_sleep" />
+    <java-symbol type="string" name="sleep_mode_notification_title" />
+    <java-symbol type="string" name="sleep_mode_notification_content" />
+    <java-symbol type="string" name="sleep_mode_enabled_toast" />
+    <java-symbol type="string" name="sleep_mode_disabled_toast" />
+
+    <!-- Smart 5G -->
+    <java-symbol type="bool" name="config_supportSmart5G" />
+</resources>

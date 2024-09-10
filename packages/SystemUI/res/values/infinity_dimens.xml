@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2024 Project Infinity X
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- Maximum horizontal offset of statusbar for burn-in protection -->
+    <dimen name="status_bar_offset_max_x">4dp</dimen>
+
+    <!-- Maximum vertical offset of statusbar for burn-in protection -->
+    <dimen name="status_bar_offset_max_y">4dp</dimen>
+    
+    <!-- Screen Record -->
+    <dimen name="screenrecord_dot_size">48dp</dimen>
+    
+    <!-- The height of the WiFi toggle layout in Internet panel -->
+    <dimen name="internet_dialog_wifi_toggle_height">56dp</dimen>
+
+    <!-- Udfps fingerprint animation -->
+    <dimen name="udfps_animation_size">200dp</dimen>
+    <dimen name="udfps_animation_offset">0dp</dimen>
+    
+    <!-- Width of the battery icon in the status bar when set to circle style. -->
+    <dimen name="status_bar_battery_icon_circle_width">14.5dp</dimen>
+
+    <!-- Width of the big battery circle icon in the status bar. -->
+    <dimen name="status_bar_battery_icon_big_circle_width">20.5dp</dimen>
+
+    <!-- Height of the big battery circle icon in the status bar. -->
+    <dimen name="status_bar_battery_icon_big_circle_height">@dimen/status_bar_battery_icon_big_circle_width</dimen>
+
+    <!-- Height of the landscape battery icon in the status bar. -->
+    <dimen name="status_bar_battery_icon_height_landscape">10.5dp</dimen>
+
+    <!-- Width of the landscape battery icon in the status bar. -->
+    <dimen name="status_bar_battery_icon_width_landscape">20dp</dimen>
+    
+    <!-- Battery Icon Height -->
+    <dimen name="status_bar_battery_icon_height_landscape_a">15.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_b">15.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_c">14.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_d">16.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_e">16.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_f">16.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_g">12.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_h">16.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_i">14.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_j">15.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_k">18.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_l">15.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_m">16.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_n">13.0dip</dimen>
+    <dimen name="status_bar_battery_icon_height_landscape_o">14.0dip</dimen>
+
+    <!-- Battery Icon Width -->
+    <dimen name="status_bar_battery_icon_width_landscape_a">25.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_b">25.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_c">24.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_d">22.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_e">24.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_f">28.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_g">20.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_h">28.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_i">25.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_j">24.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_k">26.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_l">27.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_m">28.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_n">25.0dip</dimen>
+    <dimen name="status_bar_battery_icon_width_landscape_o">22.0dip</dimen>
+    
+    <!-- QQS Brightness slider -->
+    <dimen name="quick_qs_brightness_margin_top">24dp</dimen>
+    <dimen name="qqs_top_brightness_margin_top">4dp</dimen>
+    <dimen name="qqs_top_brightness_margin_bottom">12dp</dimen>
+    <dimen name="qqs_bottom_brightness_margin_top">12dp</dimen>
+    <dimen name="qqs_bottom_brightness_margin_bottom">4dp</dimen>
+
+    <!-- QS Brightness slider -->
+    <dimen name="qs_top_brightness_margin_top">4dp</dimen>
+    <dimen name="qs_top_brightness_margin_bottom">12dp</dimen>
+    <dimen name="qs_bottom_brightness_margin_top">12dp</dimen>
+    <dimen name="qs_bottom_brightness_margin_bottom">4dp</dimen>
+
+    <!-- Base Multiplier for dp to px. -->
+    <dimen name="amb_font_base_multiplier_dp">1dp</dimen>
+
+    <!-- HD calling icon -->
+    <dimen name="signal_icon_viewport_size">24dp</dimen>
+    
+    <!-- Additional gesture navbar lengths -->
+    <dimen name="navigation_home_handle_width_short">72dp</dimen>
+    <dimen name="navigation_home_handle_width_long">140dp</dimen>
+
+    <!-- AoD battery bar -->
+    <dimen name="battery_bar_view_height">4dp</dimen>
+    
+    <!-- Island notification -->
+    <dimen name="island_icon_size">48dp</dimen>
+    <dimen name="island_side_margin">12dp</dimen>
+
+    <!-- Clear all notifications button -->
+    <dimen name="dismiss_all_button_elevation">10dp</dimen>
+    <dimen name="dismiss_all_button_height">55dp</dimen>
+    <dimen name="dismiss_all_button_width">55dp</dimen>
+    <dimen name="dismiss_all_button_margin_bottom">48dp</dimen>
+    
+    <!-- Pixel navbar -->
+    <dimen name="opa_diamond_translation">16dp</dimen>
+    <dimen name="opa_disabled_home_diameter">@dimen/navigation_icon_size</dimen>
+    <dimen name="opa_dot_diam">10dp</dimen>
+    <dimen name="opa_line_x_trans_bg">30dp</dimen>
+    <dimen name="opa_line_x_trans_ry">15dp</dimen>
+    <dimen name="opa_line_y_translation">16dp</dimen>
+
+    <!-- OmniStyle custom headers -->
+    <dimen name="qs_header_image_height">142dp</dimen>
+    <dimen name="qs_header_image_fade_size">80dp</dimen>
+    
+    <!-- Maximum horizontal offset of navigation bar for burn-in protection -->
+    <dimen name="navigation_bar_burn_in_offset_max_x">5dp</dimen>
+
+    <!-- Maximum vertical offset of navigation bar for burn-in protection -->
+    <dimen name="navigation_bar_burn_in_offset_max_y">8dp</dimen>
+</resources>

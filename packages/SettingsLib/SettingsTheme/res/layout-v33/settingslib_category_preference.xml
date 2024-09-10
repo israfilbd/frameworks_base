@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+    android:background="?android:attr/selectableItemBackground"
+    android:baselineAligned="false"
+    android:layout_marginTop="16dp"
+    android:gravity="center_vertical">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+        
+        <View
+           android:layout_width="8dp"
+           android:layout_height="match_parent"
+           android:background="@drawable/bar"
+           android:padding="6dp"
+           android:layout_marginEnd="8dp"/>
+
+        <TextView
+            android:id="@+android:id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAlignment="viewStart"
+            android:textSize="15sp"
+            android:breakStrategy="simple"
+            android:paddingVertical="6dp"
+            android:paddingHorizontal="12dp"
+            android:textStyle="bold"
+            android:background="@drawable/custom_inner_preference_background"
+            android:textColor="?android:attr/colorAccent"
+            android:fontFamily="@*android:string/config_headlineFontFamily"/>
+
+    </RelativeLayout>
+
+</LinearLayout>

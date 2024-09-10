@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2024 Project Infinity X
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+
+     <!-- Island notification -->
+    <style name="Theme.Island.SystemUI" parent="@style/Theme.MaterialComponents.DayNight">
+        <item name="android:fontFamily">@*android:string/config_bodyFontFamily</item>
+    </style>
+
+    <style name="islandBackgroundOverlay" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">48dp</item>
+    </style>
+
+    <!-- Pixel navbar -->
+    <style name="DotStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_centerHorizontal">true</item>
+        <item name="android:layout_centerVertical">true</item>
+        <item name="android:alpha">@null</item>
+    </style>
+</resources>

@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+
+    
+    <string name="aerr_copy">Kopírovať URL adresu záznamu o chybe.</string>
+    <string name="url_copy_success">URL úspešne skopírované</string>
+    <string name="url_copy_failed">Pri nahrávaní protokolu o zlyhaní došlo k chybe</string>
+
+    
+    <string name="systemui_restart_title">Vyžaduje sa reštart SystemUI</string>
+    <string name="systemui_restart_message">Aby sa všetky zmeny prejavili je potrebné reštartovať SystemUI. Reštartovať teraz?</string>
+
+    
+    <string name="reboot_to_recovery_title">Recovery</string>
+    <string name="reboot_to_recovery_message">Rebooting to recovery</string>
+    <string name="reboot_to_bootloader_title">Bootloader</string>
+    <string name="reboot_to_bootloader_message">Rebooting to bootloader</string>
+    <string name="reboot_title">Reštartovať</string>
+    <string name="reboot_message">Reštartovanie systému...</string>
+    
+    
+    <string name="gesture_locked_warning">Opätovným potiahnutím odomknete gestá</string>
+
+    
+    <string name="alert_slider_state_path" />
+    <string name="alert_slider_uevent_match_path" />
+
+    
+    <string name="charging_control_notification_channel">Ovládanie nabíjania</string>
+    <string name="charging_control_notification_title">Ovládanie nabíjania</string>
+    <string name="charging_control_notification_cancel_once">Zrušiť</string>
+    <string name="charging_control_notification_content_limit">Batéria bude nabitá na %1$d%%</string>
+    <string name="charging_control_notification_content_limit_reached">Batéria je nabitá na %1$d%%</string>
+    <string name="charging_control_notification_content_target">Batéria bude plne nabitá o %1$s</string>
+    <string name="charging_control_notification_content_target_reached">Batéria je nabitá</string>
+
+    
+    <string name="live_display_title" translatable="false">LiveDisplay</string>
+    <string name="live_display_auto">Automatický</string>
+    <string name="live_display_auto_summary">Automaticky upraviť teplotu farieb obrazovky po západe a východe slnka</string>
+    <string name="live_display_off">Vypnúť</string>
+    <string name="live_display_off_summary">Zakázať všetky úpravy</string>
+    <string name="live_display_day">Deň</string>
+    <string name="live_display_day_summary">Použiť iba nastavenia pre deň</string>
+    <string name="live_display_night">Noc</string>
+    <string name="live_display_night_summary">Používať iba nastavenia pre noc</string>
+    <string name="live_display_outdoor">Vonku (slnečno)</string>
+    <string name="live_display_outdoor_summary">Použiť iba nastavenia vonku</string>
+    <string name="live_display_hint">LiveDisplay môže pomôcť znížiť únavu očí a pomôže vám spať v noci. Ťuknite sem a vyskúšajte túto funkciu!</string>
+    <string name="accessibility_quick_settings_live_display_off">LiveDisplay vyp.</string>
+    <string name="accessibility_quick_settings_live_display_auto">LiveDisplay: automatický režim.</string>
+    <string name="accessibility_quick_settings_live_display_day">LiveDisplay: denný režim.</string>
+    <string name="accessibility_quick_settings_live_display_night">LiveDisplay: nočný režim.</string>
+    <string name="accessibility_quick_settings_live_display_outdoor">LiveDisplay: režim vonku.</string>
+    <string name="accessibility_quick_settings_live_display_changed_off">LiveDisplay vypnutý.</string>
+    <string name="accessibility_quick_settings_live_display_changed_auto">LiveDisplay sa zmenil na automatický režim.</string>
+    <string name="accessibility_quick_settings_live_display_changed_day">LiveDisplay bol zmenený na denný režim.</string>
+    <string name="accessibility_quick_settings_live_display_changed_night">LiveDisplay bol zmenený na nočný režim.</string>
+    <string name="accessibility_quick_settings_live_display_changed_outdoor">LiveDisplay bol zmenený na režim vonku.</string>
+</resources>

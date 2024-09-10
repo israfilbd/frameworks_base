@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+
+    
+    <string name="aerr_copy">URL des Absturzberichts kopieren</string>
+    <string name="url_copy_success">URL erfolgreich kopiert</string>
+    <string name="url_copy_failed">Beim Hochladen des Protokolls zu Pasty ist ein Fehler aufgetreten</string>
+
+    
+    <string name="systemui_restart_title">Neustart der SystemUI erforderlich</string>
+    <string name="systemui_restart_message">Um alle Änderungen anzuwenden ist ein Neustart von SystemUI notwendig. SystemUI jetzt neustarten?</string>
+
+    
+    <string name="reboot_to_recovery_title">Recovery</string>
+    <string name="reboot_to_recovery_message">Neustart ins Recovery</string>
+    <string name="reboot_to_bootloader_title">Bootloader</string>
+    <string name="reboot_to_bootloader_message">Neustart in den Bootloader</string>
+    <string name="reboot_title">Neustart</string>
+    <string name="reboot_message">Starte Sytem neu</string>
+    
+    
+    <string name="gesture_locked_warning">Erneut wischen, um Gerät zu entsperren</string>
+
+    
+    <string name="alert_slider_state_path" />
+    <string name="alert_slider_uevent_match_path" />
+
+    
+    <string name="charging_control_notification_channel">Ladekontrolle</string>
+    <string name="charging_control_notification_title">Ladekontrolle</string>
+    <string name="charging_control_notification_cancel_once">Abbrechen</string>
+    <string name="charging_control_notification_content_limit">Akku wird bis %1$d%% geladen</string>
+    <string name="charging_control_notification_content_limit_reached">Akku ist bis %1$d%% geladen</string>
+    <string name="charging_control_notification_content_target">Akku wird bis %1$s vollständig geladen sein</string>
+    <string name="charging_control_notification_content_target_reached">Akku ist aufgeladen</string>
+
+    
+    <string name="live_display_title" translatable="false">LiveDisplay</string>
+    <string name="live_display_auto">Automatisch</string>
+    <string name="live_display_auto_summary">Farbtemperatur des Bildschirms automatisch nach Sonnenuntergang und Sonnenaufgang anpassen</string>
+    <string name="live_display_off">Aus</string>
+    <string name="live_display_off_summary">Alle Anpassungen deaktivieren</string>
+    <string name="live_display_day">Tag</string>
+    <string name="live_display_day_summary">Nur Tag-Einstellungen verwenden</string>
+    <string name="live_display_night">Nacht</string>
+    <string name="live_display_night_summary">Nur Nacht-Einstellungen verwenden</string>
+    <string name="live_display_outdoor">Im Freien (helle Sonne)</string>
+    <string name="live_display_outdoor_summary">Nur \"Im Freien\"-Einstellungen verwenden</string>
+    <string name="live_display_hint">LiveDisplay kann gegen eine Überanstrengung der Augen und beim Schlafen in der Nacht helfen. Klicken Sie hier, um es auszuprobieren!</string>
+    <string name="accessibility_quick_settings_live_display_off">LiveDisplay aus.</string>
+    <string name="accessibility_quick_settings_live_display_auto">LiveDisplay: Automatischer Modus.</string>
+    <string name="accessibility_quick_settings_live_display_day">LiveDisplay: Tag-Modus.</string>
+    <string name="accessibility_quick_settings_live_display_night">LiveDisplay: Nacht-Modus.</string>
+    <string name="accessibility_quick_settings_live_display_outdoor">LiveDisplay: \"Im Freien\"-Modus.</string>
+    <string name="accessibility_quick_settings_live_display_changed_off">LiveDisplay ausgeschaltet.</string>
+    <string name="accessibility_quick_settings_live_display_changed_auto">LiveDisplay auf Auto-Modus geändert.</string>
+    <string name="accessibility_quick_settings_live_display_changed_day">LiveDisplay auf Tag-Modus geändert.</string>
+    <string name="accessibility_quick_settings_live_display_changed_night">LiveDisplay auf Nacht-Modus geändert.</string>
+    <string name="accessibility_quick_settings_live_display_changed_outdoor">LiveDisplay auf Outdoor-Modus geändert.</string>
+</resources>

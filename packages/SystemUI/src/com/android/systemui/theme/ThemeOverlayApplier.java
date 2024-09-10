@@ -1,0 +1,422 @@
+/*
+ * Copyright (C) 2019 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.android.systemui.theme;
+
+import static com.android.systemui.shared.Flags.enableHomeDelay;
+
+import android.annotation.AnyThread;
+import android.content.om.FabricatedOverlay;
+import android.content.om.OverlayIdentifier;
+import android.content.om.OverlayInfo;
+import android.content.om.OverlayManager;
+import android.content.om.OverlayManagerTransaction;
+import android.os.UserHandle;
+import android.util.ArrayMap;
+import android.util.Log;
+import android.util.Pair;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
+
+import com.android.systemui.Dumpable;
+import com.android.systemui.dagger.SysUISingleton;
+import com.android.systemui.dagger.qualifiers.Background;
+import com.android.systemui.dagger.qualifiers.Main;
+import com.android.systemui.dump.DumpManager;
+
+import com.google.android.collect.Lists;
+import com.google.android.collect.Sets;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+
+/**
+ * Responsible for orchestrating overlays, based on user preferences and other inputs from
+ * {@link ThemeOverlayController}.
+ */
+@SysUISingleton
+public class ThemeOverlayApplier implements Dumpable {
+    private static final String TAG = "ThemeOverlayApplier";
+    private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
+
+    @VisibleForTesting
+    static final String ANDROID_PACKAGE = "android";
+    @VisibleForTesting
+    static final String SETTINGS_PACKAGE = "com.android.settings";
+    @VisibleForTesting
+    static final String SYSUI_PACKAGE = "com.android.systemui";
+
+    static final String OVERLAY_CATEGORY_DYNAMIC_COLOR =
+            "android.theme.customization.dynamic_color";
+    static final String OVERLAY_CATEGORY_ACCENT_COLOR =
+            "android.theme.customization.accent_color";
+    static final String OVERLAY_CATEGORY_SYSTEM_PALETTE =
+            "android.theme.customization.system_palette";
+    static final String OVERLAY_CATEGORY_THEME_STYLE =
+            "android.theme.customization.theme_style";
+
+    static final String OVERLAY_COLOR_SOURCE = "android.theme.customization.color_source";
+
+    static final String OVERLAY_COLOR_INDEX = "android.theme.customization.color_index";
+
+    static final String OVERLAY_COLOR_BOTH = "android.theme.customization.color_both";
+
+    static final String COLOR_SOURCE_PRESET = "preset";
+
+    static final String COLOR_SOURCE_HOME = "home_wallpaper";
+
+    static final String COLOR_SOURCE_LOCK = "lock_wallpaper";
+
+    static final String TIMESTAMP_FIELD = "_applied_timestamp";
+
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_FONT = "android.theme.customization.font";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_SHAPE =
+            "android.theme.customization.adaptive_icon_shape";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_ANDROID =
+            "android.theme.customization.icon_pack.android";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_SYSUI =
+            "android.theme.customization.icon_pack.systemui";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_SETTINGS =
+            "android.theme.customization.icon_pack.settings";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_LAUNCHER =
+            "android.theme.customization.icon_pack.launcher";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_THEME_PICKER =
+            "android.theme.customization.icon_pack.themepicker";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_SIGNAL =
+            "android.theme.customization.signal_icon";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_ICON_WIFI =
+            "android.theme.customization.wifi_icon";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_NAVBAR =
+            "android.theme.customization.navbar";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_DATA =
+            "android.customization.sb_data";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_LOCK_CLOCK_FONT =
+            "android.theme.customization.lockscreen_clock_font";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_UI_STYLE_ANDROID =
+            "android.theme.customization.style.android";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_UI_STYLE_SETTINGS =
+            "android.theme.customization.style.settings";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_UI_STYLE_SYSUI =
+            "android.theme.customization.style.systemui";
+
+    static final String OVERLAY_BRIGHTNESS_SLIDER_FILLED =
+            "com.android.systemui.brightness_slider.filled";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_THIN =
+            "com.android.systemui.brightness_slider.thin";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_CYBERPUNK =
+            "com.android.systemui.brightness_slider.cyberpunk";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_GRADIANT =
+            "com.android.systemui.brightness_slider.gradiant";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_NEUMORPH =
+            "com.android.systemui.brightness_slider.neumorph";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_OUTLINE =
+            "com.android.systemui.brightness_slider.outline";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_SHADED =
+            "com.android.systemui.brightness_slider.shaded";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_THINOUTLINE =
+            "com.android.systemui.brightness_slider.thinoutline";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_TRANSLUCENT =
+            "com.android.systemui.brightness_slider.translucent";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_LEAFYOUTLINE =
+            "com.android.systemui.brightness_slider.leafyoutline";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_MINIMALTHUMB =
+            "com.android.systemui.brightness_slider.minimalthumb";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_OLDSCHOOLTHUMB =
+            "com.android.systemui.brightness_slider.oldschoolthumb";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_ROUNDEDCLIP =
+            "com.android.systemui.brightness_slider.roundedclip";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_THUMBSLIDER =
+            "com.android.systemui.brightness_slider.thumbslider";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_LINE =
+            "com.android.systemui.brightness_slider.line";
+    static final String OVERLAY_BRIGHTNESS_SLIDER_LIGHTY =
+            "com.android.systemui.brightness_slider.lighty";
+
+    /*
+     * All theme customization categories used by the system, in order that they should be applied,
+     * starts with launcher and grouped by target package.
+     */
+    static final List<String> THEME_CATEGORIES = Lists.newArrayList(
+            OVERLAY_CATEGORY_SYSTEM_PALETTE,
+            OVERLAY_CATEGORY_SHAPE,
+            OVERLAY_CATEGORY_FONT,
+            OVERLAY_CATEGORY_ACCENT_COLOR,
+            OVERLAY_CATEGORY_DYNAMIC_COLOR,
+            OVERLAY_CATEGORY_ICON_ANDROID,
+            OVERLAY_CATEGORY_ICON_SYSUI,
+            OVERLAY_CATEGORY_ICON_SETTINGS,
+            OVERLAY_CATEGORY_ICON_SIGNAL,
+            OVERLAY_CATEGORY_ICON_WIFI,
+            OVERLAY_CATEGORY_NAVBAR,
+            OVERLAY_CATEGORY_DATA,
+            OVERLAY_CATEGORY_LOCK_CLOCK_FONT,
+            OVERLAY_CATEGORY_UI_STYLE_ANDROID,
+            OVERLAY_CATEGORY_UI_STYLE_SETTINGS,
+            OVERLAY_CATEGORY_UI_STYLE_SYSUI);
+
+    /* Categories that need to be applied to the current user as well as the system user. */
+    @VisibleForTesting
+    static final Set<String> SYSTEM_USER_CATEGORIES = Sets.newHashSet(
+            OVERLAY_CATEGORY_SYSTEM_PALETTE,
+            OVERLAY_CATEGORY_ACCENT_COLOR,
+            OVERLAY_CATEGORY_DYNAMIC_COLOR,
+            OVERLAY_CATEGORY_FONT,
+            OVERLAY_CATEGORY_SHAPE,
+            OVERLAY_CATEGORY_UI_STYLE_ANDROID,
+            OVERLAY_CATEGORY_UI_STYLE_SYSUI,
+            OVERLAY_CATEGORY_ICON_ANDROID,
+            OVERLAY_CATEGORY_ICON_SYSUI,
+            OVERLAY_CATEGORY_NAVBAR,
+            OVERLAY_CATEGORY_DATA,
+            OVERLAY_CATEGORY_LOCK_CLOCK_FONT);
+
+    /* Brightness slider overlays */
+    static final List<String> BRIGHTNESS_SLIDER_OVERLAYS = Lists.newArrayList(
+            "",
+            OVERLAY_BRIGHTNESS_SLIDER_FILLED,
+            OVERLAY_BRIGHTNESS_SLIDER_THIN,
+            OVERLAY_BRIGHTNESS_SLIDER_CYBERPUNK,
+            OVERLAY_BRIGHTNESS_SLIDER_GRADIANT,
+            OVERLAY_BRIGHTNESS_SLIDER_NEUMORPH,
+            OVERLAY_BRIGHTNESS_SLIDER_OUTLINE,
+            OVERLAY_BRIGHTNESS_SLIDER_SHADED,
+            OVERLAY_BRIGHTNESS_SLIDER_THINOUTLINE,
+            OVERLAY_BRIGHTNESS_SLIDER_TRANSLUCENT,
+            OVERLAY_BRIGHTNESS_SLIDER_LEAFYOUTLINE,
+            OVERLAY_BRIGHTNESS_SLIDER_MINIMALTHUMB,
+            OVERLAY_BRIGHTNESS_SLIDER_OLDSCHOOLTHUMB,
+            OVERLAY_BRIGHTNESS_SLIDER_ROUNDEDCLIP,
+            OVERLAY_BRIGHTNESS_SLIDER_THUMBSLIDER,
+            OVERLAY_BRIGHTNESS_SLIDER_LINE,
+            OVERLAY_BRIGHTNESS_SLIDER_LIGHTY);
+
+    /* Allowed overlay categories for each target package. */
+    private final Map<String, Set<String>> mTargetPackageToCategories = new ArrayMap<>();
+    /* Target package for each overlay category. */
+    private final Map<String, String> mCategoryToTargetPackage = new ArrayMap<>();
+    private final OverlayManager mOverlayManager;
+    private final Executor mBgExecutor;
+    private final Executor mMainExecutor;
+    private final String mLauncherPackage;
+    private final String mThemePickerPackage;
+
+    @Inject
+    public ThemeOverlayApplier(OverlayManager overlayManager,
+            @Background Executor bgExecutor,
+            @Named(ThemeModule.LAUNCHER_PACKAGE) String launcherPackage,
+            @Named(ThemeModule.THEME_PICKER_PACKAGE) String themePickerPackage,
+            DumpManager dumpManager,
+            @Main Executor mainExecutor) {
+        mOverlayManager = overlayManager;
+        mBgExecutor = bgExecutor;
+        mMainExecutor = mainExecutor;
+        mLauncherPackage = launcherPackage;
+        mThemePickerPackage = themePickerPackage;
+        mTargetPackageToCategories.put(ANDROID_PACKAGE, Sets.newHashSet(
+                OVERLAY_CATEGORY_SYSTEM_PALETTE, OVERLAY_CATEGORY_ACCENT_COLOR,
+                OVERLAY_CATEGORY_DYNAMIC_COLOR,
+                OVERLAY_CATEGORY_FONT, OVERLAY_CATEGORY_SHAPE,
+                OVERLAY_CATEGORY_ICON_ANDROID, OVERLAY_CATEGORY_UI_STYLE_ANDROID));
+        mTargetPackageToCategories.put(SYSUI_PACKAGE,
+                Sets.newHashSet(OVERLAY_CATEGORY_ICON_SYSUI, OVERLAY_CATEGORY_UI_STYLE_SYSUI));
+        mTargetPackageToCategories.put(SETTINGS_PACKAGE,
+                Sets.newHashSet(OVERLAY_CATEGORY_ICON_SETTINGS, OVERLAY_CATEGORY_UI_STYLE_SETTINGS));
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ACCENT_COLOR, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_DYNAMIC_COLOR, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_FONT, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_SHAPE, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_LOCK_CLOCK_FONT, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ICON_ANDROID, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ICON_SYSUI, SYSUI_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_UI_STYLE_ANDROID, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_UI_STYLE_SETTINGS, SETTINGS_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_UI_STYLE_SYSUI, SYSUI_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ICON_SETTINGS, SETTINGS_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ICON_SIGNAL, SYSUI_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ICON_WIFI, SYSUI_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_NAVBAR, SYSUI_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_DATA, SYSUI_PACKAGE);
+
+        dumpManager.registerDumpable(TAG, this);
+    }
+
+    /**
+     * Apply the set of overlay packages to the set of {@code UserHandle}s provided. Overlays that
+     * affect sysui will also be applied to the system user.
+     *
+     * @param categoryToPackage Overlay packages to be applied
+     * @param pendingCreation Overlays yet to be created
+     * @param currentUser Current User ID
+     * @param managedProfiles Profiles get overlays
+     * @param onComplete Callback for when resources are ready. Runs in the main thread.
+     */
+    public void applyCurrentUserOverlays(
+            Map<String, OverlayIdentifier> categoryToPackage,
+            FabricatedOverlay[] pendingCreation,
+            int currentUser,
+            Set<UserHandle> managedProfiles,
+            Runnable onComplete
+    ) {
+
+        mBgExecutor.execute(() -> {
+
+            // Disable all overlays that have not been specified in the user setting.
+            final Set<String> overlayCategoriesToDisable = new HashSet<>(THEME_CATEGORIES);
+            final Set<String> targetPackagesToQuery = overlayCategoriesToDisable.stream()
+                    .map(category -> mCategoryToTargetPackage.get(category))
+                    .collect(Collectors.toSet());
+            final List<OverlayInfo> overlays = new ArrayList<>();
+            targetPackagesToQuery.forEach(targetPackage -> overlays.addAll(mOverlayManager
+                    .getOverlayInfosForTarget(targetPackage, UserHandle.SYSTEM)));
+            final List<Pair<String, String>> overlaysToDisable = overlays.stream()
+                    .filter(o ->
+                            mTargetPackageToCategories.get(o.targetPackageName).contains(
+                                    o.category))
+                    .filter(o -> overlayCategoriesToDisable.contains(o.category))
+                    .filter(o -> !categoryToPackage.containsValue(
+                            new OverlayIdentifier(o.packageName)))
+                    .filter(o -> o.isEnabled())
+                    .map(o -> new Pair<>(o.category, o.packageName))
+                    .collect(Collectors.toList());
+
+            OverlayManagerTransaction.Builder transaction = getTransactionBuilder();
+            HashSet<OverlayIdentifier> identifiersPending = new HashSet<>();
+            if (pendingCreation != null) {
+                for (FabricatedOverlay overlay : pendingCreation) {
+                    try {
+                        identifiersPending.add(overlay.getIdentifier());
+                        transaction.registerFabricatedOverlay(overlay);
+                    } catch (NullPointerException e) {
+                        Log.e(TAG, "NPE for overlay.getIdentifier()", e);
+                    }
+                }
+            }
+
+            for (Pair<String, String> packageToDisable : overlaysToDisable) {
+                OverlayIdentifier overlayInfo = new OverlayIdentifier(packageToDisable.second);
+                setEnabled(transaction, overlayInfo, packageToDisable.first, currentUser,
+                        managedProfiles, false, identifiersPending.contains(overlayInfo));
+            }
+
+            for (String category : THEME_CATEGORIES) {
+                if (categoryToPackage.containsKey(category)) {
+                    OverlayIdentifier overlayInfo = categoryToPackage.get(category);
+                    setEnabled(transaction, overlayInfo, category, currentUser, managedProfiles,
+                            true, identifiersPending.contains(overlayInfo));
+                }
+            }
+
+            try {
+                mOverlayManager.commit(transaction.build());
+                if (enableHomeDelay() && onComplete != null) {
+                    Log.d(TAG, "Executing onComplete runnable");
+                    mMainExecutor.execute(onComplete);
+                }
+            } catch (SecurityException | IllegalStateException e) {
+                Log.e(TAG, "setEnabled failed", e);
+            }
+        });
+    }
+
+    /* Set brightness slider styles */
+    public void setBrightnessSliderStyle(int brightnessSliderStyle) {
+        mBgExecutor.execute(() -> {
+            try {
+                for (int i = 1; i < BRIGHTNESS_SLIDER_OVERLAYS.size(); i++) {
+                    String overlay = BRIGHTNESS_SLIDER_OVERLAYS.get(i);
+                    boolean enable = (i == brightnessSliderStyle);
+                    mOverlayManager.setEnabled(overlay, enable, UserHandle.SYSTEM);
+                }
+            } catch (SecurityException | IllegalStateException e) {
+                Log.e(TAG, "Failed to set brightness slider style", e);
+            }
+        });
+    }
+
+    @VisibleForTesting
+    protected OverlayManagerTransaction.Builder getTransactionBuilder() {
+        return new OverlayManagerTransaction.Builder();
+    }
+
+    @AnyThread
+    private void setEnabled(OverlayManagerTransaction.Builder transaction,
+            OverlayIdentifier identifier, String category, int currentUser,
+            Set<UserHandle> managedProfiles, boolean enabled, boolean pendingCreation) {
+        if (DEBUG) {
+            Log.d(TAG, "setEnabled: " + identifier.getPackageName() + " category: "
+                    + category + ": " + enabled);
+        }
+
+        OverlayInfo overlayInfo = mOverlayManager.getOverlayInfo(identifier,
+                UserHandle.of(currentUser));
+        if (overlayInfo == null && !pendingCreation) {
+            Log.i(TAG, "Won't enable " + identifier + ", it doesn't exist for user"
+                    + currentUser);
+            return;
+        }
+
+        transaction.setEnabled(identifier, enabled, currentUser);
+        if (currentUser != UserHandle.SYSTEM.getIdentifier()
+                && SYSTEM_USER_CATEGORIES.contains(category)) {
+            transaction.setEnabled(identifier, enabled, UserHandle.SYSTEM.getIdentifier());
+        }
+
+        // Do not apply Launcher or Theme picker overlays to managed users. Apps are not
+        // installed in there.
+        overlayInfo = mOverlayManager.getOverlayInfo(identifier, UserHandle.SYSTEM);
+        if (overlayInfo == null || overlayInfo.targetPackageName.equals(mLauncherPackage)
+                || overlayInfo.targetPackageName.equals(mThemePickerPackage)) {
+            return;
+        }
+
+        for (UserHandle userHandle : managedProfiles) {
+            transaction.setEnabled(identifier, enabled, userHandle.getIdentifier());
+        }
+    }
+
+    /**
+     * @inherit
+     */
+    @Override
+    public void dump(@NonNull PrintWriter pw, @NonNull String[] args) {
+        pw.println("mTargetPackageToCategories=" + mTargetPackageToCategories);
+        pw.println("mCategoryToTargetPackage=" + mCategoryToTargetPackage);
+    }
+}
