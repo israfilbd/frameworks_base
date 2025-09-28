@@ -20104,6 +20104,15 @@ public class ActivityManagerService extends IActivityManager.Stub
         } catch (Exception e) {}
     }
 
+    @Override
+    public void compactAllSystem() {
+        mHandler.post(() -> {
+            synchronized (mProcLock) {
+                mCachedAppOptimizer.compactAllSystem();
+            }
+        });
+    }
+
     public class ProcessComparator implements Comparator<ProcessToKill> {
         @Override
         public int compare(ProcessToKill p1, ProcessToKill p2) {
