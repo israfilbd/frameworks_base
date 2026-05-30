@@ -1,0 +1,186 @@
+# proto-file: build/make/tools/aconfig/aconfig_protos/protos/aconfig.proto
+# proto-message: flag_declarations
+# Project link: http://gantry/projects/android_platform_windowing_sdk
+
+package: "com.android.window.flags"
+container: "system"
+
+flag {
+    namespace: "windowing_sdk"
+    name: "activity_embedding_interactive_divider_flag"
+    description: "Whether the interactive divider feature is enabled"
+    bug: "293654166"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "untrusted_embedding_any_app_permission"
+    is_exported: true
+    description: "Feature flag to enable the permission to embed any app in untrusted mode."
+    bug: "293647332"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "untrusted_embedding_state_sharing"
+    is_exported: true
+    description: "Feature flag to enable state sharing in untrusted embedding when apps opt in."
+    bug: "293647332"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "cover_display_opt_in"
+    is_exported: true
+    description: "Properties to allow apps and activities to opt-in to cover display rendering"
+    bug: "312530526"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "rear_display_disable_force_desktop_system_decorations"
+    description: "Block system decorations from being added to a rear display when desktop mode is forced"
+    bug: "346103150"
+    is_fixed_read_only: true
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "touch_pass_through_opt_in"
+    description: "Requires apps to opt-in to overlay pass through touches and provide APIs to opt-in"
+    bug: "358129114"
+    is_exported: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "activity_embedding_delay_task_fragment_finish_for_activity_launch"
+    description: "Fixes a race condition that we finish the TaskFragment too early when there is a pending activity launch."
+    bug: "390452023"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "aaos_core_contrib"
+    name: "safe_region_letterboxing_v1"
+    description: "Enables letterboxing for a safe region"
+    bug: "425949809"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "activity_embedding_metrics"
+    description: "Metrics for Activity Embedding usage in WM Extensions"
+    bug: "399465821"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "enable_experimental_bubbles_controller"
+    description: "Experiment to allow apps to request Bubbles actions in WM Shell"
+    bug: "407149510"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "root_task_for_bubble"
+    description: "Using a root task to manage Bubble tasks"
+    bug: "407669465"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fallback_to_focused_display"
+    description: "Use the focused display as the fallback"
+    bug: "406967985"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "task_fragment_companion_activity"
+    description: "Track the activity to be finished with tf in core"
+    bug: "433459536"
+    is_fixed_read_only: true
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "support_gemini_on_multi_display"
+    description: "Launch Gemini on a multi-display environment"
+    bug: "400351723"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fix_bubble_trampoline_animation"
+    description: "Fix the animation for Bubble Task Trampoline"
+    bug: "417848405"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "return_all_visible_activities_for_vis"
+    description: "Return all visible activities in multi-tasking feature to VIS"
+    bug: "434114340"
+    is_fixed_read_only: true
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "activity_embedding_abort_cross_uid_launch_in_finishing_task_fragment"
+    description: "Aborts cross-uid activity launch from a finishing TaskFragment to avoid race conditions"
+    bug: "427881773"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "refactor_match_parent_bounds"
+    description: "Consolidate fillsParentBounds with matchParentBounds."
+    bug: "409417223"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fix_bal_reparent_existing_task"
+    description: "Avoid reparent existing task when the background launch is not allowed."
+    bug: "434047695"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fix_rapid_top_resumed_switch"
+    description: "Prevent top-resumed-activity rapidly switched in multi-window mode."
+    bug: "417956804"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

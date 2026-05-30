@@ -1,0 +1,136 @@
+/*
+ * Copyright (C) 2023 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.packageinstaller.v2.viewmodel
+
+import android.app.Application
+import android.content.Intent
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.distinctUntilChanged
+import com.android.packageinstaller.v2.model.InstallRepository
+import com.android.packageinstaller.v2.model.InstallStage
+import com.android.packageinstaller.v2.model.InstallStaging
+
+class InstallViewModel(application: Application, val repository: InstallRepository) :
+    AndroidViewModel(application) {
+
+    companion object {
+        private val LOG_TAG = InstallViewModel::class.java.simpleName
+    }
+
+    private val _currentInstallStage = MediatorLiveData<InstallStage>(InstallStaging())
+    val currentInstallStage: MutableLiveData<InstallStage>
+        get() = _currentInstallStage
+
+    init {
+        // Since installing is an async operation, we may get the install result later in time.
+        // Result of the installation will be set in InstallRepository#installResult.
+        // As such, currentInstallStage will need to add another MutableLiveData as a data source
+        _currentInstallStage.addSource(
+            repository.installResult.distinctUntilChanged()
+        ) { installStage: InstallStage? ->
+            if (installStage != null) {
+                _currentInstallStage.value = installStage
+            }
+        }
+
+        // Since staging is an async operation, we will get the staging result later in time.
+        // Result of the file staging will be set in InstallRepository#mStagingResult.
+        // As such, mCurrentInstallStage will need to add another MutableLiveData
+        // as a data source
+        _currentInstallStage.addSource(
+            repository.stagingResult.distinctUntilChanged()
+        ) { installStage: InstallStage ->
+            when (installStage.stageCode) {
+                InstallStage.STAGE_READY -> checkIfAllowedAndInitiateInstall()
+                InstallStage.STAGE_VERIFICATION_CONFIRMATION_REQUIRED -> requestVerification()
+                else -> _currentInstallStage.value = installStage
+            }
+        }
+    }
+
+    fun preprocessIntent(intent: Intent, callerInfo: InstallRepository.CallerInfo) {
+        val stage = repository.performPreInstallChecks(intent, callerInfo)
+        if (stage.stageCode == InstallStage.STAGE_ABORTED
+            || stage.stageCode == InstallStage.STAGE_VERIFICATION_FAILURE) {
+            _currentInstallStage.value = stage
+        } else {
+            repository.stageForInstall()
+        }
+    }
+
+    val stagingProgress: LiveData<Int>
+        get() = repository.stagingProgress
+
+    private fun checkIfAllowedAndInitiateInstall() {
+        val stage = repository.requestUserConfirmation()
+        if (stage != null) {
+            _currentInstallStage.value = stage
+        }
+    }
+
+    private fun requestVerification() {
+        val stage = repository.requestVerificationConfirmation()
+        _currentInstallStage.value = stage
+    }
+
+    fun onNegativeVerificationUserResponse() {
+        val stage = repository.setNegativeVerificationUserResponse()
+        _currentInstallStage.value = stage
+    }
+
+    fun onPositiveVerificationUserResponse() {
+        val stage =
+            repository.setPositiveVerificationUserResponse()
+        _currentInstallStage.value = stage
+    }
+
+    fun onRetryVerificationUserResponse() {
+        val stage =
+            repository.setRetryVerificationUserResponse()
+        _currentInstallStage.value = stage
+    }
+
+    fun forcedSkipSourceCheck() {
+        val stage = repository.requestUserConfirmation(/* forceSourceCheck= */ false)
+        if (stage != null) {
+            _currentInstallStage.value = stage
+        }
+    }
+
+    fun cleanupInstall() {
+        repository.cleanupInstall()
+    }
+
+    fun reattemptInstall() {
+        val stage = repository.reattemptInstall()
+        _currentInstallStage.value = stage
+    }
+
+    fun initiateInstall() {
+        repository.initiateInstall()
+    }
+
+    fun abortStaging() {
+        repository.abortStaging()
+    }
+
+    val stagedSessionId: Int
+        get() = repository.stagedSessionId
+}

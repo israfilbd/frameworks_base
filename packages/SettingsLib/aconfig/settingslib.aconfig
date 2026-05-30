@@ -1,0 +1,288 @@
+package: "com.android.settingslib.flags"
+container: "system"
+
+flag {
+    name: "new_status_bar_icons"
+    namespace: "systemui"
+    description: "Enable new status bar system icons"
+    bug: "314812750"
+}
+
+flag {
+    name: "bluetooth_qs_tile_dialog_auto_on_toggle"
+    namespace: "bluetooth"
+    description: "Displays the auto on toggle in the bluetooth QS tile dialog"
+    bug: "316985153"
+}
+
+flag {
+    name: "legacy_le_audio_sharing"
+    namespace: "pixel_cross_device_control"
+    description: "Gates the legacy le audio sharing UI."
+    bug: "322295262"
+}
+
+flag {
+    name: "enable_le_audio_sharing"
+    namespace: "pixel_cross_device_control"
+    description: "Gates whether to enable LE audio sharing"
+    bug: "388674074"
+}
+
+flag {
+    name: "enable_le_audio_qr_code_private_broadcast_sharing"
+    namespace: "pixel_cross_device_control"
+    description: "Gates whether to enable LE audio private broadcast sharing via QR code"
+    bug: "388674074"
+}
+
+flag {
+    name: "enable_determining_advanced_details_header_with_metadata"
+    namespace: "pixel_cross_device_control"
+    description: "Use metadata instead of device type to determine whether a bluetooth device should use advanced details header."
+    bug: "328556903"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_determining_spatial_audio_attributes_by_profile"
+    namespace: "cross_device_experiences"
+    description: "Use bluetooth profile connection policy to determine spatial audio attributes"
+    bug: "341005211"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "volume_dialog_audio_sharing_fix"
+    namespace: "cross_device_experiences"
+    description: "Gates whether to show separate volume bars during audio sharing"
+    bug: "336716411"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "extreme_power_low_state_vulnerability"
+    namespace: "pixel_energizer"
+    description: "the battery saver can pause all non-essential apps and their corresponding notification when device is in locked state to introduce the security vulnerability"
+    bug: "346513692"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "settings_catalyst"
+    namespace: "android_settings"
+    description: "Settings catalyst project migration"
+    is_exported: true
+    bug: "323791114"
+    is_exported: true
+}
+
+flag {
+    name: "write_system_preference_permission_enabled"
+    is_fixed_read_only: true
+    namespace: "android_settings"
+    description: "Enable WRITE_SYSTEM_PREFERENCE permission and appop"
+    is_exported: true
+    bug: "375193223"
+    is_exported: true
+}
+
+flag {
+    name: "asha_profile_access_profile_enabled_true"
+    namespace: "accessibility"
+    description: "Changes the return value of HearingAidProfile.accessProfileEnabled() to true"
+    bug: "356530795"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "audio_sharing_hysteresis_mode_fix"
+    namespace: "cross_device_experiences"
+    description: "Gates whether to enable fix for hysteresis mode"
+    bug: "355222285"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "member_device_lea_active_state_sync_fix"
+    namespace: "cross_device_experiences"
+    description: "Gates whether to enable fix for member device active state sync on lea profile"
+    bug: "364201289"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "audio_sharing_qs_dialog_improvement"
+    namespace: "cross_device_experiences"
+    description: "Gates whether to enable audio sharing qs dialog improvement"
+    bug: "360759048"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "audio_sharing_developer_option"
+    namespace: "cross_device_experiences"
+    description: "Gates whether to enable audio sharing developer option"
+    bug: "368401233"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "hearing_devices_ambient_volume_control"
+    namespace: "accessibility"
+    description: "Enable the ambient volume control in device details and hearing devices dialog."
+    bug: "357878944"
+}
+
+flag {
+    name: "hearing_devices_separated_preset_control"
+    namespace: "accessibility"
+    description: "Enable the separated preset control in device details and hearing devices dialog."
+    bug: "417628947"
+}
+
+flag {
+    name: "settings_preference_write_consent_enabled"
+    namespace: "android_settings"
+    description: "Enable the user consent prompt before writing sensitive preferences via service"
+    bug: "378552675"
+}
+
+flag {
+    name: "hearing_devices_input_routing_control"
+    namespace: "accessibility"
+    description: "Enable the input routing control in device details and hearing devices dialog."
+    bug: "349255906"
+}
+
+flag {
+    name: "hearing_device_set_connection_status_report"
+    namespace: "accessibility"
+    description: "Enable the connection status report for a set of hearing device."
+    bug: "357882387"
+}
+
+flag {
+    name: "ignore_a2dp_disconnection_for_android_auto"
+    namespace: "cross_device_experiences"
+    description: "Do not show problem connecting message when Android Auto disconnect A2DP"
+    bug: "381981752"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "disable_audio_sharing_auto_pick_fallback_in_ui"
+    namespace: "cross_device_experiences"
+    description: "Do not auto pick audio sharing fallback device in UI"
+    bug: "383469911"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "adopt_primary_group_management_api"
+    namespace: "cross_device_experiences"
+    description: "Adopt Bluetooth LE broadcast primary group management APIs"
+    bug: "381946931"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "adopt_primary_group_management_api_v2"
+    namespace: "cross_device_experiences"
+    description: "Adopt more Bluetooth LE broadcast primary group management APIs post launch"
+    bug: "381946931"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "promote_audio_sharing_for_second_auto_connected_lea_device"
+    namespace: "cross_device_experiences"
+    description: "Show audio sharing promote notification or dialog when the second lea device is auto connected"
+    bug: "395786392"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "audio_stream_media_service_by_receive_state"
+    namespace: "cross_device_experiences"
+    description: "Start or update audio stream media service by receive state"
+    bug: "398700619"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "audio_stream_play_pause_by_modify_source"
+    namespace: "cross_device_experiences"
+    description: "Play pause the audio stream by modify source"
+    bug: "384976631"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "refactor_battery_level_display"
+    namespace: "cross_device_experiences"
+    description: "Refactor the sources of battery level display "
+    bug: "397847825"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "fix_battery_level_in_connection_summary"
+    namespace: "cross_device_experiences"
+    description: "Fix battery level in connection summary"
+    bug: "396543491"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "audio_stream_scan_with_filter"
+    namespace: "cross_device_experiences"
+    description: "Add ability to start scanning with filter"
+    bug: "395978182"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_bluetooth_diagnosis"
+    namespace: "cross_device_experiences"
+    description: "Enable Bluetooth problem detection and diagnosis"
+    bug: "411309851"
+}

@@ -1,0 +1,121 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package android.media;
+
+import android.content.Intent;
+import android.media.AppId;
+import android.media.IMediaRouter2;
+import android.media.IMediaRouter2Manager;
+import android.media.IMediaRouterClient;
+import android.media.MediaRoute2Info;
+import android.media.MediaRouterClientState;
+import android.media.RoutingChangeInfo;
+import android.media.RouteDiscoveryPreference;
+import android.media.RouteListingPreference;
+import android.media.RoutingSessionInfo;
+import android.media.SuggestedDeviceInfo;
+import android.media.session.MediaSession;
+import android.os.Bundle;
+import android.os.UserHandle;
+/**
+ * @hide
+ */
+interface IMediaRouterService {
+    //TODO: Merge or remove methods when media router 2 is done.
+    void registerClientAsUser(IMediaRouterClient client, String packageName, int userId);
+    void unregisterClient(IMediaRouterClient client);
+
+    void registerClientGroupId(IMediaRouterClient client, String groupId);
+
+    MediaRouterClientState getState(IMediaRouterClient client);
+    boolean isPlaybackActive(IMediaRouterClient client);
+
+    void setBluetoothA2dpOn(IMediaRouterClient client, boolean on);
+    void setDiscoveryRequest(IMediaRouterClient client, int routeTypes, boolean activeScan);
+    void setSelectedRoute(IMediaRouterClient client, String routeId, boolean explicit);
+    void requestSetVolume(IMediaRouterClient client, String routeId, int volume);
+    void requestUpdateVolume(IMediaRouterClient client, String routeId, int direction);
+
+    // Note: When changing this file, match the order of methods below with
+    // MediaRouterService.java for readability.
+
+    // Methods for MediaRouter2
+    List<MediaRoute2Info> getSystemRoutes(String callerPackageName, boolean isProxyRouter);
+    RoutingSessionInfo getSystemSessionInfo();
+    boolean showMediaOutputSwitcherWithRouter2(String packageName,
+            in @nullable MediaSession.Token sessionToken);
+
+    void registerRouter2(IMediaRouter2 router, String packageName);
+    void unregisterRouter2(IMediaRouter2 router);
+    void updateScanningStateWithRouter2(IMediaRouter2 router, @JavaPassthrough(annotation="@android.media.MediaRouter2.ScanningState") int scanningState);
+    void setDiscoveryRequestWithRouter2(IMediaRouter2 router,
+            in RouteDiscoveryPreference preference);
+    void setRouteListingPreference(IMediaRouter2 router,
+            in @nullable RouteListingPreference routeListingPreference);
+    void setRouteVolumeWithRouter2(IMediaRouter2 router, in MediaRoute2Info route, int volume);
+
+    void requestCreateSessionWithRouter2(IMediaRouter2 router, int requestId, long managerRequestId,
+            in RoutingSessionInfo oldSession, in MediaRoute2Info route,
+            in RoutingChangeInfo routingChangeInfo, in @nullable Bundle sessionHints);
+    void selectRouteWithRouter2(IMediaRouter2 router, String sessionId, in MediaRoute2Info route,
+            in RoutingChangeInfo routingChangeInfo);
+    void deselectRouteWithRouter2(IMediaRouter2 router, String sessionId, in MediaRoute2Info route,
+            in RoutingChangeInfo routingChangeInfo);
+    void transferToRouteWithRouter2(IMediaRouter2 router, String sessionId,
+            in MediaRoute2Info route, in RoutingChangeInfo routingChangeInfo);
+    void setSessionVolumeWithRouter2(IMediaRouter2 router, String sessionId, int volume);
+    void releaseSessionWithRouter2(IMediaRouter2 router, String sessionId);
+    void setDeviceSuggestionsWithRouter2(IMediaRouter2 router,
+            in @nullable List<SuggestedDeviceInfo> suggestedDeviceInfo);
+    Map<String, List<SuggestedDeviceInfo>> getDeviceSuggestionsWithRouter2(
+            IMediaRouter2 router);
+
+    // Methods for MediaRouter2Manager
+    List<RoutingSessionInfo> getRemoteSessions(IMediaRouter2Manager manager);
+    RoutingSessionInfo getSystemSessionInfoForPackage(String callerPackageName,
+        String targetPackageName);
+    List<AppId> getSystemSessionOverridesAppIds(IMediaRouter2Manager manager);
+    void registerManager(IMediaRouter2Manager manager, String packageName);
+    void registerProxyRouter(IMediaRouter2Manager manager, String callingPackageName, String targetPackageName, in UserHandle targetUser);
+    void unregisterManager(IMediaRouter2Manager manager);
+    void setRouteVolumeWithManager(IMediaRouter2Manager manager, int requestId,
+            in MediaRoute2Info route, int volume);
+    void updateScanningState(IMediaRouter2Manager manager, @JavaPassthrough(annotation="@android.media.MediaRouter2.ScanningState") int scanningState);
+
+    void requestCreateSessionWithManager(IMediaRouter2Manager manager, int requestId,
+            in RoutingSessionInfo oldSession, in RoutingChangeInfo routingChangeInfo,
+            in @nullable MediaRoute2Info route);
+    void selectRouteWithManager(IMediaRouter2Manager manager, int requestId,
+            String sessionId, in MediaRoute2Info route, in RoutingChangeInfo routingChangeInfo);
+    void deselectRouteWithManager(IMediaRouter2Manager manager, int requestId,
+            String sessionId, in MediaRoute2Info route, in RoutingChangeInfo routingChangeInfo);
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.MEDIA_CONTENT_CONTROL)")
+    void transferToRouteWithManager(IMediaRouter2Manager manager, int requestId,
+            String sessionId, in MediaRoute2Info route,
+            in UserHandle transferInitiatorUserHandle, String transferInitiatorPackageName,
+            in RoutingChangeInfo routingChangeInfo);
+    void setSessionVolumeWithManager(IMediaRouter2Manager manager, int requestId,
+            String sessionId, int volume);
+    void releaseSessionWithManager(IMediaRouter2Manager manager, int requestId, String sessionId);
+    boolean showMediaOutputSwitcherWithProxyRouter(IMediaRouter2Manager manager,
+            in @nullable MediaSession.Token sessionToken);
+    void setDeviceSuggestionsWithManager(IMediaRouter2Manager manager,
+            in @nullable List<SuggestedDeviceInfo> suggestedDeviceInfo);
+Map<String, List<SuggestedDeviceInfo>> getDeviceSuggestionsWithManager(
+            IMediaRouter2Manager manager);
+    void onDeviceSuggestionRequestedWithManager(IMediaRouter2Manager manager);
+}

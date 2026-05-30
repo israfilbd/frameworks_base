@@ -1,0 +1,191 @@
+package: "android.location.flags"
+container: "system"
+
+flag {
+    name: "deprecate_provider_request_apis"
+    namespace: "location"
+    description: "Deprecates LocationManager ProviderChanged APIs"
+    bug: "361811782"
+    is_exported: true
+}
+
+flag {
+    name: "keep_gnss_stationary_throttling"
+    namespace: "location"
+    description: "Keeps stationary throttling for the GNSS provider even if the disable_stationary_throttling flag is true."
+    bug: "354000147"
+}
+
+flag {
+    name: "disable_stationary_throttling"
+    namespace: "location"
+    description: "Disables stationary throttling for all providers"
+    bug: "354000147"
+}
+
+flag {
+    name: "new_geocoder"
+    namespace: "location"
+    description: "Flag for new Geocoder APIs"
+    bug: "229872126"
+    is_exported: true
+}
+
+flag {
+    name: "enable_location_bypass"
+    namespace: "location"
+    description: "Enable location bypass feature"
+    bug: "301150056"
+}
+
+flag {
+    name: "location_bypass"
+    is_exported: true
+    namespace: "location"
+    description: "Enable location bypass appops behavior"
+    bug: "329151785"
+}
+
+flag {
+    name: "fix_service_watcher"
+    namespace: "location"
+    description: "Enable null explicit services in ServiceWatcher"
+    bug: "311210517"
+}
+
+flag {
+    name: "geoid_heights_via_altitude_hal"
+    namespace: "location"
+    description: "Flag for making geoid heights available via the Altitude HAL"
+    bug: "304375846"
+    is_exported: true
+}
+
+flag {
+    name: "gnss_api_navic_l1"
+    namespace: "location"
+    description: "Flag for GNSS API for NavIC L1"
+    bug: "302199306"
+    is_exported: true
+}
+
+flag {
+    name: "gnss_api_measurement_request_work_source"
+    namespace: "location"
+    description: "Flag for GnssMeasurementRequest WorkSource API"
+    bug: "295235160"
+    is_exported: true
+}
+
+flag {
+    name: "enable_ni_supl_message_injection_by_carrier_config_bugfix"
+    namespace: "location"
+    description: "Flag for enabling NI SUPL message injection by carrier config"
+    bug: "242105192"
+    is_fixed_read_only: true
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+    is_exported: true
+}
+
+flag {
+    name: "population_density_provider"
+    namespace: "location"
+    description: "Flag for enabling the population density provider"
+    bug: "376198890"
+}
+
+flag {
+    name: "density_based_coarse_locations"
+    namespace: "location"
+    description: "Flag for gating the density-based coarse locations"
+    bug: "376198890"
+}
+
+flag {
+    name: "gnss_assistance_interface"
+    namespace: "location"
+    description: "Flag for GNSS assistance interface"
+    bug: "209078566"
+    is_exported: true
+}
+
+flag {
+    name: "update_min_location_request_interval"
+    namespace: "location"
+    description: "Flag for updating the default logic for the minimal interval for location request"
+    bug: "397444378"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "gnss_location_provider_overlay_2025_devices"
+    namespace: "location"
+    description: "Flag for GNSS location provider overlay for 2025 devices"
+    bug: "398254728"
+    is_fixed_read_only: true
+}
+
+flag {
+    name: "gnss_assistance_interface_jni"
+    namespace: "location"
+    description: "Flag for GNSS assistance interface JNI"
+    bug: "209078566"
+}
+
+flag {
+    name: "service_watcher_unstable_fallback"
+    namespace: "location"
+    description: "Flag for service watcher to fallback on an unstable service"
+    bug: "402997842"
+    is_fixed_read_only: true
+}
+
+flag {
+    name: "location_indicators_enabled"
+    namespace: "location"
+    description: "Enables modified location privacy item behavior"
+    bug: "419834493"
+}
+
+flag {
+    name: "change_get_adas_allowlist_from_hidden_to_system"
+    namespace: "location"
+    description: "Changes the getAdasAllowlist API from hidden to system"
+    bug: "362287534"
+    is_exported: true
+}
+
+flag {
+    name: "fix_glonass_almanac_frequency_channel_range"
+    namespace: "location"
+    description: "Fix GLONASS almanac frequency channel range"
+    bug: "428050932"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "support_toa_in_gnss_satellite_almanac"
+    namespace: "location"
+    description: "Support TOA in GnssSatelliteAlmanac"
+    bug: "409934786"
+}
+
+flag {
+    name: "disable_hardware_ar"
+    namespace: "location"
+    description: "Disables the legacy hardware AR code path which has been deprecated for a long time"
+    bug: "441145460"
+}
+
+flag {
+    name: "support_ionex_assistance"
+    namespace: "location"
+    description: "Support IONEX assistance"
+    bug: "434875844"
+}

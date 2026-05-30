@@ -1,0 +1,129 @@
+{
+  "desktop-presubmit": [
+    {
+      "name": "CfVkmsCursorTest"
+    }
+  ],
+  "presubmit-large": [
+    {
+      "name": "FrameworksServicesTests_Presubmit"
+    }
+  ],
+  "presubmit-pm": [
+    {
+      "name": "PackageManagerServiceServerTests_Presubmit"
+    }
+  ],
+  "presubmit": [
+    {
+      "name": "ManagedProvisioningTests"
+    },
+    {
+      "file_patterns": [
+        "ApexManager\\.java",
+        "SystemServer\\.java",
+        "services/tests/apexsystemservices/.*"
+      ],
+      "name": "ApexSystemServicesTestCases"
+    },
+    {
+      "name": "FrameworksUiServicesTests"
+    },
+    {
+      "name": "FrameworksUiServicesNotificationTests"
+    },
+    {
+      "name": "FrameworksUiServicesZenTests"
+    },
+    {
+      "name": "FrameworksInputMethodSystemServerTests_server_inputmethod"
+    },
+    {
+      "name": "ExtServicesUnitTests-tplus"
+    },
+    {
+      "name": "ExtServicesUnitTests-sminus"
+    },
+    {
+      "name": "FrameworksCoreTests_Presubmit"
+    },
+    {
+      "name": "FrameworkPermissionTests_Presubmit"
+    },
+    {
+      "name": "FrameworksInProcessTests"
+    },
+    {
+      "name": "vts_treble_vintf_framework_test"
+    },
+    {
+      "name": "vts_treble_vintf_vendor_test"
+    },
+    {
+      "name": "CtsStrictJavaPackagesTestCases"
+    }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsUtilTestCasesRavenwood",
+      "host": true,
+      "file_patterns": [
+        "[Rr]avenwood"
+      ]
+    },
+    {
+      "name": "RavenwoodBivalentTest",
+      "host": true,
+      "file_patterns": [
+        "[Rr]avenwood"
+      ]
+    }
+  ],
+  "postsubmit-managedprofile-stress": [
+    {
+      "name": "ManagedProfileLifecycleStressTest"
+    }
+  ],
+ "auto-postsubmit": [
+   // Test tag for automotive targets. These are only running in postsubmit so as to harden the
+   // automotive targets to avoid introducing additional test flake and build time. The plan for
+   // presubmit testing for auto is to augment the existing tests to cover auto use cases as well.
+   // Additionally, this tag is used in targeted test suites to limit resource usage on the test
+   // infra during the hardening phase.
+   // TODO: this tag to be removed once the above is no longer an issue.
+   {
+     "name": "FrameworksUiServicesTests"
+   },
+   {
+     "name": "ExtServicesUnitTests-tplus"
+   },
+   {
+     "name": "ExtServicesUnitTests-sminus"
+   },
+   {
+     "name": "TestablesTests"
+   },
+   {
+     "name": "FrameworksCoreTests_Presubmit"
+   },
+   {
+     "name": "FrameworksServicesTests_presubmit"
+   },
+   {
+     "name": "PackageManagerServiceServerTests_Presubmit"
+   }
+ ],
+  "wear-cts-presubmit": [
+    {
+      "name": "CtsWidgetTestCases",
+      "options": [
+        {
+          "include-filter": "android.widget.cts.RemoteViewsTest"
+        },
+        {
+          "include-filter": "android.widget.cts.TextViewTest"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsBatterySavingTestCases_android_server_power"
+    },
+    {
+      "name": "FrameworksMockingServicesTests_android_server_power_Presubmit"
+    },
+    {
+      "name": "PowerServiceTests_server_power"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsBatterySavingTestCases"
+    },
+    {
+      "name": "FrameworksMockingServicesTests_android_server_power"
+    },
+    {
+      "name": "FrameworksServicesTests_android_server_power"
+    },
+    {
+      "name": "PowerServiceTests_server_power"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+/*
+ * Copyright (C) 2023 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.keyguard.ui.view.layout.sections
+
+import android.content.Context
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.constraintlayout.widget.ConstraintSet.BOTTOM
+import androidx.constraintlayout.widget.ConstraintSet.END
+import androidx.constraintlayout.widget.ConstraintSet.MATCH_CONSTRAINT
+import androidx.constraintlayout.widget.ConstraintSet.PARENT_ID
+import androidx.constraintlayout.widget.ConstraintSet.START
+import androidx.constraintlayout.widget.ConstraintSet.TOP
+import com.android.systemui.customization.clocks.R as clocksR
+import com.android.systemui.keyguard.shared.model.KeyguardSection
+import com.android.systemui.keyguard.ui.viewmodel.KeyguardSmartspaceViewModel
+import com.android.systemui.media.controls.ui.controller.KeyguardMediaController
+import com.android.systemui.res.R
+import com.android.systemui.scene.shared.flag.SceneContainerFlag
+import com.android.systemui.shade.ShadeDisplayAware
+import javax.inject.Inject
+
+/** Aligns media on left side for split shade, below smartspace, date, and weather. */
+class SplitShadeMediaSection
+@Inject
+constructor(
+    @ShadeDisplayAware private val context: Context,
+    private val keyguardMediaController: KeyguardMediaController,
+    private val smartspaceViewModel: KeyguardSmartspaceViewModel,
+) : KeyguardSection() {
+    private val mediaContainerId = R.id.status_view_media_container
+
+    override fun addViews(constraintLayout: ConstraintLayout) {
+        SceneContainerFlag.assertInLegacyMode()
+        val mediaFrame =
+            FrameLayout(context, null).apply {
+                id = mediaContainerId
+                val padding = context.resources.getDimensionPixelSize(R.dimen.qs_media_padding)
+                val horizontalPadding =
+                    padding +
+                        context.resources.getDimensionPixelSize(
+                            clocksR.dimen.status_view_margin_horizontal
+                        )
+
+                setPaddingRelative(horizontalPadding, padding, horizontalPadding, padding)
+            }
+        constraintLayout.addView(mediaFrame)
+        keyguardMediaController.attachSplitShadeContainer(mediaFrame)
+    }
+
+    override fun bindData(constraintLayout: ConstraintLayout) {}
+
+    override fun applyConstraints(constraintSet: ConstraintSet) {
+        constraintSet.apply {
+            constrainWidth(mediaContainerId, MATCH_CONSTRAINT)
+            constrainHeight(mediaContainerId, WRAP_CONTENT)
+            if (smartspaceViewModel.isSmartspaceEnabled) {
+                connect(mediaContainerId, TOP, R.id.smart_space_barrier_bottom, BOTTOM)
+            } else {
+                connect(mediaContainerId, TOP, R.id.keyguard_slice_view, BOTTOM)
+            }
+            connect(mediaContainerId, START, PARENT_ID, START)
+            connect(mediaContainerId, END, R.id.split_shade_guideline, END)
+        }
+    }
+
+    override fun removeViews(constraintLayout: ConstraintLayout) {
+        constraintLayout.removeView(mediaContainerId)
+    }
+}

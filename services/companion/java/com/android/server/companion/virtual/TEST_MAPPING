@@ -1,0 +1,52 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsVirtualDevicesTestCases"
+    },
+    {
+      "name": "CtsVirtualDevicesAudioTestCases"
+    },
+    {
+      "name": "CtsVirtualDevicesSensorTestCases"
+    },
+    {
+      "name": "CtsVirtualDevicesAppLaunchTestCases"
+    },
+    {
+      "name": "CtsVirtualDevicesCameraTestCases",
+      "keywords": ["primary-device"]
+    },
+    {
+      "name": "CtsHardwareTestCases_cts_tests",
+      "file_patterns": ["Virtual[^/]*\\.java"]
+    },
+    {
+      "name": "CtsAccessibilityServiceTestCases_cts_accessibilitydisplayproxytest"
+    },
+    {
+      "name": "CtsInputMethodTestCases_cts_virtualdeviceimetest"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsMediaAudioTestCases_cts_audiofocuswithvdmtest"
+    },
+    {
+      "name": "CtsPermissionTestCases",
+      "options": [
+        {
+          "include-filter": "android.permission.cts.DevicePermissionsTest"
+        },
+        {
+          "include-filter": "android.permission.cts.PermissionUpdateListenerTest"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        }
+      ]
+    },
+    {
+      "name": "CtsPermissionMultiDeviceTestCases"
+    }
+  ]
+}

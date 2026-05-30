@@ -1,0 +1,594 @@
+/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.input
+
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManagerInternal
+import android.graphics.PointF
+import android.hardware.display.DisplayManager
+import android.hardware.display.DisplayViewport
+import android.hardware.display.VirtualDisplay
+import android.hardware.input.IKeyEventActivityListener
+import android.hardware.input.InputManager
+import android.hardware.input.InputSettings
+import android.hardware.input.KeyGestureEvent
+import android.os.InputEventInjectionSync
+import android.os.PermissionEnforcer
+import android.os.SystemClock
+import android.os.test.FakePermissionEnforcer
+import android.os.test.TestLooper
+import android.platform.test.annotations.EnableFlags
+import android.platform.test.annotations.Presubmit
+import android.platform.test.flag.junit.SetFlagsRule
+import android.provider.Settings
+import android.testing.TestableContext
+import android.view.InputDevice
+import android.view.KeyCharacterMap
+import android.view.KeyEvent
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import android.view.View.OnKeyListener
+import androidx.test.core.app.ApplicationProvider
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.dx.mockito.inline.extended.ExtendedMockito
+import com.android.internal.util.test.FakeSettingsProvider
+import com.android.modules.utils.testing.ExtendedMockitoRule
+import com.android.server.LocalServices
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyBoolean
+import org.mockito.ArgumentMatchers.anyFloat
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.eq
+import org.mockito.Mock
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.Mockito.`when`
+import org.mockito.stubbing.OngoingStubbing
+
+/**
+ * Tests for {@link InputManagerService}.
+ *
+ * Build/Install/Run: atest InputTests:InputManagerServiceTests
+ */
+@Presubmit
+class InputManagerServiceTests {
+
+    companion object {
+        val ACTION_KEY_EVENTS =
+            listOf(
+                KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_META_LEFT),
+                KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_META_RIGHT),
+                KeyEvent(
+                    /* downTime= */ 0,
+                    /* eventTime= */ 0,
+                    /* action= */ 0,
+                    /* code= */ 0,
+                    /* repeat= */ 0,
+                    KeyEvent.META_META_ON,
+                ),
+            )
+    }
+
+    @get:Rule
+    val extendedMockitoRule =
+        ExtendedMockitoRule.Builder(this)
+            .mockStatic(LocalServices::class.java)
+            .mockStatic(KeyCharacterMap::class.java)
+            .mockStatic(InputSettings::class.java)
+            .build()!!
+
+    @JvmField
+    @Rule
+    val testableContext = TestableContext(ApplicationProvider.getApplicationContext())
+
+    @get:Rule val setFlagsRule = SetFlagsRule()
+
+    @get:Rule val fakeSettingsProviderRule = FakeSettingsProvider.rule()!!
+
+    @Mock private lateinit var native: NativeInputManagerService
+
+    @Mock private lateinit var wmCallbacks: InputManagerService.WindowManagerCallbacks
+
+    @Mock private lateinit var packageManagerInternal: PackageManagerInternal
+
+    @Mock private lateinit var uEventManager: UEventManager
+
+    @Mock
+    private lateinit var kbdController: InputManagerService.KeyboardBacklightControllerInterface
+
+    @Mock private lateinit var kcm: KeyCharacterMap
+    @Mock private lateinit var inputManager: InputManager
+
+    private lateinit var service: InputManagerService
+    private lateinit var localService: InputManagerInternal
+    private lateinit var testLooper: TestLooper
+    private lateinit var fakePermissionEnforcer: FakePermissionEnforcer
+
+    @Before
+    fun setup() {
+        fakePermissionEnforcer = FakePermissionEnforcer()
+        testableContext.addMockSystemService(PermissionEnforcer::class.java, fakePermissionEnforcer)
+
+        testableContext.contentResolver.addProvider(Settings.AUTHORITY, FakeSettingsProvider())
+        testLooper = TestLooper()
+        whenever(inputManager.inputDeviceIds).thenReturn(intArrayOf())
+        service =
+            InputManagerService(
+                object :
+                    InputManagerService.Injector(
+                        testableContext,
+                        testLooper.looper,
+                        testLooper.looper,
+                        uEventManager,
+                    ) {
+                    override fun getNativeService(
+                        service: InputManagerService?
+                    ): NativeInputManagerService {
+                        return native
+                    }
+
+                    override fun registerLocalService(service: InputManagerInternal?) {
+                        localService = service!!
+                    }
+
+                    override fun getKeyboardBacklightController(
+                        nativeService: NativeInputManagerService?
+                    ): InputManagerService.KeyboardBacklightControllerInterface {
+                        return kbdController
+                    }
+                },
+                fakePermissionEnforcer,
+            )
+        testableContext.addMockSystemService(InputManager::class.java, inputManager)
+        testableContext.addMockSystemService(Context.INPUT_SERVICE, inputManager)
+        fakePermissionEnforcer.grant(Manifest.permission.MANAGE_KEY_GESTURES)
+
+        ExtendedMockito.doReturn(packageManagerInternal).`when` {
+            LocalServices.getService(eq(PackageManagerInternal::class.java))
+        }
+        ExtendedMockito.doReturn(kcm).`when` { KeyCharacterMap.load(anyInt()) }
+
+        assertTrue("Local service must be registered", this::localService.isInitialized)
+        service.setWindowManagerCallbacks(wmCallbacks)
+    }
+
+    @Test
+    fun testStart() {
+        verifyNoInteractions(native)
+
+        service.start()
+        verify(native).start()
+    }
+
+    @Test
+    fun testInputSettingsUpdatedOnSystemRunning() {
+        verifyNoInteractions(native)
+
+        runWithShellPermissionIdentity { service.systemRunning() }
+
+        verify(native).setPointerSpeed(anyInt())
+        verify(native).setTouchpadPointerSpeed(anyInt())
+        verify(native).setTouchpadNaturalScrollingEnabled(anyBoolean())
+        verify(native).setTouchpadTapToClickEnabled(anyBoolean())
+        verify(native).setTouchpadTapDraggingEnabled(anyBoolean())
+        verify(native).setShouldNotifyTouchpadHardwareState(anyBoolean())
+        verify(native).setTouchpadRightClickZoneEnabled(anyBoolean())
+        verify(native).setTouchpadThreeFingerTapShortcutEnabled(anyBoolean())
+        verify(native).setTouchpadSystemGesturesEnabled(anyBoolean())
+        verify(native).setTouchpadsEnabled(anyBoolean())
+        verify(native).setShowTouches(anyBoolean())
+        verify(native).setMotionClassifierEnabled(anyBoolean())
+        verify(native).setMaximumObscuringOpacityForTouch(anyFloat())
+        verify(native).setStylusPointerIconEnabled(anyBoolean())
+        // Called thrice at boot, since there are individual callbacks to update the
+        // key repeat timeout, the key repeat delay and whether key repeat enabled.
+        verify(native, times(3)).setKeyRepeatConfiguration(anyInt(), anyInt(), anyBoolean())
+    }
+
+    @Test
+    fun testPointerDisplayUpdatesWhenDisplayViewportsChanged() {
+        val displayId = 123
+        whenever(wmCallbacks.pointerDisplayId).thenReturn(displayId)
+        val viewports = listOf<DisplayViewport>()
+        localService.setDisplayViewports(viewports)
+        verify(native).setDisplayViewports(any(Array<DisplayViewport>::class.java))
+        verify(native).setPointerDisplayId(displayId)
+    }
+
+    @Test
+    fun setDeviceTypeAssociation_setsDeviceTypeAssociation() {
+        val inputPort = "inputPort"
+        val type = "type"
+
+        localService.setTypeAssociation(inputPort, type)
+
+        assertThat(service.getDeviceTypeAssociations())
+            .asList()
+            .containsExactly(inputPort, type)
+            .inOrder()
+    }
+
+    @Test
+    fun setAndUnsetDeviceTypeAssociation_deviceTypeAssociationIsMissing() {
+        val inputPort = "inputPort"
+        val type = "type"
+
+        localService.setTypeAssociation(inputPort, type)
+        localService.unsetTypeAssociation(inputPort)
+
+        assertTrue(service.getDeviceTypeAssociations().isEmpty())
+    }
+
+    @Test
+    fun testAddAndRemoveVirtualKeyboardLayoutAssociation() {
+        val inputPort = "input port"
+        val languageTag = "language"
+        val layoutType = "layoutType"
+        localService.addKeyboardLayoutAssociation(inputPort, languageTag, layoutType)
+        verify(native).changeKeyboardLayoutAssociation()
+
+        localService.removeKeyboardLayoutAssociation(inputPort)
+        verify(native, times(2)).changeKeyboardLayoutAssociation()
+    }
+
+    @Test
+    @EnableFlags(com.android.hardware.input.Flags.FLAG_KEY_EVENT_ACTIVITY_DETECTION)
+    fun testKeyActivenessNotifyEventsLifecycle() {
+        service.systemRunning()
+        fakePermissionEnforcer.grant(android.Manifest.permission.LISTEN_FOR_KEY_ACTIVITY)
+
+        /* register for key event activeness */
+        var callback = 0
+        val listener = KeyEventListener {
+            callback++
+            true
+        }
+        assertEquals(true, service.registerKeyEventActivityListener(listener))
+
+        /* mimic key event pressed */
+        val event = createKeycodeAEvent(createInputDevice(), KeyEvent.ACTION_DOWN)
+        service.interceptKeyBeforeQueueing(event, 0)
+
+        /* verify onKeyEventActivity callback called */
+        assertEquals(1, callback)
+
+        /* unregister for key event activeness */
+        assertEquals(true, service.unregisterKeyEventActivityListener(listener))
+
+        /* mimic key event pressed */
+        service.interceptKeyBeforeQueueing(event, /* policyFlags */ 0)
+
+        /* verify onKeyEventActivity callback not called */
+        assertEquals(1, callback)
+    }
+
+    private class AutoClosingVirtualDisplays(val displays: List<VirtualDisplay>) : AutoCloseable {
+        operator fun get(i: Int): VirtualDisplay = displays[i]
+
+        override fun close() {
+            for (display in displays) {
+                display.release()
+            }
+        }
+    }
+
+    private fun createVirtualDisplays(count: Int): AutoClosingVirtualDisplays {
+        val displayManager: DisplayManager =
+            testableContext.getSystemService(DisplayManager::class.java) as DisplayManager
+        val virtualDisplays = mutableListOf<VirtualDisplay>()
+        for (i in 0 until count) {
+            virtualDisplays.add(
+                displayManager.createVirtualDisplay(
+                    /* displayName= */ "testVirtualDisplay$i",
+                    /* width= */ 100,
+                    /* height= */ 100,
+                    /* densityDpi= */ 100,
+                    /* surface= */ null,
+                    /* flags= */ 0,
+                )
+            )
+        }
+        return AutoClosingVirtualDisplays(virtualDisplays)
+    }
+
+    // Helper function that creates a KeyEvent with Keycode A with the given action
+    private fun createKeycodeAEvent(inputDevice: InputDevice, action: Int): KeyEvent {
+        val eventTime = SystemClock.uptimeMillis()
+        return KeyEvent(
+            /* downTime= */ eventTime,
+            /* eventTime= */ eventTime,
+            /* action= */ action,
+            /* code= */ KeyEvent.KEYCODE_A,
+            /* repeat= */ 0,
+            /* metaState= */ 0,
+            /* deviceId= */ inputDevice.id,
+            /* scanCode= */ 0,
+            /* flags= */ KeyEvent.FLAG_FROM_SYSTEM,
+            /* source= */ InputDevice.SOURCE_KEYBOARD,
+        )
+    }
+
+    private fun createInputDevice(): InputDevice {
+        return InputDevice.Builder()
+            .setId(123)
+            .setName("abc")
+            .setDescriptor("def")
+            .setSources(InputDevice.SOURCE_KEYBOARD)
+            .build()
+    }
+
+    @Test
+    fun addUniqueIdAssociationByDescriptor_verifyAssociations() {
+        // Overall goal is to have 2 displays and verify that events from the InputDevice are
+        // sent only to the view that is on the associated display.
+        // So, associate the InputDevice with display 1, then send and verify KeyEvents.
+        // Then remove associations, then associate the InputDevice with display 2, then send
+        // and verify commands.
+
+        // Make 2 virtual displays with some mock SurfaceViews
+        val mockSurfaceView1 = mock(SurfaceView::class.java)
+        val mockSurfaceView2 = mock(SurfaceView::class.java)
+        val mockSurfaceHolder1 = mock(SurfaceHolder::class.java)
+        `when`(mockSurfaceView1.holder).thenReturn(mockSurfaceHolder1)
+        val mockSurfaceHolder2 = mock(SurfaceHolder::class.java)
+        `when`(mockSurfaceView2.holder).thenReturn(mockSurfaceHolder2)
+
+        createVirtualDisplays(2).use { virtualDisplays ->
+            // Simulate an InputDevice
+            val inputDevice = createInputDevice()
+
+            // Associate input device with display
+            service.addUniqueIdAssociationByDescriptor(
+                inputDevice.descriptor,
+                virtualDisplays[0].display.displayId.toString(),
+            )
+
+            // Simulate 2 different KeyEvents
+            val downEvent = createKeycodeAEvent(inputDevice, KeyEvent.ACTION_DOWN)
+            val upEvent = createKeycodeAEvent(inputDevice, KeyEvent.ACTION_UP)
+
+            // Create a mock OnKeyListener object
+            val mockOnKeyListener = mock(OnKeyListener::class.java)
+
+            // Verify that the event went to Display 1 not Display 2
+            service.injectInputEvent(downEvent, InputEventInjectionSync.NONE)
+
+            // Call the onKey method on the mock OnKeyListener object
+            mockOnKeyListener.onKey(mockSurfaceView1, /* keyCode= */ KeyEvent.KEYCODE_A, downEvent)
+            mockOnKeyListener.onKey(mockSurfaceView2, /* keyCode= */ KeyEvent.KEYCODE_A, upEvent)
+
+            // Verify that the onKey method was called with the expected arguments
+            verify(mockOnKeyListener).onKey(mockSurfaceView1, KeyEvent.KEYCODE_A, downEvent)
+            verify(mockOnKeyListener, never())
+                .onKey(mockSurfaceView2, KeyEvent.KEYCODE_A, downEvent)
+
+            // Remove association
+            service.removeUniqueIdAssociationByDescriptor(inputDevice.descriptor)
+
+            // Associate with Display 2
+            service.addUniqueIdAssociationByDescriptor(
+                inputDevice.descriptor,
+                virtualDisplays[1].display.displayId.toString(),
+            )
+
+            // Simulate a KeyEvent
+            service.injectInputEvent(upEvent, InputEventInjectionSync.NONE)
+
+            // Verify that the event went to Display 2 not Display 1
+            verify(mockOnKeyListener).onKey(mockSurfaceView2, KeyEvent.KEYCODE_A, upEvent)
+            verify(mockOnKeyListener, never()).onKey(mockSurfaceView1, KeyEvent.KEYCODE_A, upEvent)
+        }
+    }
+
+    @Test
+    fun addUniqueIdAssociationByPort_verifyAssociations() {
+        // Overall goal is to have 2 displays and verify that events from the InputDevice are
+        // sent only to the view that is on the associated display.
+        // So, associate the InputDevice with display 1, then send and verify KeyEvents.
+        // Then remove associations, then associate the InputDevice with display 2, then send
+        // and verify commands.
+
+        // Make 2 virtual displays with some mock SurfaceViews
+        val mockSurfaceView1 = mock(SurfaceView::class.java)
+        val mockSurfaceView2 = mock(SurfaceView::class.java)
+        val mockSurfaceHolder1 = mock(SurfaceHolder::class.java)
+        `when`(mockSurfaceView1.holder).thenReturn(mockSurfaceHolder1)
+        val mockSurfaceHolder2 = mock(SurfaceHolder::class.java)
+        `when`(mockSurfaceView2.holder).thenReturn(mockSurfaceHolder2)
+
+        createVirtualDisplays(2).use { virtualDisplays ->
+            // Simulate an InputDevice
+            val inputDevice = createInputDevice()
+
+            // Associate input device with display
+            service.addUniqueIdAssociationByPort(
+                inputDevice.name,
+                virtualDisplays[0].display.displayId.toString(),
+            )
+
+            // Simulate 2 different KeyEvents
+            val downEvent = createKeycodeAEvent(inputDevice, KeyEvent.ACTION_DOWN)
+            val upEvent = createKeycodeAEvent(inputDevice, KeyEvent.ACTION_UP)
+
+            // Create a mock OnKeyListener object
+            val mockOnKeyListener = mock(OnKeyListener::class.java)
+
+            // Verify that the event went to Display 1 not Display 2
+            service.injectInputEvent(downEvent, InputEventInjectionSync.NONE)
+
+            // Call the onKey method on the mock OnKeyListener object
+            mockOnKeyListener.onKey(mockSurfaceView1, /* keyCode= */ KeyEvent.KEYCODE_A, downEvent)
+            mockOnKeyListener.onKey(mockSurfaceView2, /* keyCode= */ KeyEvent.KEYCODE_A, upEvent)
+
+            // Verify that the onKey method was called with the expected arguments
+            verify(mockOnKeyListener).onKey(mockSurfaceView1, KeyEvent.KEYCODE_A, downEvent)
+            verify(mockOnKeyListener, never())
+                .onKey(mockSurfaceView2, KeyEvent.KEYCODE_A, downEvent)
+
+            // Remove association
+            service.removeUniqueIdAssociationByPort(inputDevice.name)
+
+            // Associate with Display 2
+            service.addUniqueIdAssociationByPort(
+                inputDevice.name,
+                virtualDisplays[1].display.displayId.toString(),
+            )
+
+            // Simulate a KeyEvent
+            service.injectInputEvent(upEvent, InputEventInjectionSync.NONE)
+
+            // Verify that the event went to Display 2 not Display 1
+            verify(mockOnKeyListener).onKey(mockSurfaceView2, KeyEvent.KEYCODE_A, upEvent)
+            verify(mockOnKeyListener, never()).onKey(mockSurfaceView1, KeyEvent.KEYCODE_A, upEvent)
+        }
+    }
+
+    @Test
+    fun handleKeyGestures_keyboardBacklight() {
+        val backlightDownEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_KEYBOARD_BACKLIGHT_DOWN)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(backlightDownEvent)
+        verify(kbdController).decrementKeyboardBacklight(anyInt())
+
+        val backlightUpEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_KEYBOARD_BACKLIGHT_UP)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(backlightUpEvent)
+        verify(kbdController).incrementKeyboardBacklight(anyInt())
+    }
+
+    @Test
+    fun handleKeyGestures_a11yBounceKeysShortcut() {
+        val toggleBounceKeysEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_BOUNCE_KEYS)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(toggleBounceKeysEvent)
+        ExtendedMockito.verify {
+            InputSettings.setAccessibilityBounceKeysThreshold(
+                any(),
+                eq(InputSettings.DEFAULT_BOUNCE_KEYS_THRESHOLD_MILLIS),
+            )
+        }
+    }
+
+    @Test
+    fun handleKeyGestures_a11yMouseKeysShortcut() {
+        val toggleMouseKeysEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_MOUSE_KEYS)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(toggleMouseKeysEvent)
+        ExtendedMockito.verify { InputSettings.setAccessibilityMouseKeysEnabled(any(), eq(true)) }
+    }
+
+    @Test
+    fun handleKeyGestures_a11yStickyKeysShortcut() {
+        val toggleStickyKeysEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_STICKY_KEYS)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(toggleStickyKeysEvent)
+        ExtendedMockito.verify { InputSettings.setAccessibilityStickyKeysEnabled(any(), eq(true)) }
+    }
+
+    @Test
+    fun handleKeyGestures_a11ySlowKeysShortcut() {
+        val toggleSlowKeysEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_SLOW_KEYS)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(toggleSlowKeysEvent)
+        ExtendedMockito.verify {
+            InputSettings.setAccessibilitySlowKeysThreshold(
+                any(),
+                eq(InputSettings.DEFAULT_SLOW_KEYS_THRESHOLD_MILLIS),
+            )
+        }
+    }
+
+    @Test
+    fun handleKeyGestures_toggleCapsLock() {
+        val toggleCapsLockEvent =
+            KeyGestureEvent.Builder()
+                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_CAPS_LOCK)
+                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                .build()
+        service.handleKeyGestureEvent(toggleCapsLockEvent)
+
+        verify(native).toggleCapsLock(anyInt())
+    }
+
+    @Test
+    fun getCursorPosition_returnsPosition() {
+        val expectedPosition = PointF(10f, 20f)
+        whenever(native.getMouseCursorPositionInPhysicalDisplay(anyInt()))
+            .thenReturn(floatArrayOf(expectedPosition.x, expectedPosition.y))
+
+        val position = service.getCursorPositionInPhysicalDisplay(0)
+
+        assertThat(position).isEqualTo(expectedPosition)
+    }
+
+    @Test
+    fun getCursorPositionInLogicalDisplay_returnsPosition() {
+        val expectedPosition = PointF(30f, 40f)
+        whenever(native.getMouseCursorPositionInLogicalDisplay(anyInt()))
+            .thenReturn(floatArrayOf(expectedPosition.x, expectedPosition.y))
+
+        val position = service.getCursorPositionInLogicalDisplay(0)
+
+        assertThat(position).isEqualTo(expectedPosition)
+    }
+
+    @Test
+    fun getCursorPosition_nullFromNative() {
+        whenever(native.getMouseCursorPositionInPhysicalDisplay(anyInt())).thenReturn(null)
+
+        val position = service.getCursorPositionInPhysicalDisplay(0)
+
+        assertThat(position).isNull()
+    }
+
+    inner class KeyEventListener(private var listener: () -> Boolean) :
+        IKeyEventActivityListener.Stub() {
+        override fun onKeyEventActivity() {
+            listener.invoke()
+        }
+    }
+}
+
+private fun <T> whenever(methodCall: T): OngoingStubbing<T> = `when`(methodCall)

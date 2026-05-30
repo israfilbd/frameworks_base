@@ -1,0 +1,185 @@
+{
+  // Test mappings for SystemUI unit tests.
+  // For e2e mappings, see go/sysui-e2e-test-mapping
+
+  // v2/android-virtual-infra/test_mapping/presubmit-avd
+  "presubmit": [
+    {
+      "name": "SystemUIGoogleTests"
+    },
+    {
+      "name": "SystemUIClocksTests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        }
+      ]
+    },
+    {
+      // Permission indicators
+      "name": "CtsPermissionUiTestCases",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        },
+        {
+          "include-filter": "android.permissionui.cts.CameraMicIndicatorsPermissionTest"
+        }
+      ]
+    },
+    {
+      "name": "SystemUIComposeGalleryTests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        }
+      ]
+    },
+    {
+      // Permission indicators
+      "name": "CtsVoiceRecognitionTestCases"
+    },
+    {
+      "name": "CtsInputTestCases"
+    },
+    {
+      "name": "InputTests"
+    }
+  ],
+
+  "auto-end-to-end-postsubmit": [
+    {
+      "name": "AndroidAutomotiveHomeTests",
+      "options": [
+        {
+          "include-filter": "android.platform.tests.HomeTest"
+        },
+        {
+          "exclude-filter": "android.platform.tests.HomeTest#testAssistantWidget"
+        }
+      ]
+    }
+  ],
+
+  "postsubmit": [
+    {
+      // Permission indicators
+      "name": "CtsPermissionUiTestCases",
+      "options": [
+        {
+          "include-filter": "android.permissionui.cts.CameraMicIndicatorsPermissionTest"
+        }
+      ]
+    }
+  ],
+
+  // v2/sysui/suite/test-mapping-sysui-screenshot-test
+  "sysui-screenshot-test": [
+    {
+      "name": "SystemUIGoogleScreenshotTests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
+        },
+        {
+          "exclude-annotation": "android.platform.test.annotations.Postsubmit"
+        }
+      ]
+    },
+    {
+      "name": "SystemUIGoogleKeyguardScreenshotTests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
+        },
+        {
+          "exclude-annotation": "android.platform.test.annotations.Postsubmit"
+        }
+      ]
+    }
+  ],
+
+  // v2/sysui/suite/test-mapping-sysui-screenshot-test-staged
+  "sysui-screenshot-test-staged": [
+    {
+      "name": "SystemUIGoogleScreenshotTests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "include-annotation": "androidx.test.filters.FlakyTest"
+        }
+      ]
+    },
+    {
+      "name": "SystemUIGoogleKeyguardScreenshotTests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        },
+        {
+          "include-annotation": "androidx.test.filters.FlakyTest"
+        }
+      ]
+    }
+  ],
+  "sysui-robo-test": [
+    {
+      "name": "SystemUIGoogleRoboRNGTests"
+    },
+    {
+      "name": "SystemUIGoogleRobo2RNGTests"
+    },
+    {
+      "name": "SystemUIGoogleRoboRNGKeyguardTests"
+    }
+  ],
+  "imports": [
+    {
+      "path": "cts/tests/tests/multiuser"
+    }
+  ],
+
+  "sysui-e2e-presubmit": [
+    {
+      "name": "PlatformScenarioTests_SysUI_Presubmit"
+    }
+  ],
+
+  "desktop-presubmit": [
+    {
+      "name": "SystemUIGoogleScreenshotTests_desktop"
+    },
+    {
+      "name": "SystemUITests_desktop"
+    }
+  ],
+
+  "sysui-unit-test": [
+    {
+      "name": "SystemUITests_presubmit"
+    }
+  ]
+}

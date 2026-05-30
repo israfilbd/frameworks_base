@@ -1,0 +1,13 @@
+{
+  "postsubmit": [
+    {
+      "name": "CtsRootBugreportTestCases"
+    },
+    {
+      "name": "BugreportManagerTestCases"
+    },
+    {
+      "name": "FrameworksServicesTests_incident"
+    }
+  ]
+}

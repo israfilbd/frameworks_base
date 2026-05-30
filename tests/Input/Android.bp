@@ -1,0 +1,66 @@
+package {
+    default_team: "trendy_team_input_framework",
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+android_test {
+    name: "InputTests",
+    defaults: [
+        // For ExtendedMockito dependencies.
+        "modules-utils-testable-device-config-defaults",
+    ],
+    srcs: [
+        "src/**/*.aidl",
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+    kotlincflags: [
+        "-Werror",
+    ],
+    asset_dirs: ["assets"],
+    platform_apis: true,
+    certificate: "platform",
+    static_libs: [
+        "android.view.flags-aconfig-java",
+        "androidx.test.core",
+        "androidx.test.ext.junit",
+        "androidx.test.ext.truth",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
+        "collector-device-lib",
+        "compatibility-device-util-axt",
+        "cts-input-lib",
+        "cts-wm-util",
+        "flag-junit",
+        "frameworks-base-testutils",
+        "hamcrest-library",
+        "inputtests_aidl-java",
+        "junit-params",
+        "kotlin-test",
+        "mockito-kotlin-nodeps",
+        "mockito-target-extended-minus-junit4",
+        "platform-compat-test-rules",
+        "platform-test-annotations",
+        "platform-screenshot-diff-core",
+        "services.core.unboosted",
+        "servicestests-utils",
+        "testables",
+        "testng",
+        "truth",
+        "ui-trace-collector",
+    ],
+    jni_libs: [
+        "libinputtests_jni",
+    ],
+    libs: [
+        "android.test.mock.stubs.system",
+        "android.test.base.stubs.system",
+    ],
+    test_suites: ["device-tests"],
+}

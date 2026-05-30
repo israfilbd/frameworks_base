@@ -1,0 +1,1274 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.statusbar.phone
+
+import android.app.ActivityOptions
+import android.app.IActivityTaskManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.os.Bundle
+import android.os.Handler
+import android.os.RemoteException
+import android.os.UserHandle
+import android.platform.test.annotations.DisableFlags
+import android.platform.test.annotations.EnableFlags
+import android.view.RemoteAnimationAdapter
+import android.view.View
+import android.widget.FrameLayout
+import android.window.SplashScreen.SPLASH_SCREEN_STYLE_SOLID_COLOR
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.android.app.displaylib.PerDisplayRepository
+import com.android.keyguard.KeyguardUpdateMonitor
+import com.android.systemui.ActivityIntentHelper
+import com.android.systemui.Flags
+import com.android.systemui.SysuiTestCase
+import com.android.systemui.animation.ActivityTransitionAnimator
+import com.android.systemui.animation.LaunchableView
+import com.android.systemui.assist.AssistManager
+import com.android.systemui.communal.domain.interactor.CommunalSceneInteractor
+import com.android.systemui.communal.domain.interactor.CommunalSettingsInteractor
+import com.android.systemui.desktop.DesktopFirstRepository
+import com.android.systemui.keyguard.KeyguardViewMediator
+import com.android.systemui.keyguard.WakefulnessLifecycle
+import com.android.systemui.kosmos.testScope
+import com.android.systemui.model.SysUiState
+import com.android.systemui.plugins.ActivityStartOptions
+import com.android.systemui.plugins.ActivityStarter.OnDismissAction
+import com.android.systemui.settings.UserTracker
+import com.android.systemui.shade.ShadeController
+import com.android.systemui.shade.data.repository.FakeShadeRepository
+import com.android.systemui.shade.data.repository.ShadeAnimationRepository
+import com.android.systemui.shade.domain.interactor.ShadeAnimationInteractorLegacyImpl
+import com.android.systemui.shade.domain.interactor.ShadeDialogContextInteractor
+import com.android.systemui.shared.system.QuickStepContract.SYSUI_STATE_FREEFORM_ACTIVE_IN_DESKTOP_MODE
+import com.android.systemui.statusbar.CommandQueue
+import com.android.systemui.statusbar.NotificationLockscreenUserManager
+import com.android.systemui.statusbar.NotificationShadeWindowController
+import com.android.systemui.statusbar.SysuiStatusBarStateController
+import com.android.systemui.statusbar.notification.row.ExpandableNotificationRow
+import com.android.systemui.statusbar.policy.DeviceProvisionedController
+import com.android.systemui.statusbar.policy.KeyguardStateController
+import com.android.systemui.statusbar.window.StatusBarWindowController
+import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
+import com.android.systemui.testKosmos
+import com.android.systemui.util.concurrency.FakeExecutor
+import com.android.systemui.util.time.FakeSystemClock
+import com.google.common.truth.Truth.assertThat
+import java.util.Optional
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runTest
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyBoolean
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.nullable
+import org.mockito.Mock
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
+import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class LegacyActivityStarterInternalImplTest : SysuiTestCase() {
+    @Mock private lateinit var centralSurfaces: CentralSurfaces
+    @Mock private lateinit var assistManager: AssistManager
+    @Mock private lateinit var dozeServiceHost: DozeServiceHost
+    @Mock private lateinit var biometricUnlockController: BiometricUnlockController
+    @Mock private lateinit var keyguardViewMediator: KeyguardViewMediator
+    @Mock private lateinit var shadeController: ShadeController
+    @Mock private lateinit var commandQueue: CommandQueue
+    @Mock private lateinit var statusBarKeyguardViewManager: StatusBarKeyguardViewManager
+    @Mock private lateinit var activityTransitionAnimator: ActivityTransitionAnimator
+    @Mock private lateinit var shadeDialogContextInteractor: ShadeDialogContextInteractor
+    @Mock private lateinit var lockScreenUserManager: NotificationLockscreenUserManager
+    @Mock private lateinit var statusBarWindowController: StatusBarWindowController
+    @Mock private lateinit var statusBarWindowControllerStore: StatusBarWindowControllerStore
+    @Mock private lateinit var notifShadeWindowController: NotificationShadeWindowController
+    @Mock private lateinit var wakefulnessLifecycle: WakefulnessLifecycle
+    @Mock private lateinit var keyguardStateController: KeyguardStateController
+    @Mock private lateinit var statusBarStateController: SysuiStatusBarStateController
+    @Mock private lateinit var keyguardUpdateMonitor: KeyguardUpdateMonitor
+    @Mock private lateinit var deviceProvisionedController: DeviceProvisionedController
+    @Mock private lateinit var activityTaskManager: IActivityTaskManager
+    @Mock private lateinit var userTracker: UserTracker
+    @Mock private lateinit var activityIntentHelper: ActivityIntentHelper
+    @Mock private lateinit var communalSceneInteractor: CommunalSceneInteractor
+    @Mock private lateinit var communalSettingsInteractor: CommunalSettingsInteractor
+    @Mock private lateinit var perDisplaySysUiStateRepository: PerDisplayRepository<SysUiState>
+    @Mock private lateinit var sysUIState: SysUiState
+    @Mock private lateinit var remoteAnimationAdapter: RemoteAnimationAdapter
+    @Mock private lateinit var mDesktopFirstRepository: DesktopFirstRepository
+    private lateinit var underTest: LegacyActivityStarterInternalImpl
+    private val kosmos = testKosmos()
+    private val mainExecutor = FakeExecutor(FakeSystemClock())
+    private val shadeAnimationInteractor =
+        ShadeAnimationInteractorLegacyImpl(ShadeAnimationRepository(), FakeShadeRepository())
+
+    @Before
+    fun setUp() {
+        MockitoAnnotations.initMocks(this)
+        `when`(statusBarWindowControllerStore.defaultDisplay).thenReturn(statusBarWindowController)
+        `when`(perDisplaySysUiStateRepository[anyInt()]).thenReturn(sysUIState)
+        underTest =
+            LegacyActivityStarterInternalImpl(
+                centralSurfacesOptLazy = { Optional.of(centralSurfaces) },
+                assistManagerLazy = { assistManager },
+                dozeServiceHostLazy = { dozeServiceHost },
+                biometricUnlockControllerLazy = { biometricUnlockController },
+                keyguardViewMediatorLazy = { keyguardViewMediator },
+                shadeControllerLazy = { shadeController },
+                commandQueue = commandQueue,
+                shadeAnimationInteractor = shadeAnimationInteractor,
+                statusBarKeyguardViewManagerLazy = { statusBarKeyguardViewManager },
+                notifShadeWindowControllerLazy = { notifShadeWindowController },
+                activityTransitionAnimator = activityTransitionAnimator,
+                contextInteractor = shadeDialogContextInteractor,
+                lockScreenUserManager = lockScreenUserManager,
+                statusBarWindowControllerStore = statusBarWindowControllerStore,
+                wakefulnessLifecycle = wakefulnessLifecycle,
+                keyguardStateController = keyguardStateController,
+                statusBarStateController = statusBarStateController,
+                keyguardUpdateMonitor = keyguardUpdateMonitor,
+                deviceProvisionedController = deviceProvisionedController,
+                userTracker = userTracker,
+                activityIntentHelper = activityIntentHelper,
+                activityTaskManager = activityTaskManager,
+                mainExecutor = mainExecutor,
+                applicationScope = kosmos.testScope,
+                communalSceneInteractor = communalSceneInteractor,
+                communalSettingsInteractor = communalSettingsInteractor,
+                perDisplaySysUiStateRepository = perDisplaySysUiStateRepository,
+                desktopFirstRepository = mDesktopFirstRepository,
+            )
+        `when`(userTracker.userHandle).thenReturn(UserHandle.OWNER)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(false))
+        `when`(communalSceneInteractor.isIdleOnCommunal).thenReturn(MutableStateFlow(false))
+        `when`(communalSceneInteractor.isLaunchingWidget).thenReturn(MutableStateFlow(false))
+        `when`(shadeDialogContextInteractor.context).thenReturn(context)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(false)
+    }
+
+    @Test
+    fun registerTransition_registers() {
+        with(kosmos) {
+            testScope.runTest {
+                val cookie = mock(ActivityTransitionAnimator.TransitionCookie::class.java)
+                val controllerFactory =
+                    mock(ActivityTransitionAnimator.ControllerFactory::class.java)
+                `when`(controllerFactory.cookie).thenReturn(cookie)
+
+                underTest.registerTransition(cookie, controllerFactory, testScope)
+
+                verify(activityTransitionAnimator)
+                    .registerLongLivedTransitions(eq(cookie), any(), eq(testScope))
+            }
+        }
+    }
+
+    @Test
+    fun unregisterTransition_unregisters() {
+        val cookie = mock(ActivityTransitionAnimator.TransitionCookie::class.java)
+
+        underTest.unregisterTransition(cookie)
+
+        verify(activityTransitionAnimator).unregisterLongLivedTransitions(eq(cookie))
+    }
+
+    @Test
+    fun startActivityDismissingKeyguard_dismissShadeWhenOccluded_runAfterKeyguardGone() {
+        val intent = mock(Intent::class.java)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSettingsInteractor.isCommunalFlagEnabled()).thenReturn(false)
+
+        underTest.startActivityDismissingKeyguard(intent, dismissShade = true)
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), any(), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager).addAfterKeyguardGoneRunnable(any())
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startActivityDismissingKeyguard_dismissShadeWhenOccluded_runImmediately() {
+        val intent = mock(Intent::class.java)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSettingsInteractor.isCommunalFlagEnabled()).thenReturn(true)
+
+        underTest.startActivityDismissingKeyguard(intent, dismissShade = true)
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), any(), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager, never()).addAfterKeyguardGoneRunnable(any())
+        verify(activityTransitionAnimator)
+            .startIntentWithAnimation(
+                eq(null),
+                eq(kosmos.testScope),
+                eq(false),
+                eq(false),
+                eq(false),
+                any(),
+            )
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startActivityDismissingKeyguard_dismissShadeWhenOccluded_runImmediatelyLegacy() {
+        val intent = mock(Intent::class.java)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSettingsInteractor.isCommunalFlagEnabled()).thenReturn(true)
+
+        underTest.startActivityDismissingKeyguard(intent, dismissShade = true)
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), any(), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager, never()).addAfterKeyguardGoneRunnable(any())
+        verify(activityTransitionAnimator)
+            .startIntentWithAnimation(eq(null), eq(false), eq(null), eq(false), any())
+    }
+
+    @Test
+    fun startActivityDismissingKeyguard_includesDisplayLaunchId() {
+        val intent = mock(Intent::class.java)
+        val activityOptions = ActivityOptions.makeBasic().apply { launchDisplayId = 17 }
+
+        underTest.startActivityDismissingKeyguard(
+            ActivityStartOptions(intent, activityOptions = activityOptions)
+        )
+        mainExecutor.runAllReady()
+
+        val intentStarterCaptor = argumentCaptor<(RemoteAnimationAdapter?) -> Int>()
+        verify(activityTransitionAnimator)
+            .startIntentWithAnimation(
+                eq(null),
+                eq(false),
+                eq(null),
+                eq(false),
+                intentStarterCaptor.capture(),
+            )
+        intentStarterCaptor.lastValue(remoteAnimationAdapter)
+        val activityOptionsCaptor = argumentCaptor<Bundle>()
+        verify(activityTaskManager)
+            .startActivityAsUser(
+                eq(null),
+                any(),
+                eq(null),
+                eq(intent),
+                eq(null),
+                eq(null),
+                eq(null),
+                any(),
+                any(),
+                eq(null),
+                activityOptionsCaptor.capture(),
+                any(),
+            )
+        val calledActivityOptions = ActivityOptions.fromBundle(activityOptionsCaptor.lastValue)
+        assertThat(calledActivityOptions.launchDisplayId).isEqualTo(17)
+    }
+
+    @Test
+    fun startPendingIntentDismissingKeyguard_keyguardShowing_dismissWithAction() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+
+        underTest.startPendingIntentDismissingKeyguard(intent = pendingIntent, dismissShade = true)
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(any(), eq(null), anyBoolean(), eq(null))
+    }
+
+    @Test
+    fun startPendingIntentDismissingKeyguard_withCustomMessage_dismissWithAction() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+        val customMessage = "Custom unlock reason"
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            customMessage = customMessage,
+        )
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(any(), eq(null), anyBoolean(), eq(customMessage))
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentMaybeDismissingKeyguard_keyguardShowing_showOverLs_launchAnimator() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(true)
+
+        startPendingIntentMaybeDismissingKeyguard(
+            intent = pendingIntent,
+            animationController = controller,
+            intentSentUiThreadCallback = null,
+        )
+        mainExecutor.runAllReady()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentMaybeDismissingKeyguard_keyguardShowing_showOverLs_launchAnimatorLegacy() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(true)
+
+        startPendingIntentMaybeDismissingKeyguard(
+            intent = pendingIntent,
+            animationController = controller,
+            intentSentUiThreadCallback = null,
+        )
+        mainExecutor.runAllReady()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(true),
+                nullable(String::class.java),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_fillInIntentAndExtraOptions_sendAndReturnResult() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        val fillInIntent = mock(Intent::class.java)
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+
+        // extra activity options to set on pending intent
+        val activityOptions = mock(ActivityOptions::class.java)
+        activityOptions.splashScreenStyle = SPLASH_SCREEN_STYLE_SOLID_COLOR
+
+        startPendingIntentMaybeDismissingKeyguard(
+            intent = pendingIntent,
+            animationController = controller,
+            intentSentUiThreadCallback = null,
+            fillInIntent = fillInIntent,
+            extraOptions = activityOptions.toBundle(),
+        )
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(
+                actionCaptor.capture(),
+                nullable(Runnable::class.java),
+                anyBoolean(),
+                eq(null),
+            )
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager, never()).addAfterKeyguardGoneRunnable(any())
+        val intentStarterCaptor = argumentCaptor<ActivityTransitionAnimator.PendingIntentStarter>()
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                any(),
+                eq(kosmos.testScope),
+                eq(true),
+                eq(false),
+                anyBoolean(),
+                intentStarterCaptor.capture(),
+            )
+        intentStarterCaptor.firstValue.startPendingIntent(null)
+
+        // Fill-in intent is passed and options contain extra values specified
+        val bundleCaptor = argumentCaptor<Bundle>()
+        verify(pendingIntent)
+            .sendAndReturnResult(
+                eq(context),
+                eq(0),
+                eq(fillInIntent),
+                nullable(PendingIntent.OnFinished::class.java),
+                nullable(Handler::class.java),
+                nullable(String::class.java),
+                bundleCaptor.capture(),
+            )
+        val options = ActivityOptions.fromBundle(bundleCaptor.firstValue)
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+            .isEqualTo(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+        assertThat(options.splashScreenStyle).isEqualTo(SPLASH_SCREEN_STYLE_SOLID_COLOR)
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_fillInIntentAndExtraOptions_sendAndReturnResultLegacy() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        val fillInIntent = mock(Intent::class.java)
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+
+        // extra activity options to set on pending intent
+        val activityOptions = mock(ActivityOptions::class.java)
+        activityOptions.splashScreenStyle = SPLASH_SCREEN_STYLE_SOLID_COLOR
+
+        startPendingIntentMaybeDismissingKeyguard(
+            intent = pendingIntent,
+            animationController = controller,
+            intentSentUiThreadCallback = null,
+            fillInIntent = fillInIntent,
+            extraOptions = activityOptions.toBundle(),
+        )
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(
+                actionCaptor.capture(),
+                nullable(Runnable::class.java),
+                anyBoolean(),
+                eq(null),
+            )
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(statusBarKeyguardViewManager, never()).addAfterKeyguardGoneRunnable(any())
+        val intentStarterCaptor =
+            argumentCaptor<ActivityTransitionAnimator.LegacyPendingIntentStarter>()
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                any(),
+                eq(true),
+                nullable(String::class.java),
+                anyBoolean(),
+                intentStarterCaptor.capture(),
+            )
+        intentStarterCaptor.firstValue.startPendingIntent(null)
+
+        // Fill-in intent is passed and options contain extra values specified
+        val bundleCaptor = argumentCaptor<Bundle>()
+        verify(pendingIntent)
+            .sendAndReturnResult(
+                eq(context),
+                eq(0),
+                eq(fillInIntent),
+                nullable(PendingIntent.OnFinished::class.java),
+                nullable(Handler::class.java),
+                nullable(String::class.java),
+                bundleCaptor.capture(),
+            )
+        val options = ActivityOptions.fromBundle(bundleCaptor.firstValue)
+        assertThat(options.getPendingIntentBackgroundActivityStartMode())
+            .isEqualTo(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+        assertThat(options.splashScreenStyle).isEqualTo(SPLASH_SCREEN_STYLE_SOLID_COLOR)
+    }
+
+    @Test
+    fun startPendingIntentDismissingKeyguard_associatedView_getAnimatorController() {
+        val pendingIntent = mock(PendingIntent::class.java)
+        val associatedView = mock(ExpandableNotificationRow::class.java)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            intentSentUiThreadCallback = null,
+            associatedView = associatedView,
+        )
+
+        verify(centralSurfaces).getAnimatorControllerFromNotification(associatedView)
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_transitionAnimator_animateOverOcclusion() {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_transitionAnimator_animateOverOcclusionLegacy() {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(true),
+                nullable(String::class.java),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_transitionAnimator_animateCommunal() {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSettingsInteractor.isCommunalFlagEnabled()).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSceneInteractor.isLaunchingWidget).thenReturn(MutableStateFlow(true))
+        `when`(activityIntentHelper.wouldPendingLaunchResolverActivity(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = false,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = false,
+        )
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), eq(null), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                eq(true),
+                eq(false),
+                eq(false),
+                any(),
+            )
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_transitionAnimator_animateCommunalLegacy() {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSettingsInteractor.isCommunalFlagEnabled()).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSceneInteractor.isLaunchingWidget).thenReturn(MutableStateFlow(true))
+        `when`(activityIntentHelper.wouldPendingLaunchResolverActivity(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = false,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = false,
+        )
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), eq(null), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(true),
+                nullable(String::class.java),
+                eq(false),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_transitionAnimator_doNotAnimateCommunal() {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSceneInteractor.isLaunchingWidget).thenReturn(MutableStateFlow(true))
+        `when`(activityIntentHelper.wouldPendingLaunchResolverActivity(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = false,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = false,
+        )
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), eq(null), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(statusBarKeyguardViewManager).addAfterKeyguardGoneRunnable(runnableCaptor.capture())
+        runnableCaptor.firstValue.run()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                eq(false),
+                eq(false),
+                eq(false),
+                any(),
+            )
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startPendingIntentDismissingKeyguard_transitionAnimator_doNotAnimateCommunalLegacy() {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        `when`(communalSceneInteractor.isCommunalVisible).thenReturn(MutableStateFlow(true))
+        `when`(communalSceneInteractor.isLaunchingWidget).thenReturn(MutableStateFlow(true))
+        `when`(activityIntentHelper.wouldPendingLaunchResolverActivity(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+        `when`(activityIntentHelper.wouldPendingShowOverLockscreen(eq(pendingIntent), anyInt()))
+            .thenReturn(false)
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = false,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = false,
+        )
+        mainExecutor.runAllReady()
+
+        val actionCaptor = argumentCaptor<OnDismissAction>()
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(actionCaptor.capture(), eq(null), anyBoolean(), eq(null))
+        actionCaptor.firstValue.onDismiss()
+        mainExecutor.runAllReady()
+
+        val runnableCaptor = argumentCaptor<Runnable>()
+        verify(statusBarKeyguardViewManager).addAfterKeyguardGoneRunnable(runnableCaptor.capture())
+        runnableCaptor.firstValue.run()
+
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(false),
+                nullable(String::class.java),
+                eq(false),
+                any(),
+            )
+    }
+
+    @Test
+    fun startActivity_noUserHandleProvided_getUserHandle() {
+        val intent = mock(Intent::class.java)
+
+        underTest.startActivity(intent, false, null, false, null)
+
+        verify(userTracker).userHandle
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startActivity_transitionAnimator_animateOverOcclusion() {
+        val intent = mock(Intent::class.java)
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+
+        mainExecutor.runAllReady()
+        underTest.startActivity(intent, true, controller, true, null)
+
+        verify(activityTransitionAnimator)
+            .startIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @DisableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @Test
+    fun startActivity_transitionAnimator_animateOverOcclusionLegacy() {
+        val intent = mock(Intent::class.java)
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+
+        mainExecutor.runAllReady()
+        underTest.startActivity(intent, true, controller, true, null)
+
+        verify(activityTransitionAnimator)
+            .startIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(true),
+                nullable(String::class.java),
+                eq(true),
+                any(),
+            )
+    }
+
+    @Test
+    fun dismissKeyguardThenExecute_startWakeAndUnlock() {
+        `when`(wakefulnessLifecycle.wakefulness).thenReturn(WakefulnessLifecycle.WAKEFULNESS_ASLEEP)
+        `when`(keyguardStateController.canDismissLockScreen()).thenReturn(true)
+        `when`(statusBarStateController.leaveOpenOnKeyguardHide()).thenReturn(false)
+        `when`(dozeServiceHost.isPulsing).thenReturn(true)
+
+        underTest.dismissKeyguardThenExecute({ true }, {}, false)
+
+        verify(biometricUnlockController)
+            .startWakeAndUnlock(BiometricUnlockController.MODE_WAKE_AND_UNLOCK_PULSING, null)
+    }
+
+    @Test
+    fun dismissKeyguardThenExecute_keyguardIsShowing_dismissWithAction() {
+        val customMessage = "Enter your pin."
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+
+        underTest.dismissKeyguardThenExecute({ true }, {}, false, customMessage)
+
+        verify(statusBarKeyguardViewManager)
+            .dismissWithAction(any(), any(), eq(false), eq(customMessage))
+    }
+
+    @Test
+    fun dismissKeyguardThenExecute_awakeDreams() {
+        val customMessage = "Enter your pin."
+        var dismissActionExecuted = false
+        `when`(keyguardStateController.isShowing).thenReturn(false)
+        `when`(keyguardUpdateMonitor.isDreaming).thenReturn(true)
+
+        underTest.dismissKeyguardThenExecute(
+            {
+                dismissActionExecuted = true
+                true
+            },
+            {},
+            false,
+            customMessage,
+        )
+
+        verify(centralSurfaces).awakenDreams()
+        assertThat(dismissActionExecuted).isTrue()
+    }
+
+    @Test
+    @Throws(RemoteException::class)
+    fun executeRunnableDismissingKeyguard_dreaming_notShowing_awakenDreams() {
+        `when`(keyguardStateController.isShowing).thenReturn(false)
+        `when`(keyguardStateController.isOccluded).thenReturn(false)
+        `when`(keyguardUpdateMonitor.isDreaming).thenReturn(true)
+
+        underTest.executeRunnableDismissingKeyguard(
+            runnable = {},
+            cancelAction = null,
+            dismissShade = false,
+            afterKeyguardGone = false,
+            deferred = false,
+        )
+
+        verify(centralSurfaces, times(1)).awakenDreams()
+    }
+
+    @Test
+    @Throws(RemoteException::class)
+    fun executeRunnableDismissingKeyguard_notDreaming_notShowing_doNotAwakenDreams() {
+        `when`(keyguardStateController.isShowing).thenReturn(false)
+        `when`(keyguardStateController.isOccluded).thenReturn(false)
+        `when`(keyguardUpdateMonitor.isDreaming).thenReturn(false)
+
+        underTest.executeRunnableDismissingKeyguard(
+            runnable = {},
+            cancelAction = null,
+            dismissShade = false,
+            afterKeyguardGone = false,
+            deferred = false,
+        )
+
+        verify(centralSurfaces, never()).awakenDreams()
+    }
+
+    private fun startPendingIntentMaybeDismissingKeyguard(
+        intent: PendingIntent,
+        intentSentUiThreadCallback: Runnable?,
+        animationController: ActivityTransitionAnimator.Controller?,
+        fillInIntent: Intent? = null,
+        extraOptions: Bundle? = null,
+        customMessage: String? = null,
+    ) {
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = intent,
+            dismissShade = true,
+            intentSentUiThreadCallback = intentSentUiThreadCallback,
+            animationController = animationController,
+            showOverLockscreen = true,
+            fillInIntent = fillInIntent,
+            extraOptions = extraOptions,
+            customMessage = customMessage,
+        )
+    }
+
+    @EnableFlags(
+        Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION,
+        Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP,
+    )
+    @Test
+    fun startActivity_skipAnimInDesktop_flagEnabled_inDesktop_desktopFirst_noAnimate() {
+        setupDesktopMode(enabled = true)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(true)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is false
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(false),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(
+        Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION,
+        Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP,
+    )
+    @Test
+    fun startActivity_skipAnimInDesktop_flagEnabled_inDesktop_notDesktopFirst_noAnimate() {
+        setupDesktopMode(enabled = true)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(false)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is false
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(false),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @DisableFlags(Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP)
+    @Test
+    fun startActivity_skipAnimInDesktop_flagDisabled_inDesktop_desktopFirst_doAnimate() {
+        setupDesktopMode(enabled = true)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(true)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is true
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @DisableFlags(Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP)
+    @Test
+    fun startActivity_skipAnimInDesktop_flagDisabled_inDesktop_noDesktopFirst_doAnimate() {
+        setupDesktopMode(enabled = true)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(false)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is true
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(
+        Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION,
+        Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP,
+    )
+    @Test
+    fun startActivity_skipAnimInDesktop_flagEnabled_notInDesktop_desktopFirst_notAnimate() {
+        setupDesktopMode(enabled = false)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(true)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is false
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(false),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(
+        Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION,
+        Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP,
+    )
+    @Test
+    fun startActivity_skipAnimInDesktop_flagEnabled_notInDesktop_notDesktopFirst_doAnimate() {
+        setupDesktopMode(enabled = false)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(false)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is true
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @DisableFlags(Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP)
+    @Test
+    fun startActivity_skipAnimInDesktop_flagDisabled_notInDesktop_desktopFirst_doAnimate() {
+        setupDesktopMode(enabled = false)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(true)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is true
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    @EnableFlags(Flags.FLAG_ANIMATION_LIBRARY_SHELL_MIGRATION)
+    @DisableFlags(Flags.FLAG_SHADE_APP_LAUNCH_ANIMATION_SKIP_IN_DESKTOP)
+    @Test
+    fun startActivity_skipAnimInDesktop_flagDisabled_notInDesktop_notDesktopFirst_doAnimate() {
+        setupDesktopMode(enabled = false)
+        `when`(mDesktopFirstRepository.isDisplayDesktopFirst(DISPLAY_ID)).thenReturn(false)
+        val (controller, pendingIntent) = setupLaunchWithOccludedKeyguard()
+
+        underTest.startPendingIntentDismissingKeyguard(
+            intent = pendingIntent,
+            dismissShade = true,
+            animationController = controller,
+            showOverLockscreen = true,
+            skipLockscreenChecks = true,
+        )
+        mainExecutor.runAllReady()
+
+        // Verify animate parameter is true
+        verify(activityTransitionAnimator)
+            .startPendingIntentWithAnimation(
+                nullable(ActivityTransitionAnimator.Controller::class.java),
+                eq(kosmos.testScope),
+                /* animate= */ eq(true),
+                eq(false),
+                eq(true),
+                any(),
+            )
+    }
+
+    private fun setupDesktopMode(enabled: Boolean) {
+        val flags =
+            if (enabled) {
+                SYSUI_STATE_FREEFORM_ACTIVE_IN_DESKTOP_MODE
+            } else {
+                0L
+            }
+        `when`(sysUIState.flags).thenReturn(flags)
+    }
+
+    private fun setupLaunchWithOccludedKeyguard():
+        Pair<ActivityTransitionAnimator.Controller?, PendingIntent> {
+        val parent = FrameLayout(context)
+        val view =
+            object : View(context), LaunchableView {
+                override fun setShouldBlockVisibilityChanges(block: Boolean) {}
+            }
+        parent.addView(view)
+        val controller = ActivityTransitionAnimator.Controller.fromView(view)
+        val pendingIntent = mock(PendingIntent::class.java)
+        `when`(pendingIntent.isActivity).thenReturn(true)
+        `when`(keyguardStateController.isShowing).thenReturn(true)
+        `when`(keyguardStateController.isOccluded).thenReturn(true)
+        return Pair(controller, pendingIntent)
+    }
+
+    private companion object {
+        private const val DISPLAY_ID = 0
+    }
+}

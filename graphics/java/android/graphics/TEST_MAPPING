@@ -1,0 +1,13 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsTextTestCases_text",
+      "file_patterns": [
+        "Typeface\\.java",
+        "Paint\\.java",
+        "[^/]*Canvas\\.java",
+        "[^/]*Font[^/]*\\.java"
+      ]
+    }
+  ]
+}

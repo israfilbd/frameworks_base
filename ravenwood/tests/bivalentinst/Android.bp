@@ -1,0 +1,134 @@
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+android_ravenwood_test {
+    name: "RavenwoodBivalentInstTest_self_inst",
+
+    srcs: [
+        "test/**/*.java",
+    ],
+    exclude_srcs: [
+        "test/**/*_nonself.java",
+    ],
+
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+
+        "junit",
+        "truth",
+    ],
+
+    package_name: "com.android.ravenwood.bivalentinsttest_self_inst",
+    manifest: "AndroidManifest-self-inst.xml",
+    auto_gen_config: true,
+    build_resources: true,
+}
+
+android_ravenwood_test {
+    name: "RavenwoodBivalentInstTest_nonself_inst",
+
+    srcs: [
+        "test/**/*.java",
+    ],
+    exclude_srcs: [
+        "test/**/*_self.java",
+    ],
+
+    static_libs: [
+        "RavenwoodBivalentInstTestTarget_R",
+
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+
+        "junit",
+        "truth",
+    ],
+
+    package_name: "com.android.ravenwood.bivalentinsttest_nonself_inst",
+    manifest: "AndroidManifest-nonself-inst.xml",
+
+    // TODO: switch to use instrumentation_for
+    target_package_name: "com.android.ravenwood.bivalentinst_target_app",
+    target_resource_apk: "RavenwoodBivalentInstTestTarget",
+
+    auto_gen_config: true,
+    build_resources: true,
+}
+
+java_library {
+    name: "RavenwoodBivalentInstTestTarget_R",
+    srcs: [
+        ":RavenwoodBivalentInstTestTarget{.aapt.srcjar}",
+    ],
+}
+
+android_test {
+    name: "RavenwoodBivalentInstTest_self_inst_device",
+
+    srcs: [
+        "test/**/*.java",
+    ],
+    exclude_srcs: [
+        "test/**/*_nonself.java",
+    ],
+    static_libs: [
+        "junit",
+        "truth",
+
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+
+        "ravenwood-junit",
+    ],
+    test_suites: [
+        "device-tests",
+    ],
+    manifest: "AndroidManifest-self-inst.xml",
+    test_config: "AndroidTest-self-inst.xml",
+    optimize: {
+        enabled: false,
+    },
+}
+
+android_test {
+    name: "RavenwoodBivalentInstTest_nonself_inst_device",
+
+    srcs: [
+        "test/**/*.java",
+    ],
+    exclude_srcs: [
+        "test/**/*_self.java",
+    ],
+    static_libs: [
+        "junit",
+        "truth",
+
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+
+        "ravenwood-junit",
+    ],
+    data: [
+        ":RavenwoodBivalentInstTestTarget",
+    ],
+    test_suites: [
+        "device-tests",
+    ],
+    manifest: "AndroidManifest-nonself-inst.xml",
+    test_config: "AndroidTest-nonself-inst.xml",
+    instrumentation_for: "RavenwoodBivalentInstTestTarget",
+    optimize: {
+        enabled: false,
+    },
+}

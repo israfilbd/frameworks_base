@@ -1,0 +1,39 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsAccessibilityServiceTestCases"
+    },
+    {
+      "name": "CtsAccessibilityTestCases"
+    },
+    {
+      "name": "CtsUiAutomationTestCases"
+    },
+    {
+      "name": "FrameworksServicesTests_accessibility"
+    },
+    {
+      "name": "FrameworksCoreTests_accessibility"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsAccessibilityServiceSdk29TestCases"
+    },
+    {
+      "name": "CtsAccessibilityServiceTestCases"
+    },
+    {
+      "name": "CtsAccessibilityTestCases"
+    },
+    {
+      "name": "CtsUiAutomationTestCases"
+    },
+    {
+      "name": "FrameworksServicesTests_accessibility"
+    },
+    {
+      "name": "FrameworksCoreTests_accessibility"
+    }
+  ]
+}

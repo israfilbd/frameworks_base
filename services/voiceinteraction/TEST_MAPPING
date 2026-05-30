@@ -1,0 +1,30 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsVoiceInteractionTestCases",
+      "options": [
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-filter": "android.voiceinteraction.cts.HotwordDetectionServiceStressTest"
+        }
+      ]
+    },
+    {
+      "name": "CtsAssistTestCases"
+    },
+    {
+      "name": "CtsVoiceInteractionHostTestCases"
+    },
+    {
+      "name": "CtsLocalVoiceInteraction"
+    },
+    {
+      "name": "FrameworksVoiceInteractionTests"
+    },
+    {
+      "name": "CtsSoundTriggerTestCases"
+    }
+  ]
+}

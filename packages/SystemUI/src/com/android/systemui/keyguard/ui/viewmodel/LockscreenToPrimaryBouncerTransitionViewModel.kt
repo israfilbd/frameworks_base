@@ -1,0 +1,137 @@
+/*
+ * Copyright (C) 2023 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.keyguard.ui.viewmodel
+
+import com.android.systemui.Flags
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.keyguard.domain.interactor.FromLockscreenTransitionInteractor
+import com.android.systemui.keyguard.shared.model.Edge
+import com.android.systemui.keyguard.shared.model.KeyguardState.LOCKSCREEN
+import com.android.systemui.keyguard.shared.model.KeyguardState.PRIMARY_BOUNCER
+import com.android.systemui.keyguard.ui.KeyguardTransitionAnimationFlow
+import com.android.systemui.keyguard.ui.transitions.BlurConfig
+import com.android.systemui.keyguard.ui.transitions.DeviceEntryIconTransition
+import com.android.systemui.keyguard.ui.transitions.PrimaryBouncerTransition
+import com.android.systemui.scene.shared.flag.SceneContainerFlag
+import com.android.systemui.scene.shared.model.Overlays
+import com.android.systemui.scene.ui.composable.transitions.TO_BOUNCER_FADE_FRACTION
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+
+/**
+ * Breaks down LOCKSCREEN->PRIMARY BOUNCER transition into discrete steps for corresponding views to
+ * consume.
+ */
+@SysUISingleton
+class LockscreenToPrimaryBouncerTransitionViewModel
+@Inject
+constructor(private val blurConfig: BlurConfig, animationFlow: KeyguardTransitionAnimationFlow) :
+    DeviceEntryIconTransition, PrimaryBouncerTransition {
+    private val transitionAnimation =
+        animationFlow
+            .setup(
+                duration = FromLockscreenTransitionInteractor.TO_PRIMARY_BOUNCER_DURATION,
+                edge = Edge.create(from = LOCKSCREEN, to = Overlays.Bouncer),
+            )
+            .setupWithoutSceneContainer(edge = Edge.create(from = LOCKSCREEN, to = PRIMARY_BOUNCER))
+
+    private val alphaForAnimationStep: (Float) -> Float =
+        when {
+            SceneContainerFlag.isEnabled -> { step ->
+                    1f - Math.min((step / TO_BOUNCER_FADE_FRACTION), 1f)
+                }
+            else -> { step -> 1f - step }
+        }
+
+    val shortcutsAlpha: Flow<Float> =
+        transitionAnimation.sharedFlow(
+            duration = 200.milliseconds,
+            onStep = alphaForAnimationStep,
+            // Rapid swipes to bouncer, and may end up skipping intermediate values that would've
+            // caused a complete fade out of lockscreen elements. Ensure it goes to 0f.
+            onFinish = { 0f },
+        )
+
+    val lockscreenAlpha: Flow<Float> =
+        if (SceneContainerFlag.isEnabled) {
+            // Lockscreen -> Bouncer is a scene transition in Flexiglass.
+            // SharedNotificationContainerViewModel#alphaForShadeAndQsExpansion might be relevant
+            // instead.
+            emptyFlow()
+        } else {
+            shortcutsAlpha
+        }
+
+    val notificationAlpha: Flow<Float> =
+        if (SceneContainerFlag.isEnabled) {
+            // Lockscreen -> Bouncer is a scene transition in Flexiglass.
+            // SharedNotificationContainerViewModel#alphaForShadeAndQsExpansion might be relevant
+            // instead.
+            emptyFlow()
+        } else if (Flags.bouncerUiRevamp()) {
+            transitionAnimation.sharedFlowWithShade(
+                duration = 200.milliseconds,
+                onStep = { step, isShadeExpanded ->
+                    if (isShadeExpanded) 1f else alphaForAnimationStep(step)
+                },
+                onFinish = { isShadeExpanded -> if (isShadeExpanded) 1f else 0f },
+            )
+        } else {
+            lockscreenAlpha
+        }
+
+    override val notificationBlurRadius: Flow<Float> =
+        if (Flags.bouncerUiRevamp()) {
+            transitionAnimation.sharedFlowWithShade(
+                duration = 1.milliseconds,
+                onStep = { _, isShadeExpanded ->
+                    if (isShadeExpanded) blurConfig.maxBlurRadiusPx else null
+                },
+            )
+        } else {
+            emptyFlow()
+        }
+
+    override val deviceEntryParentViewAlpha: Flow<Float> =
+        transitionAnimation.sharedFlowWithShade(
+            duration = 250.milliseconds,
+            onStep = { step, isShadeExpanded -> if (isShadeExpanded) 0f else 1f - step },
+            onFinish = { 0f },
+        )
+
+    override val windowBlurRadius: Flow<Float> =
+        transitionAnimation.sharedFlowWithShade(
+            duration = FromLockscreenTransitionInteractor.TO_PRIMARY_BOUNCER_DURATION,
+            onStep = { step, isShadeExpanded ->
+                if (isShadeExpanded) {
+                    if (Flags.notificationShadeBlur()) {
+                        blurConfig.maxBlurRadiusPx
+                    } else {
+                        null
+                    }
+                } else {
+                    transitionProgressToBlurRadius(
+                        starBlurRadius = blurConfig.minBlurRadiusPx,
+                        endBlurRadius = blurConfig.maxBlurRadiusPx,
+                        transitionProgress = step,
+                    )
+                }
+            },
+        )
+}

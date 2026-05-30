@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksMockingServicesTests_IdleController"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "FrameworksMockingServicesTests_android_server"
+    }
+  ]
+}

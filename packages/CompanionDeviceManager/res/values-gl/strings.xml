@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2017 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="4470785958457506021">"Xestor de dispositivos complementarios"</string>
+    <string name="confirmation_title" msgid="2244241995958340998">"Queres permitir que a aplicación &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; acceda ao dispositivo &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="message_discovery_soft_timeout" msgid="473346859407859161">"Cómpre que este <xliff:g id="DEVICE_TYPE">%1$s</xliff:g> teña activada a conexión <xliff:g id="DISCOVERY_METHOD">%2$s</xliff:g> e que estea preto do <xliff:g id="PROFILE_NAME">%3$s</xliff:g>."</string>
+    <string name="message_discovery_hard_timeout" msgid="677514663495711424">"Non se atopou ningún dispositivo. Téntao de novo máis tarde."</string>
+    <string name="discovery_bluetooth" msgid="5693557668470016164">"Bluetooth"</string>
+    <string name="discovery_wifi" msgid="1551782459721758773">"Wifi"</string>
+    <string name="discovery_mixed" msgid="7071466134150760127">"Bluetooth e wifi"</string>
+    <string name="profile_name_watch" msgid="576290739483672360">"reloxo"</string>
+    <string name="chooser_title_non_profile" msgid="6035023914517087400">"Escolle un dispositivo para que o xestione a aplicación &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;"</string>
+    <string name="chooser_title" msgid="2235819929238267637">"Escolle o <xliff:g id="PROFILE_NAME">%1$s</xliff:g> que queiras configurar"</string>
+    <string name="single_device_title" msgid="4199861437545438606">"Buscando <xliff:g id="PROFILE_NAME">%1$s</xliff:g>"</string>
+    <string name="summary_watch" msgid="8134580124808507407">"Esta aplicación poderá sincronizar información (por exemplo, o nome de quen chama) e acceder a estes permisos do dispositivo (<xliff:g id="DEVICE_TYPE">%1$s</xliff:g>)"</string>
+    <string name="profile_name_fitness_tracker" msgid="3107192493390199691">"monitor de forma física"</string>
+    <string name="confirmation_title_glasses" msgid="8288346850537727333">"Queres permitir que &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; xestione o dispositivo (&lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;)?"</string>
+    <string name="profile_name_glasses" msgid="3506504967216601277">"dispositivo"</string>
+    <string name="summary_glasses" msgid="5469208629679579157">"Esta aplicación poderá acceder a estes permisos do dispositivo (<xliff:g id="DEVICE_TYPE">%1$s</xliff:g>)"</string>
+    <string name="profile_name_medical" msgid="5617160509499466400">"produto sanitario"</string>
+    <string name="title_app_streaming" msgid="237666000400427614">"Queres permitir que &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; emita aplicacións e funcións do sistema entre o teu dispositivo (<xliff:g id="DEVICE_TYPE">%2$s</xliff:g>) e outro aparello &lt;strong&gt;(<xliff:g id="DEVICE_NAME">%3$s</xliff:g>)&lt;/strong&gt;?"</string>
+    <string name="summary_app_streaming" msgid="8346968726357732862">"<xliff:g id="APP_NAME">%1$s</xliff:g> dará os seguintes permisos:"</string>
+    <string name="summary_app_streaming_legacy" msgid="8994180646987541606">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> terá acceso a todo o que se vexa ou reproduza no teu dispositivo (<xliff:g id="DEVICE_TYPE">%2$s</xliff:g>), como audio, fotos, información de pago, contrasinais e mensaxes.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_1">%1$s</xliff:g> poderá emitir aplicacións no <xliff:g id="DEVICE_NAME">%3$s</xliff:g> ata que quites o acceso a este permiso."</string>
+    <string name="helper_summary_app_streaming" msgid="160149899100957545">"<xliff:g id="APP_NAME">%1$s</xliff:g> solicita permiso en nome do dispositivo (<xliff:g id="DEVICE_NAME">%2$s</xliff:g>) para emitir aplicacións e funcións do sistema entre os teus aparellos"</string>
+    <string name="title_automotive_projection" msgid="3296005598978412847"></string>
+    <string name="summary_automotive_projection" msgid="8683801274662496164"></string>
+    <string name="title_computer" msgid="5040395223341777259">"Permitir que &lt;strong&gt;<xliff:g id="DISPLAY_NAME">%3$s</xliff:g>&lt;/strong&gt; acceda a esta información do dispositivo (<xliff:g id="DEVICE_TYPE">%2$s</xliff:g>)"</string>
+    <string name="helper_summary_computer" msgid="2298803016482139668">"<xliff:g id="APP_NAME">%1$s</xliff:g> está solicitando permiso en nome do teu dispositivo (<xliff:g id="DEVICE_NAME">%2$s</xliff:g>) para acceder ás fotos, ao contido multimedia e ás notificacións do seguinte aparello: <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_nearby_device_streaming" msgid="5342768208699657581">"Queres permitir que &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; emita aplicacións e funcións do sistema entre o teu dispositivo (<xliff:g id="DEVICE_TYPE">%2$s</xliff:g>) e outro aparello &lt;strong&gt;(<xliff:g id="DEVICE_NAME">%3$s</xliff:g>)&lt;/strong&gt;?"</string>
+    <string name="summary_nearby_device_streaming" msgid="7940640272770197219">"<xliff:g id="APP_NAME">%1$s</xliff:g> dará os seguintes permisos:"</string>
+    <string name="summary_nearby_device_streaming_legacy" msgid="4306665203887990326">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> terá acceso a todo o que se vexa ou reproduza no teu dispositivo (<xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>), como audio, fotos, información de pago, contrasinais e mensaxes.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_2">%1$s</xliff:g> poderá emitir aplicacións no <xliff:g id="DEVICE_NAME_3">%3$s</xliff:g> ata que quites o acceso a este permiso."</string>
+    <string name="helper_summary_nearby_device_streaming" msgid="4712712177819370967">"<xliff:g id="APP_NAME">%1$s</xliff:g> está solicitando permiso en nome dun dispositivo (<xliff:g id="DEVICE_NAME">%2$s</xliff:g>) para emitir aplicacións do seguinte aparello: <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_virtual_device" msgid="6556338763070329395">"Queres permitir que &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; emita audio e funcións do sistema entre o teu dispositivo (<xliff:g id="DEVICE_TYPE">%3$s</xliff:g>) e outro aparello &lt;strong&gt;(<xliff:g id="DEVICE_NAME">%2$s</xliff:g>)&lt;/strong&gt;?"</string>
+    <string name="summary_virtual_device" msgid="1062189396947962635">"<xliff:g id="APP_NAME">%2$s</xliff:g> dará os seguintes permisos:"</string>
+    <string name="profile_name_generic" msgid="6851028682723034988">"dispositivo"</string>
+    <string name="summary_generic" msgid="1761976003668044801">"Esta aplicación poderá sincronizar información (por exemplo, o nome de quen chama) entre o teléfono e o dispositivo escollido"</string>
+    <string name="consent_yes" msgid="8344487259618762872">"Permitir"</string>
+    <string name="consent_no" msgid="2640796915611404382">"Non permitir"</string>
+    <string name="consent_cancel" msgid="5655005528379285841">"Cancelar"</string>
+    <string name="consent_back" msgid="2560683030046918882">"Atrás"</string>
+    <string name="downward_arrow_action" msgid="2327165938832076333">"Desprazarse abaixo na lista"</string>
+    <string name="downward_arrow" msgid="2292427714411156088">"Frecha cara abaixo"</string>
+    <string name="permission_expand" msgid="893185038020887411">"Despregar <xliff:g id="PERMISSION_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_collapse" msgid="3320833884220844084">"Contraer <xliff:g id="PERMISSION_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_sync_confirmation_title" msgid="4409622174437248702">"Queres darlles ás aplicacións de &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME">%1$s</xliff:g>&lt;/strong&gt; os mesmos permisos que teñen as de &lt;strong&gt;<xliff:g id="PRIMARY_DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="permission_sync_summary" msgid="765497944331294275">"Con esta acción podes conceder acceso a &lt;strong&gt;Micrófono&lt;/strong&gt;, &lt;strong&gt;Cámara&lt;/strong&gt;, e &lt;strong&gt;Acceso á localización&lt;/strong&gt;, así como outros permisos de acceso á información confidencial de &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_0">%1$s</xliff:g>&lt;/strong&gt;. &lt;br/&gt;&lt;br/&gt;Podes cambiar estes permisos en calquera momento na configuración de &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_1">%1$s</xliff:g>&lt;/strong&gt;."</string>
+    <string name="vendor_header_button_description" msgid="7994879208461111473">"Máis información"</string>
+    <string name="permission_phone" msgid="2661081078692784919">"Teléfono"</string>
+    <string name="permission_sms" msgid="6337141296535774786">"SMS"</string>
+    <string name="permission_contacts" msgid="3858319347208004438">"Contactos"</string>
+    <string name="permission_calendar" msgid="6805668388691290395">"Calendario"</string>
+    <string name="permission_microphone" msgid="2152206421428732949">"Micrófono"</string>
+    <string name="permission_call_logs" msgid="5546761417694586041">"Rexistros de chamadas"</string>
+    <string name="permission_nearby_devices" msgid="7530973297737123481">"Dispositivos próximos"</string>
+    <string name="permission_media_routing_control" msgid="5498639511586715253">"Cambiar a saída multimedia"</string>
+    <string name="permission_storage" msgid="6831099350839392343">"Fotos e contido multimedia"</string>
+    <string name="permission_notifications" msgid="4099418516590632909">"Notificacións"</string>
+    <string name="permission_create_virtual_device" msgid="1102905050922460040">"Reproducir os datos en: <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_add_mirror_display" msgid="3743433250535606288">"Replicar a túa pantalla"</string>
+    <string name="permission_add_trusted_display" msgid="9052824856626276723">"Reproducir as aplicacións"</string>
+    <string name="permission_schedule_exact_alarm" msgid="5680932535987512225">"Fixar alarmas e recordatorios"</string>
+    <string name="permission_bypass_dnd" msgid="1241123166903040347">"Sortear config. Non molestar"</string>
+    <string name="permission_phone_summary" msgid="8246321093970051702">"Fai e xestiona chamadas telefónicas"</string>
+    <string name="permission_call_logs_summary" msgid="7545243592757693321">"Le e edita o rexistro de chamadas do teléfono"</string>
+    <string name="permission_sms_summary" msgid="8499509535410068616">"Envía e consulta mensaxes SMS"</string>
+    <string name="permission_contacts_summary" msgid="2840800622763086808">"Accede aos contactos"</string>
+    <string name="permission_calendar_summary" msgid="8430353935747336165">"Accede ao calendario"</string>
+    <string name="permission_microphone_summary" msgid="4862628553869973259">"Grava audio"</string>
+    <string name="permission_nearby_devices_summary" msgid="1306752848196464817">"Busca dispositivos próximos, establece conexión con eles e determina a súa posición relativa"</string>
+    <string name="permission_notification_listener_access_summary" msgid="7856071768185367749">"Le todas as notificacións (que poden incluír información como contactos, mensaxes e fotos)"</string>
+    <string name="permission_notifications_summary" msgid="6819393427371255636">"• Le todas as notificacións (que poden incluír información como contactos, mensaxes e fotos)&lt;br/&gt;• Envíache notificacións&lt;br/&gt;&lt;br/&gt;En Configuración &gt; Notificacións podes xestionar en calquera momento a capacidade desta aplicación para ler e enviar notificacións."</string>
+    <string name="permission_storage_summary" msgid="3918240895519506417"></string>
+    <string name="permission_post_notifications_summary" msgid="1099188848900200165">"Envíache notificacións"</string>
+    <string name="permission_create_virtual_device_summary" msgid="3570256456647725172">"Reproduce en tempo real os datos do micrófono, da cámara e doutros sensores do &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt; no dispositivo (<xliff:g id="DEVICE_TYPE">%2$s</xliff:g>)."</string>
+    <string name="permission_add_mirror_display_summary" msgid="1385423940454941534">"Grava, emite ou comparte o contido da pantalla do dispositivo (<xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g>) co &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g> terá acceso a todo o que se vexa ou reproduza no teu dispositivo (<xliff:g id="DEVICE_TYPE_1">%2$s</xliff:g>), como o audio, as fotos, a información de pago, os contrasinais e as mensaxes."</string>
+    <string name="permission_add_trusted_display_summary" msgid="7399955172055281447">"Emite as aplicacións do dispositivo (<xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g>) no &lt;strong&gt;<xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g> terá acceso a todo o que se vexa ou reproduza no <xliff:g id="DEVICE_NAME_2">%3$s</xliff:g>, como o audio, as fotos, a información de pago, os contrasinais e as mensaxes, incluso cando o dispositivo (<xliff:g id="DEVICE_TYPE_3">%2$s</xliff:g>) estea bloqueado."</string>
+    <string name="permission_media_routing_control_summary" msgid="2714631092321412250">"Accede a unha lista de dispositivos dispoñibles e controla cal deles reproduce en tempo real ou emite audio ou vídeo desde outras aplicacións"</string>
+    <string name="permission_schedule_exact_alarm_summary" msgid="5938321911309800377"></string>
+    <string name="permission_bypass_dnd_summary" msgid="6221709271927387626"></string>
+    <string name="device_type" product="default" msgid="8268703872070046263">"teléfono"</string>
+    <string name="device_type" product="tablet" msgid="5038791954983067774">"tableta"</string>
+    <string name="device_type" product="tv" msgid="5355611506659405636">"televisión"</string>
+    <string name="device_type" product="device" msgid="1526125965802507189">"dispositivo"</string>
+</resources>

@@ -1,0 +1,16 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksVibratorCoreTests"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "FrameworksVibratorCoreTests",
+      "options": [
+        {"exclude-annotation": "org.junit.Ignore"}
+      ]
+    }
+  ]
+}
+

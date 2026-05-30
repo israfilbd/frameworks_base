@@ -1,0 +1,20 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksMockingServicesTests_backup"
+    },
+    {
+      "name": "CtsBackupTestCases",
+      "options": [
+        {
+          // Remove from presubmit until b/273295079 is resolved.
+          "exclude-filter": "android.backup.cts.BackupRestoreEventLoggerTest"
+        }
+      ]
+    }
+  ],
+  "postsubmit": [
+  ],
+  "imports": [
+  ]
+}

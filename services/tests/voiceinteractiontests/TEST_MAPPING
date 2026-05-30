@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksVoiceInteractionTests"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "FrameworksVoiceInteractionTests"
+    }
+  ]
+}

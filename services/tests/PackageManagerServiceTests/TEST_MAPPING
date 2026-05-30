@@ -1,0 +1,43 @@
+{
+  "presubmit": [
+    {
+      "name": "AppEnumerationInternalTests"
+    },
+    {
+      "name": "PackageManagerServiceServerTests_server_pm_Presubmit"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "PackageManagerServiceHostTests"
+    },
+    {
+      "name": "PackageManagerServiceServerTests_server_pm_Postsubmit"
+    }
+  ],
+  "kernel-presubmit": [
+    {
+      "name": "PackageManagerServiceHostTests",
+      "options": [
+        {
+          // TODO(b/197552347) (crashes postsubmit)
+          "exclude-filter": "com.android.server.pm.test.OverlayActorVisibilityTest#testVisibilityByOverlayable"
+        },
+        {
+          // TODO(b/204133664)
+          "exclude-filter": "com.android.server.pm.test.SdCardEjectionTests"
+        },
+        {
+          // TODO(b/272714903)
+          "exclude-filter": "com.android.server.pm.test.OverlayPathsUninstallSystemUpdatesTest#verify"
+        }
+      ]
+    }
+  ],
+  "imports": [
+    {
+      "path": "frameworks/base/services/tests/PackageManagerServiceTests/unit"
+    }
+  ]
+}
+

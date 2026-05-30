@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2015 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<resources>
+    <!-- Header sub settings margin start / end -->
+    <dimen name="header_subsettings_margin_start">72dp</dimen>
+    <dimen name="header_subsettings_margin_end">16dp</dimen>
+
+    <!-- Header margin start / end -->
+    <dimen name="header_margin_start">16dp</dimen>
+    <dimen name="header_margin_end">16dp</dimen>
+
+    <dimen name="lb_action_section_width">384dp</dimen>
+
+    <dimen name="lb_content_section_width">576dp</dimen>
+    <dimen name="lb_content_fragment_start_padding">48dp</dimen>
+    <dimen name="lb_content_fragment_delimiter_padding">16dp</dimen>
+    <dimen name="lb_content_fragment_max_icon_height">280dp</dimen>
+    <dimen name="lb_content_fragment_title_text_top_padding">2dp</dimen>
+    <dimen name="lb_content_fragment_title_text_size">36sp</dimen>
+    <dimen name="lb_content_fragment_icon_width">140dp</dimen>
+
+    <dimen name="lb_content_fragment_breadcrumb_text_size">18sp</dimen>
+    <dimen name="lb_content_fragment_description_text_size">14sp</dimen>
+    <dimen name="lb_content_fragment_title_text_bottom_padding">4dp</dimen>
+
+    <dimen name="headerElevation">8dp</dimen>
+
+    <dimen name="wear_permission_review_pref_padding">8dp</dimen>
+    <dimen name="wear_permission_review_icon_size">24dp</dimen>
+
+    <dimen name="app_snippet_icon_dimen">40dp</dimen>
+    <dimen name="app_icon_margin">12dp</dimen>
+    <dimen name="lock_icon_dimen">32dp</dimen>
+    <dimen name="app_snippet_layout_vertical_margin">16dp</dimen>
+    <dimen name="app_label_padding">18dp</dimen>
+    <dimen name="dialog_inter_element_margin">16dp</dimen>
+    <dimen name="alert_dialog_inner_padding">24dp</dimen>
+    <dimen name="button_min_height">48dp</dimen>
+    <dimen name="dialog_inter_element_vertical_margin">12dp</dimen>
+    <dimen name="alert_dialog_radius">28dp</dimen>
+    <dimen name="alert_dialog_dim_amount">0.6</dimen>
+    <dimen name="indeterminate_progress_bar_padding">26dp</dimen>
+    <dimen name="progress_bar_margin_top">32dp</dimen>
+    <!-- 364dp for the portrait mode -->
+    <dimen name="alert_dialog_min_width_minor">96.5%</dimen>
+    <!-- Override the values for the buttonbar paddings in M3 MaterialAlertDialog -->
+    <dimen name="m3_alert_dialog_action_top_padding">4dp</dimen>
+    <dimen name="m3_alert_dialog_action_bottom_padding">20dp</dimen>
+
+    <dimen name="install_without_verifying_text_padding">16dp</dimen>
+    <dimen name="more_details_clickable_layout_vertical_margin">16dp</dimen>
+
+</resources>

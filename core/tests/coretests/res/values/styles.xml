@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <style name="Theme" parent="android:Theme">
+        <item name="android:windowAnimationStyle">@style/Animation</item>
+    </style>
+
+    <style name="Animation">
+        <item name="android:activityOpenEnterAnimation">@null</item>
+        <item name="android:activityOpenExitAnimation">@null</item>
+        <item name="android:activityCloseEnterAnimation">@null</item>
+        <item name="android:activityCloseExitAnimation">@null</item>
+        <item name="android:taskOpenEnterAnimation">@null</item>
+        <item name="android:taskOpenExitAnimation">@null</item>
+        <item name="android:taskCloseEnterAnimation">@null</item>
+        <item name="android:taskCloseExitAnimation">@null</item>
+        <item name="android:taskToFrontEnterAnimation">@null</item>
+        <item name="android:taskToFrontExitAnimation">@null</item>
+        <item name="android:taskToBackEnterAnimation">@null</item>
+        <item name="android:taskToBackExitAnimation">@null</item>
+    </style>
+
+    <style name="LayoutInDisplayCutoutModeUnset">
+    </style>
+    <style name="LayoutInDisplayCutoutModeDefault">
+        <item name="android:windowLayoutInDisplayCutoutMode">default</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeShortEdges">
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeNever">
+        <item name="android:windowLayoutInDisplayCutoutMode">never</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeAlways">
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+    </style>
+    <style name="RelativeLayoutAlignBottom50Alpha">
+        <item name="android:layout_alignParentTop">false</item>
+        <item name="android:layout_alignParentBottom">true</item>
+        <item name="android:alpha">0.5</item>
+    </style>
+    <style name="RelativeLayoutAlignTop25Alpha">
+        <item name="android:layout_alignParentTop">true</item>
+        <item name="android:layout_alignParentBottom">false</item>
+        <item name="android:alpha">0.25</item>
+    </style>
+    <style name="WindowBackgroundColorLiteral">
+        <item name="android:windowBackground">#00FF00</item>
+    </style>
+    <style name="WindowBackgroundFallbackColorLiteral">
+        <item name="android:windowBackground">@null</item>
+        <item name="android:colorBackground">@null</item>
+        <item name="android:windowBackgroundFallback">#0000FF</item>
+    </style>
+    <style name="ViewDefaultBackground">
+        <item name="android:background">#00000000</item>
+    </style>
+    <style name="IsFrameRatePowerSavingsBalancedDisabled">
+        <item name="android:windowIsFrameRatePowerSavingsBalanced">false</item>
+    </style>
+    <style name="IsFrameRatePowerSavingsBalancedEnabled">
+        <item name="android:windowIsFrameRatePowerSavingsBalanced">true</item>
+    </style>
+    <style name="customFont">
+        <item name="android:fontFamily">@font/samplefont</item>
+    </style>
+    <style name="customFontWithStyle">
+        <item name="android:fontFamily">@font/samplefont</item>
+        <item name="android:textStyle">bold|italic</item>
+    </style>
+    <style name="textAppearanceWithAllAttributes">
+        <item name="android:fontFamily">@font/samplefont</item>
+        <item name="android:textStyle">bold|italic</item>
+        <item name="android:textSize">160dp</item>
+        <item name="android:textColor">#FF00FF</item>
+        <item name="android:textColorLink">#00FFFF</item>
+        <item name="android:textLocale">ja-JP,zh-CN</item>
+        <item name="android:shadowColor">#00FFFF</item>
+        <item name="android:shadowDx">1.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">3.0</item>
+        <item name="android:elegantTextHeight">true</item>
+        <item name="android:letterSpacing">1.0</item>
+        <item name="android:fontFeatureSettings">\"smcp\"</item>
+        <item name="android:fontVariationSettings">\'wdth\' 150</item>
+    </style>
+    <style name="ActionBarContextViewTheme" parent="android:Theme.NoTitleBar">
+        <item name="android:actionModeStyle">@style/ActionBarContextViewActionModeTheme</item>
+    </style>
+    <style name="ActionBarContextViewActionModeTheme">
+        <item name="android:paddingLeft">10px</item>
+        <item name="android:paddingTop">20px</item>
+        <item name="android:paddingRight">30px</item>
+        <item name="android:paddingBottom">40px</item>
+        <item name="android:height">200px</item>
+    </style>
+
+    <style name="ForceDarkAllowed" />
+    <style name="ForceDarkAllowed.Light">
+        <item name="android:isLightTheme">true</item>
+        <item name="android:forceDarkAllowed">true</item>
+    </style>
+    <style name="ForceDarkAllowed.Dark">
+        <item name="android:isLightTheme">false</item>
+        <item name="android:forceDarkAllowed">true</item>
+    </style>
+    <style name="ForceDarkAllowedFalse" />
+    <style name="ForceDarkAllowedFalse.Light">
+        <item name="android:isLightTheme">true</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+    <style name="ForceDarkAllowedFalse.Dark">
+        <item name="android:isLightTheme">false</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

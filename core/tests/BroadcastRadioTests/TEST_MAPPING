@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "BroadcastRadioTests"
+    }
+  ],
+  "auto-presubmit": [
+    {
+      "name": "BroadcastRadioTests"
+    }
+  ]
+}

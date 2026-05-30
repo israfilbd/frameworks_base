@@ -1,0 +1,695 @@
+/*
+ * Copyright (C) 2016 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+package android.content.res;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
+import android.annotation.NonNull;
+import android.app.ResourcesManager;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.os.Binder;
+import android.os.LocaleList;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.Postsubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
+import android.view.Display;
+import android.view.DisplayAdjustments;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
+@Postsubmit
+@RunWith(AndroidJUnit4.class)
+public class ResourcesManagerTest {
+    private static final int SECONDARY_DISPLAY_ID = 1;
+    private static final String APP_ONE_RES_DIR = "app_one.apk";
+    private static final String APP_ONE_RES_SPLIT_DIR = "app_one_split.apk";
+    private static final String APP_TWO_RES_DIR = "app_two.apk";
+    private static final String LIB_RES_DIR = "lib.apk";
+    private static final String TEST_LIB = "com.android.frameworks.coretests.bdr_helper_app1";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private ResourcesManager mResourcesManager;
+    private ResourcesManager mOldResourcesManager;
+    private Map<Integer, DisplayMetrics> mDisplayMetricsMap;
+
+    @Before
+    public void setUp() throws Exception {
+        mDisplayMetricsMap = new HashMap<>();
+
+        DisplayMetrics defaultDisplayMetrics = new DisplayMetrics();
+        defaultDisplayMetrics.setToDefaults();
+
+        // Override defaults (which take device specific properties).
+        defaultDisplayMetrics.density = 1.0f;
+        defaultDisplayMetrics.densityDpi = DisplayMetrics.DENSITY_DEFAULT;
+        defaultDisplayMetrics.xdpi = DisplayMetrics.DENSITY_DEFAULT;
+        defaultDisplayMetrics.ydpi = DisplayMetrics.DENSITY_DEFAULT;
+        defaultDisplayMetrics.widthPixels = 1440;
+        defaultDisplayMetrics.heightPixels = 2960;
+        defaultDisplayMetrics.noncompatDensity = defaultDisplayMetrics.density;
+        defaultDisplayMetrics.noncompatDensityDpi = defaultDisplayMetrics.densityDpi;
+        defaultDisplayMetrics.noncompatXdpi = DisplayMetrics.DENSITY_DEFAULT;
+        defaultDisplayMetrics.noncompatYdpi = DisplayMetrics.DENSITY_DEFAULT;
+        defaultDisplayMetrics.noncompatWidthPixels = defaultDisplayMetrics.widthPixels;
+        defaultDisplayMetrics.noncompatHeightPixels = defaultDisplayMetrics.heightPixels;
+        mDisplayMetricsMap.put(Display.DEFAULT_DISPLAY, defaultDisplayMetrics);
+
+        DisplayMetrics secondaryDisplayMetrics = new DisplayMetrics();
+        secondaryDisplayMetrics.setTo(defaultDisplayMetrics);
+        secondaryDisplayMetrics.widthPixels = 50;
+        secondaryDisplayMetrics.heightPixels = 100;
+        secondaryDisplayMetrics.noncompatWidthPixels = secondaryDisplayMetrics.widthPixels;
+        secondaryDisplayMetrics.noncompatHeightPixels = secondaryDisplayMetrics.heightPixels;
+        mDisplayMetricsMap.put(SECONDARY_DISPLAY_ID, secondaryDisplayMetrics);
+
+        mResourcesManager = new ResourcesManager() {
+            @Override
+            protected AssetManager createAssetManager(@NonNull ResourcesKey key) {
+                return new AssetManager();
+            }
+
+            @Override
+            protected AssetManager createAssetManager(@NonNull final ResourcesKey key,
+                    ResourcesManager.ApkAssetsSupplier apkSupplier) {
+                return createAssetManager(key);
+            }
+
+            @Override
+            public DisplayMetrics getDisplayMetrics(int displayId, DisplayAdjustments daj) {
+                return mDisplayMetricsMap.get(displayId);
+            }
+        };
+        mOldResourcesManager = ResourcesManager.setInstance(mResourcesManager);
+    }
+
+    @After
+    public void tearDown() {
+        ResourcesManager.setInstance(mOldResourcesManager);
+    }
+
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getContext();
+    }
+
+    private PackageManager getPackageManager() {
+        return getContext().getPackageManager();
+    }
+
+    @Test
+    @SmallTest
+    public void testMultipleCallsWithIdenticalParametersCacheReference() {
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources);
+
+        Resources newResources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(newResources);
+        assertSame(resources.getImpl(), newResources.getImpl());
+    }
+
+    @Test
+    @SmallTest
+    public void testMultipleCallsWithDifferentParametersReturnDifferentReferences() {
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources);
+
+        Configuration overrideConfig = new Configuration();
+        overrideConfig.smallestScreenWidthDp = 200;
+        Resources newResources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, overrideConfig,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(newResources);
+        assertNotSame(resources, newResources);
+    }
+
+    @Test
+    @SmallTest
+    public void testAddingASplitCreatesANewImpl() {
+        Resources resources1 = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources1);
+
+        Resources resources2 = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, new String[] { APP_ONE_RES_SPLIT_DIR }, null, null, null,
+                null, null, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null,
+                null);
+        assertNotNull(resources2);
+
+        assertNotSame(resources1, resources2);
+        assertNotSame(resources1.getImpl(), resources2.getImpl());
+    }
+
+    @Test
+    @SmallTest
+    public void testUpdateConfigurationUpdatesAllAssetManagers() {
+        Resources resources1 = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources1);
+
+        Resources resources2 = mResourcesManager.getResources(
+                null, APP_TWO_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources2);
+
+        Binder activity = new Binder();
+        final Configuration overrideConfig = new Configuration();
+        overrideConfig.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        Resources resources3 = mResourcesManager.getResources(
+                activity, APP_ONE_RES_DIR, null, null, null, null, null,
+                overrideConfig, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources3);
+
+        // No Resources object should be the same.
+        assertNotSame(resources1, resources2);
+        assertNotSame(resources1, resources3);
+        assertNotSame(resources2, resources3);
+
+        // Each ResourcesImpl should be different.
+        assertNotSame(resources1.getImpl(), resources2.getImpl());
+        assertNotSame(resources1.getImpl(), resources3.getImpl());
+        assertNotSame(resources2.getImpl(), resources3.getImpl());
+
+        Configuration newConfig = new Configuration();
+        newConfig.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        mResourcesManager.applyConfigurationToResources(newConfig, null);
+
+        final Configuration expectedConfig = new Configuration();
+        expectedConfig.setToDefaults();
+        expectedConfig.setLocales(LocaleList.getAdjustedDefault());
+        expectedConfig.densityDpi = mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).densityDpi;
+        expectedConfig.orientation = Configuration.ORIENTATION_LANDSCAPE;
+
+        assertEquals(expectedConfig, resources1.getConfiguration());
+        assertEquals(expectedConfig, resources2.getConfiguration());
+        assertEquals(expectedConfig, resources3.getConfiguration());
+    }
+
+    @Test
+    @SmallTest
+    public void testTwoActivitiesWithIdenticalParametersShareImpl() {
+        Binder activity1 = new Binder();
+        Resources resources1 = mResourcesManager.getResources(
+                activity1, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources1);
+
+        Binder activity2 = new Binder();
+        Resources resources2 = mResourcesManager.getResources(
+                activity2, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources1);
+
+        // The references themselves should be unique.
+        assertNotSame(resources1, resources2);
+
+        // The implementations should be the same.
+        assertSame(resources1.getImpl(), resources2.getImpl());
+    }
+
+    @Test
+    @SmallTest
+    public void testThemesGetUpdatedWithNewImpl() {
+        Binder activity1 = new Binder();
+        Resources resources1 = mResourcesManager.createBaseTokenResources(
+                activity1, APP_ONE_RES_DIR, null, null, null, null, Display.DEFAULT_DISPLAY, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources1);
+
+        Resources.Theme theme = resources1.newTheme();
+        assertSame(resources1, theme.getResources());
+        theme.applyStyle(android.R.style.Theme_NoTitleBar, false);
+
+        TypedValue value = new TypedValue();
+        assertTrue(theme.resolveAttribute(android.R.attr.windowNoTitle, value, true));
+        assertEquals(TypedValue.TYPE_INT_BOOLEAN, value.type);
+        assertTrue(value.data != 0);
+
+        final Configuration overrideConfig = new Configuration();
+        overrideConfig.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        mResourcesManager.updateResourcesForActivity(activity1, overrideConfig,
+                Display.DEFAULT_DISPLAY);
+        assertSame(resources1, theme.getResources());
+
+        // Make sure we can still access the data.
+        assertTrue(theme.resolveAttribute(android.R.attr.windowNoTitle, value, true));
+        assertEquals(TypedValue.TYPE_INT_BOOLEAN, value.type);
+        assertTrue(value.data != 0);
+    }
+
+    @Test
+    @SmallTest
+    public void testMultipleResourcesForOneActivityGetUpdatedWhenActivityBaseUpdates() {
+        Binder activity1 = new Binder();
+
+        // Create a Resources for the Activity.
+        Configuration config1 = new Configuration();
+        config1.densityDpi = 280;
+        Resources resources1 = mResourcesManager.createBaseTokenResources(
+                activity1, APP_ONE_RES_DIR, null, null, null, null, Display.DEFAULT_DISPLAY,
+                config1, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources1);
+
+        // Create a Resources based on the Activity.
+        Configuration config2 = new Configuration();
+        config2.screenLayout |= Configuration.SCREENLAYOUT_ROUND_YES;
+        Resources resources2 = mResourcesManager.getResources(
+                activity1, APP_ONE_RES_DIR, null, null, null, null, null, config2,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources2);
+
+        assertNotSame(resources1, resources2);
+        assertNotSame(resources1.getImpl(), resources2.getImpl());
+
+        final Configuration expectedConfig1 = new Configuration();
+        expectedConfig1.setToDefaults();
+        expectedConfig1.setLocales(LocaleList.getAdjustedDefault());
+        expectedConfig1.densityDpi = 280;
+        assertEquals(expectedConfig1, resources1.getConfiguration());
+
+        // resources2 should be based on the Activity's override config, so the density should
+        // be the same as resources1.
+        final Configuration expectedConfig2 = new Configuration();
+        expectedConfig2.setToDefaults();
+        expectedConfig2.setLocales(LocaleList.getAdjustedDefault());
+        expectedConfig2.densityDpi = 280;
+        expectedConfig2.screenLayout |= Configuration.SCREENLAYOUT_ROUND_YES;
+        assertEquals(expectedConfig2, resources2.getConfiguration());
+
+        // Now update the Activity base override, and both resources should update.
+        config1.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        mResourcesManager.updateResourcesForActivity(activity1, config1, Display.DEFAULT_DISPLAY);
+
+        expectedConfig1.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        assertEquals(expectedConfig1, resources1.getConfiguration());
+
+        expectedConfig2.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        assertEquals(expectedConfig2, resources2.getConfiguration());
+    }
+
+    @Test
+    @SmallTest
+    public void testChangingActivityDisplayDoesntOverrideDisplayRequestedByResources() {
+        Binder activity = new Binder();
+
+        // Create a base token resources that are based on the default display.
+        Resources activityResources = mResourcesManager.createBaseTokenResources(
+                activity, APP_ONE_RES_DIR, null, null, null,null, Display.DEFAULT_DISPLAY, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        // Create another resources that explicitly override the display of the base token above
+        // and set it to DEFAULT_DISPLAY.
+        Resources defaultDisplayResources = mResourcesManager.getResources(
+                activity, APP_ONE_RES_DIR, null, null, null, null, Display.DEFAULT_DISPLAY, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+
+        assertEquals(mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).widthPixels,
+                activityResources.getDisplayMetrics().widthPixels);
+        assertEquals(mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).heightPixels,
+                activityResources.getDisplayMetrics().heightPixels);
+        assertEquals(mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).widthPixels,
+                defaultDisplayResources.getDisplayMetrics().widthPixels);
+        assertEquals(mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).widthPixels,
+                defaultDisplayResources.getDisplayMetrics().widthPixels);
+
+        // Now change the display of the activity and ensure the activity's display metrics match
+        // the new display, but the other resources remain based on the default display.
+        mResourcesManager.updateResourcesForActivity(activity, null, SECONDARY_DISPLAY_ID);
+
+        assertEquals(mDisplayMetricsMap.get(SECONDARY_DISPLAY_ID).widthPixels,
+                activityResources.getDisplayMetrics().widthPixels);
+        assertEquals(mDisplayMetricsMap.get(SECONDARY_DISPLAY_ID).heightPixels,
+                activityResources.getDisplayMetrics().heightPixels);
+        assertEquals(mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).widthPixels,
+                defaultDisplayResources.getDisplayMetrics().widthPixels);
+        assertEquals(mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).widthPixels,
+                defaultDisplayResources.getDisplayMetrics().widthPixels);
+    }
+
+    @Test
+    @SmallTest
+    public void testUpdateResourcesForActivityUpdateWindowConfiguration() {
+        final Binder activity = new Binder();
+        final Binder activity2 = new Binder();
+        final Configuration overrideConfig = new Configuration();
+        final Resources resources = mResourcesManager.getResources(
+                activity, APP_ONE_RES_DIR, null, null, null, null, Display.DEFAULT_DISPLAY,
+                overrideConfig, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        final Resources resources2 = mResourcesManager.getResources(
+                activity2, APP_ONE_RES_DIR, null, null, null, null, Display.DEFAULT_DISPLAY,
+                overrideConfig, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        overrideConfig.windowConfiguration.getBounds().set(100, 100, 600, 1200);
+        mResourcesManager.updateResourcesForActivity(activity, overrideConfig,
+                Display.DEFAULT_DISPLAY);
+
+        assertEquals(overrideConfig.windowConfiguration,
+                resources.getConfiguration().windowConfiguration);
+        assertEquals(overrideConfig.windowConfiguration,
+                resources.getDisplayAdjustments().getConfiguration().windowConfiguration);
+        assertNotEquals(resources.getConfiguration().windowConfiguration,
+                resources2.getConfiguration().windowConfiguration);
+
+        overrideConfig.windowConfiguration.getBounds().offset(10, 10);
+        mResourcesManager.updateResourcesForActivity(activity2, overrideConfig,
+                Display.DEFAULT_DISPLAY);
+
+        assertEquals(overrideConfig.windowConfiguration,
+                resources2.getConfiguration().windowConfiguration);
+        assertNotEquals(resources.getConfiguration().windowConfiguration,
+                resources2.getConfiguration().windowConfiguration);
+    }
+
+    @Test
+    @SmallTest
+    public void testUpdateActivityResourcesOverrideWindowConfiguration() {
+        final Binder activity = new Binder();
+        final Resources activityResources = mResourcesManager.createBaseTokenResources(
+                activity, null, null, null, null, null, Display.DEFAULT_DISPLAY,
+                null, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        final Configuration overrideConfig = new Configuration();
+        overrideConfig.windowConfiguration.getBounds().set(0, 0, 500, 1000);
+        // Simulate the usage of Activity#createConfigurationContext.
+        final Resources overrideConfigResources = mResourcesManager.getResources(
+                activity, null, null, null, null, null, Display.DEFAULT_DISPLAY,
+                overrideConfig, CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        // This is a key step to make the non-window configuration fields have the same value
+        // (which were assigned from ResourcesManager#applyDisplayMetricsToConfiguration). And the
+        // following update shouldn't create the ResourcesKey that finds the same ResourcesImpl.
+        final Configuration newActivityOverrideConfig =
+                new Configuration(overrideConfigResources.getConfiguration());
+        newActivityOverrideConfig.windowConfiguration.getBounds().set(100, 200, 600, 1200);
+        mResourcesManager.updateResourcesForActivity(activity, newActivityOverrideConfig,
+                Display.DEFAULT_DISPLAY);
+
+        // Verifies that the update applies the configuration to the correct ResourcesImpl.
+        assertEquals(overrideConfig.windowConfiguration.getBounds(),
+                overrideConfigResources.getConfiguration().windowConfiguration.getBounds());
+        assertEquals(newActivityOverrideConfig.windowConfiguration.getBounds(),
+                activityResources.getConfiguration().windowConfiguration.getBounds());
+    }
+
+    @Test
+    @SmallTest
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_NON_PUBLIC_CONFIG_DIFF_FOR_RESOURCES_KEY)
+    public void testNonPublicDiffOverrideConfigShareImpl() {
+        final Configuration overrideConfig1 = new Configuration();
+        overrideConfig1.densityDpi = 100;
+        overrideConfig1.windowConfiguration.setAppBounds(0, 0, 500, 1000);
+        final Resources resources1 = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, overrideConfig1,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+
+        final Configuration overrideConfig2 = new Configuration(overrideConfig1);
+        // WindowConfiguration is not a public API field. It shouldn't affect resources.
+        overrideConfig2.windowConfiguration.getAppBounds().offset(100, 100);
+        final Resources resources2 = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, overrideConfig2,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+
+        // Verify that ResourcesKey distinguishes undefined fields.
+        final Configuration emptyConfig = new Configuration();
+        final Resources resources3 = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, emptyConfig,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+
+        assertNotNull(resources1);
+        assertNotNull(resources2);
+        assertNotNull(emptyConfig);
+        assertSame(resources1.getImpl(), resources2.getImpl());
+        assertNotSame(resources3.getImpl(), resources1.getImpl());
+        assertNotSame(resources3.getImpl(), resources2.getImpl());
+    }
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testExistingResourcesAfterResourcePathsRegistration()
+             throws PackageManager.NameNotFoundException {
+        // Create a Resources before register resources' paths for a package.
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources);
+        ResourcesImpl oriResImpl = resources.getImpl();
+
+        ApplicationInfo appInfo = getPackageManager().getApplicationInfo(TEST_LIB, 0);
+        Resources.registerResourcePaths(TEST_LIB, appInfo);
+
+        assertNotSame(oriResImpl, resources.getImpl());
+
+        ApkAssets[] loadedAssets = resources.getAssets().getApkAssets();
+        assertTrue(containsPath(TEST_LIB, loadedAssets));
+
+        // Package resources' paths should be cached in ResourcesManager.
+        assertNotNull(ResourcesManager.getInstance().getRegisteredResourcePaths().get(TEST_LIB));
+    }
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testNewResourcesAfterResourcePathsRegistration()
+            throws PackageManager.NameNotFoundException {
+        ApplicationInfo appInfo = getPackageManager().getApplicationInfo(TEST_LIB, 0);
+        Resources.registerResourcePaths(TEST_LIB, appInfo);
+
+        // Create a Resources after register resources' paths for a package.
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources);
+
+        ApkAssets[] loadedAssets = resources.getAssets().getApkAssets();
+        assertTrue(containsPath(TEST_LIB, loadedAssets));
+
+        // Package resources' paths should be cached in ResourcesManager.
+        assertNotNull(ResourcesManager.getInstance().getRegisteredResourcePaths().get(TEST_LIB));
+    }
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testExistingResourcesCreatedByConstructorAfterResourcePathsRegistration()
+            throws PackageManager.NameNotFoundException {
+        // Create a Resources through constructor directly before register resources' paths.
+        final DisplayMetrics metrics = new DisplayMetrics();
+        metrics.setToDefaults();
+        final Configuration config = new Configuration();
+        config.setToDefaults();
+        final var assets = new AssetManager();
+        Resources resources = new Resources(assets, metrics, config);
+
+        ResourcesImpl oriResImpl = resources.getImpl();
+
+        ApplicationInfo appInfo = getPackageManager().getApplicationInfo(TEST_LIB, 0);
+        Resources.registerResourcePaths(TEST_LIB, appInfo);
+
+        assertNotSame(oriResImpl, resources.getImpl());
+
+        ApkAssets[] loadedAssets = resources.getAssets().getApkAssets();
+        assertTrue(containsPath(TEST_LIB, loadedAssets));
+
+        // Package resources' paths should be cached in ResourcesManager.
+        assertNotNull(ResourcesManager.getInstance().getRegisteredResourcePaths().get(TEST_LIB));
+
+        // Now make sure that when constructing another custom Resources object its
+        // AssetManager gets updated in place.
+        final var anotherResources = new Resources(assets, metrics, config);
+        assertSame(assets, anotherResources.getAssets());
+        assertTrue(containsPath(TEST_LIB, anotherResources.getAssets().getApkAssets()));
+    }
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = ResourcesManager.class)
+    public void testResourceConfigurationAppliedWhenOverrideDoesNotExist() {
+        final int width = 240;
+        final int height = 360;
+        final float densityDpi = mDisplayMetricsMap.get(Display.DEFAULT_DISPLAY).densityDpi;
+        final int widthDp = (int) (width / densityDpi + 0.5f);
+        final int heightDp = (int) (height / densityDpi + 0.5f);
+
+        final int overrideWidth = 480;
+        final int overrideHeight = 720;
+        final int overrideWidthDp = (int) (overrideWidth / densityDpi + 0.5f);
+        final int overrideHeightDp = (int) (height / densityDpi + 0.5f);
+
+        // The method to be tested is overridden for other tests to provide a setup environment.
+        // Create a new one for this test only.
+        final ResourcesManager resourcesManager = new ResourcesManager();
+
+        Configuration newConfig = new Configuration();
+        newConfig.windowConfiguration.setAppBounds(0, 0, width, height);
+        newConfig.screenWidthDp = widthDp;
+        newConfig.screenHeightDp = heightDp;
+        resourcesManager.applyConfigurationToResources(newConfig, null);
+
+        assertEquals(width, resourcesManager.getDisplayMetrics(Display.DEFAULT_DISPLAY,
+                DisplayAdjustments.DEFAULT_DISPLAY_ADJUSTMENTS).widthPixels);
+        assertEquals(height, resourcesManager.getDisplayMetrics(Display.DEFAULT_DISPLAY,
+                DisplayAdjustments.DEFAULT_DISPLAY_ADJUSTMENTS).heightPixels);
+
+        Configuration overrideConfig = new Configuration();
+        overrideConfig.windowConfiguration.setAppBounds(0, 0, overrideWidth, overrideHeight);
+        overrideConfig.screenWidthDp = overrideWidthDp;
+        overrideConfig.screenHeightDp = overrideHeightDp;
+
+        final DisplayAdjustments daj = new DisplayAdjustments(overrideConfig);
+
+        assertEquals(overrideWidth, resourcesManager.getDisplayMetrics(
+                Display.DEFAULT_DISPLAY, daj).widthPixels);
+        assertEquals(overrideHeight, resourcesManager.getDisplayMetrics(
+                Display.DEFAULT_DISPLAY, daj).heightPixels);
+    }
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testNewResourcesWithOutdatedImplAfterResourcePathsRegistration()
+            throws PackageManager.NameNotFoundException {
+        Resources old_resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(old_resources);
+        ResourcesImpl oldImpl = old_resources.getImpl();
+
+        ApplicationInfo appInfo = getPackageManager().getApplicationInfo(TEST_LIB, 0);
+        Resources.registerResourcePaths(TEST_LIB, appInfo);
+
+        // Create another resources with identical parameters.
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources);
+        // For a normal ResourcesImpl redirect, new Resources may find an old ResourcesImpl cache
+        // and reuse it based on the ResourcesKey. But for shared library ResourcesImpl redirect,
+        // new created Resources should never reuse any old impl, it has to recreate a new impl
+        // which has proper asset paths appended.
+        assertNotSame(oldImpl, resources.getImpl());
+
+        ApkAssets[] loadedAssets = resources.getAssets().getApkAssets();
+        assertTrue(containsPath(TEST_LIB, loadedAssets));
+
+        // Package resources' paths should be cached in ResourcesManager.
+        assertNotNull(ResourcesManager.getInstance().getRegisteredResourcePaths().get(TEST_LIB));
+    }
+
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testRegisteringOwnApplicationInfo() {
+        Resources old_resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(old_resources);
+        ResourcesImpl oldImpl = old_resources.getImpl();
+
+        ApplicationInfo appInfo =
+                InstrumentationRegistry.getInstrumentation().getContext().getApplicationInfo();
+        Resources.registerResourcePaths(TEST_LIB, appInfo);
+
+        // Create another resources with identical parameters.
+        Resources resources = mResourcesManager.getResources(
+                null, APP_ONE_RES_DIR, null, null, null, null, null, null,
+                CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+        assertNotNull(resources);
+        assertNotSame(oldImpl, resources.getImpl());
+
+        ApkAssets[] loadedAssets = resources.getAssets().getApkAssets();
+        assertTrue(containsPath(appInfo.sourceDir, loadedAssets));
+
+        assertNotNull(ResourcesManager.getInstance().getRegisteredResourcePaths().get(TEST_LIB));
+    }
+
+    @Test
+    @SmallTest
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    public void testRegisterPathWithExistingResourcesWithInvalidPath()
+            throws PackageManager.NameNotFoundException, IOException {
+        File filesDir = getContext().getFilesDir();
+        File tmpName = new File(filesDir, "tmp.apk");
+        ApplicationInfo appInfo = getPackageManager().getApplicationInfo(TEST_LIB, 0);
+        try {
+            // This test requires a proper setup:
+            // 1. Create a temp location for an apk with resources. Make sure the file is a
+            //    separate copy, not a link, so we can remove it completely later.
+            Files.copy(Path.of(appInfo.sourceDir), tmpName.toPath());
+
+            // 2. Load those resources using the real resource manager object
+            ResourcesManager.setInstance(mOldResourcesManager);
+            Resources tmpResources = ResourcesManager.getInstance().getResources(null,
+                    tmpName.toString(),
+                    null, null, null, null, null, null,
+                    CompatibilityInfo.DEFAULT_COMPATIBILITY_INFO, null, null);
+            assertNotNull(tmpResources);
+
+            // 3. Now remove the temporary apk - simulate an app uninstallation
+            Files.delete(tmpName.toPath());
+
+            // 4. Here comes the test - registering resources path is going to update all objects
+            //    and it should not fail because our temporary resources backing file is gone
+            Resources.registerResourcePaths(TEST_LIB, appInfo);
+        } catch (Exception e) {
+            Assert.fail("Shouldn't throw, but did: " + e);
+        } finally {
+            Files.deleteIfExists(tmpName.toPath());
+        }
+    }
+
+    private static boolean containsPath(String substring, ApkAssets[] assets) {
+        for (final var asset : assets) {
+            if (asset.getAssetPath().contains(substring)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}

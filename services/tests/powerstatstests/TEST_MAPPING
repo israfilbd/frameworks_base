@@ -1,0 +1,21 @@
+{
+  "presubmit": [
+    {
+      "name": "PowerStatsTests_power_stats"
+    }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "PowerStatsTestsRavenwood",
+      "host": true,
+      "options": [
+        {"include-filter": "com.android.server.power.stats"}
+      ]
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "PowerStatsTests_power_stats"
+    }
+  ]
+}

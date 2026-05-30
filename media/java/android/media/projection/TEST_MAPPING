@@ -1,0 +1,10 @@
+{
+  "imports": [
+    {
+      "path": "frameworks/base/services/core/java/com/android/server/media/projection"
+    },
+    {
+      "path": "frameworks/base/libs/WindowManager/Shell/tests/e2e/mediaprojection"
+    }
+  ]
+}

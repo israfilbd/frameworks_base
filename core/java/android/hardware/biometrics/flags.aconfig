@@ -1,0 +1,113 @@
+package: "android.hardware.biometrics"
+container: "system"
+
+flag {
+  name: "add_key_agreement_crypto_object"
+  is_exported: true
+  namespace: "biometrics"
+  description: "Feature flag for adding KeyAgreement api to CryptoObject."
+  bug: "282058146"
+}
+
+flag {
+  name: "add_fallback"
+  namespace: "biometrics_framework"
+  description: "Feature flag for adding auth fallbacks to biometric prompt"
+  is_exported: true
+  bug: "391666818"
+}
+
+flag {
+  name: "bp_fallback_options"
+  namespace: "biometrics_framework"
+  description: "Adds fallback options UI to biometric prompt"
+  bug: "377774089"
+}
+
+flag {
+  name: "get_op_id_crypto_object"
+  is_exported: true
+  namespace: "biometrics_framework"
+  description: "Feature flag for adding a get operation id api to CryptoObject."
+  bug: "307601768"
+}
+
+flag {
+  name: "custom_biometric_prompt"
+  is_exported: true
+  namespace: "biometrics_framework"
+  description: "Feature flag for adding a custom content view API to BiometricPrompt.Builder."
+  bug: "302735104"
+}
+
+flag {
+  name: "screen_off_unlock_udfps"
+  is_exported: true
+  namespace: "biometrics_integration"
+  description: "This flag controls Whether to enable fp unlock when screen turns off on udfps devices"
+  bug: "373792870"
+}
+
+flag {
+  name: "identity_check_api"
+  namespace: "biometrics_framework"
+  description: "This flag is for API changes related to Identity Check"
+  bug: "373424727"
+  is_exported: true
+}
+
+flag {
+  name: "private_space_bp"
+  namespace: "biometrics_framework"
+  description: "Feature flag for biometric prompt improvements in private space"
+  bug: "365554098"
+}
+
+flag {
+  name: "effective_user_bp"
+  namespace: "biometrics_framework"
+  description: "Feature flag for using effective user in biometric prompt"
+  bug: "365094949"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}
+
+flag {
+  name: "move_fm_api_to_bm"
+  is_exported: true
+  namespace: "biometrics_framework"
+  description: "Feature flag for moving some FingerprintManager APIs to BiometricManager to unblock FM removal."
+  bug: "323957939"
+}
+
+flag {
+  name: "identity_check_test_api"
+  namespace: "biometrics_framework"
+  description: "This flag is for test API changes related to Identity Check"
+  bug: "347123256"
+}
+
+flag {
+  name: "identity_check_all_surfaces"
+  namespace: "biometrics_framework"
+  description: "This flag applies Identity Check to all biometric prompt requests"
+  bug: "402534668"
+}
+
+flag {
+  name: "identity_check_watch"
+  namespace: "biometrics_framework"
+  description: "This flag is for the integration of Identity Check with Watch"
+  bug: "397954948"
+}
+
+flag {
+  name: "bp_initialize_compose_watch"
+  namespace: "wear_frameworks"
+  description: "Initialize lifecycle to enable compose to run outside activities"
+  bug: "414859063"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}

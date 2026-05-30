@@ -1,0 +1,39 @@
+// Copyright (C) 2023 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// "framework-minus-apex" and "all-updatable-modules-system-stubs" are not
+// visible publicly. We re-export them to Ravenwood in this file.
+
+java_library {
+    name: "framework-minus-apex-for-host",
+    installable: false,
+    static_libs: ["framework-minus-apex"],
+    visibility: ["//frameworks/base/ravenwood"],
+}
+
+java_library {
+    name: "all-updatable-modules-system-stubs-for-host",
+    installable: false,
+    stem: "all-updatable-modules-system-stubs",
+    static_libs: ["all-updatable-modules-system-stubs"],
+    visibility: ["//frameworks/base/ravenwood"],
+}
+
+java_library {
+    name: "framework-updatable-stubs-module_libs_api-for-host",
+    installable: false,
+    stem: "framework-updatable-stubs-module_libs_api",
+    static_libs: ["framework-updatable-stubs-module_libs_api"],
+    visibility: ["//frameworks/base/ravenwood"],
+}

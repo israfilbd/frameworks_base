@@ -1,0 +1,49 @@
+package: "com.android.server.deviceidle"
+container: "system"
+
+flag {
+  name: "remove_idle_location"
+  namespace: "location"
+  description: "Remove DeviceIdleController usage of location"
+  bug: "332770178"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}
+
+flag {
+    name: "disable_wakelocks_in_light_idle"
+    namespace: "backstage_power"
+    description: "Disable wakelocks for background apps while Light Device Idle is active"
+    bug: "326607666"
+}
+
+flag {
+    name: "use_cpu_time_for_temp_allowlist"
+    namespace: "backstage_power"
+    description: "Use CPU time for temporary allowlists"
+    bug: "376561328"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_non_scheduled_exit_from_idle_pending"
+    namespace: "backstage_power"
+    description: "If the Device Idle state is IDLE_PENDING, allow directly going past the state if IDLE_AFTER_INACTIVE_TIMEOUT is 0."
+    bug: "431873897"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "stop_power_save_temp_whitelist_broadcast"
+    namespace: "backstage_power"
+    description: "Stop sending the power_save_temp_whitelist broadcast"
+    bug: "427275343"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

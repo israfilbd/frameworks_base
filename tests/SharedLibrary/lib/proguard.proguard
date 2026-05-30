@@ -1,0 +1,9 @@
+-keepparameternames
+-keepattributes Exceptions,InnerClasses,Signature,Deprecated,
+                SourceFile,LineNumberTable,EnclosingMethod,
+                RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,
+                RuntimeVisibleTypeAnnotations,AnnotationDefault
+
+-keep public class * {
+    public protected *;
+}

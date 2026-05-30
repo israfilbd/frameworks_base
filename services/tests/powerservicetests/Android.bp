@@ -1,0 +1,59 @@
+package {
+    default_team: "trendy_team_powermanager_framework",
+    // See: http://go/android-license-faq
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+android_test {
+    name: "PowerServiceTests",
+
+    srcs: [
+        "src/**/*.java",
+    ],
+
+    static_libs: [
+        "TestParameterInjector",
+        "flag-junit",
+        "frameworks-base-testutils",
+        "perfetto_trace_java_protos",
+        "platform-compat-test-rules",
+        "platform-test-annotations",
+        "services.core",
+        "servicestests-utils",
+        "testables",
+        "truth",
+        "truth-liteproto-extension",
+    ],
+
+    libs: [
+        "android.test.mock.stubs.system",
+    ],
+
+    defaults: [
+        "modules-utils-testable-device-config-defaults",
+    ],
+
+    platform_apis: true,
+    test_suites: [
+        "automotive-tests",
+        "device-tests",
+    ],
+
+    certificate: "platform",
+
+    dxflags: ["--multi-dex"],
+
+    optimize: {
+        enabled: false,
+    },
+}
+
+test_module_config {
+    name: "PowerServiceTests_server_power",
+    base: "PowerServiceTests",
+    test_suites: [
+        "automotive-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.server.power"],
+}

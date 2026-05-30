@@ -1,0 +1,10 @@
+package: "android.hardware.radio"
+container: "system"
+
+flag {
+    name: "hd_radio_emergency_alert_system"
+    is_exported: true
+    namespace: "car_framework"
+    description: "Feature flag for HD radio emergency alert system support"
+    bug: "361348719"
+}

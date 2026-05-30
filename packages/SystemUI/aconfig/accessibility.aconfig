@@ -1,0 +1,89 @@
+package: "com.android.systemui"
+container: "system"
+
+# NOTE: Keep alphabetized to help limit merge conflicts from multiple simultaneous editors.
+
+flag {
+    name: "cleanup_instances_when_display_removed"
+    namespace: "accessibility"
+    description: "When a specific display is removed, cleanup the cached instances related to it."
+    bug: "437868750"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "floating_menu_drag_to_hide"
+    namespace: "accessibility"
+    description: "Allows users to hide the FAB then use notification to dismiss or bring it back."
+    bug: "298718415"
+}
+
+flag {
+    name: "floating_menu_hearing_device_status_icon"
+    namespace: "accessibility"
+    description: "Update hearing device icon in floating menu according to the connection status."
+    bug: "357882387"
+}
+
+flag {
+    name: "floating_menu_radii_animation"
+    namespace: "accessibility"
+    description: "Animates the floating menu's transition between curved and jagged edges."
+    bug: "281140482"
+}
+
+flag {
+    name: "hearing_devices_dialog_related_tools"
+    namespace: "accessibility"
+    description: "Shows the related tools for hearing devices dialog."
+    bug: "341648471"
+    metadata {
+      purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "privacy_dot_live_region"
+    namespace: "accessibility"
+    description: "Exposes the status bar privacy dot as a live region so it is announced when it appears."
+    bug: "197201744"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "redesign_magnification_window_size"
+    namespace: "accessibility"
+    description: "Redesigns the window magnification magnifier sizes provided in the settings panel."
+    bug: "288056772"
+}
+
+flag {
+    name: "status_bar_region_sampling"
+    namespace: "accessibility"
+    description: "Uses region sampling in the Status Bar to avoid contrast bugs in the status bar when expanded dark theme is enabled"
+    bug: "379760792"
+}
+
+flag {
+    name: "update_window_magnifier_bottom_boundary_with_mouse"
+    namespace: "accessibility"
+    description:  "Update the window magnification behavior with bottom gesture insets with mouse."
+    bug: "419389153"
+    metadata {
+      purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "window_magnification_move_with_mouse_on_edge"
+    namespace: "accessibility"
+    description: "Allows window magnification to be moved by mouse further on the edge of the screen."
+    bug: "420776720"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.settingslib.service">
+
+  <uses-sdk android:minSdkVersion="21" />
+
+  <application>
+    <!-- Service to expose Preference Metadata and Get/Set functionality -->
+    <service
+        android:name="com.android.settingslib.service.SettingsPreferenceService"
+        android:exported="true"
+        android:featureFlag="com.android.settingslib.flags.settings_catalyst"
+        android:permission="android.permission.READ_SYSTEM_PREFERENCES">
+      <intent-filter>
+        <action android:name="android.service.settings.preferences.action.PREFERENCE_SERVICE" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>

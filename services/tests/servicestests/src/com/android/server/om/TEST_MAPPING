@@ -1,0 +1,10 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksServicesTests_om"
+    },
+    {
+      "name": "PackageManagerServiceHostTests_test_overlayactorvisibilitytest"
+    }
+  ]
+}

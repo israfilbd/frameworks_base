@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2017 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="4470785958457506021">"কম্পেনিয়ন ডিভাইচ মেনেজাৰ"</string>
+    <string name="confirmation_title" msgid="2244241995958340998">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; এপ্‌টোক &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt; এক্সেছ কৰিবলৈ দিবনে?"</string>
+    <string name="message_discovery_soft_timeout" msgid="473346859407859161">"এই <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>টোৰ <xliff:g id="DISCOVERY_METHOD">%2$s</xliff:g> অন হৈ থকাটো নিশ্চিত কৰক আৰু আপোনাৰ <xliff:g id="PROFILE_NAME">%3$s</xliff:g> আশে-পাশে ৰাখক।"</string>
+    <string name="message_discovery_hard_timeout" msgid="677514663495711424">"কোনো ডিভাইচ বিচাৰি পোৱা নগ’ল। অনুগ্ৰহ কৰি পাছত পুনৰ চেষ্টা কৰক।"</string>
+    <string name="discovery_bluetooth" msgid="5693557668470016164">"ব্লুটুথ"</string>
+    <string name="discovery_wifi" msgid="1551782459721758773">"ৱাই-ফাই"</string>
+    <string name="discovery_mixed" msgid="7071466134150760127">"ব্লুটুথ আৰু ৱাই-ফাই"</string>
+    <string name="profile_name_watch" msgid="576290739483672360">"ঘড়ী"</string>
+    <string name="chooser_title_non_profile" msgid="6035023914517087400">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;এ পৰিচালনা কৰিবলগীয়া এটা ডিভাইচ বাছনি কৰক"</string>
+    <string name="chooser_title" msgid="2235819929238267637">"ছেট আপ কৰিবলৈ এটা <xliff:g id="PROFILE_NAME">%1$s</xliff:g> বাছনি কৰক"</string>
+    <string name="single_device_title" msgid="4199861437545438606">"কোনো <xliff:g id="PROFILE_NAME">%1$s</xliff:g> বিচাৰি থকা হৈছে"</string>
+    <string name="summary_watch" msgid="8134580124808507407">"এই এপ্‌টোক ফ’ন কৰা লোকৰ নামৰ দৰে তথ্য ছিংক কৰিবলৈ আৰু আপোনাৰ <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>ত এই অনুমতিসমূহ এক্সেছ কৰিবলৈ অনুমতি দিয়া হ’ব"</string>
+    <string name="profile_name_fitness_tracker" msgid="3107192493390199691">"ফিটনেছ ট্ৰেকাৰ"</string>
+    <string name="confirmation_title_glasses" msgid="8288346850537727333">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;ক &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt; পৰিচালনা কৰিবলৈ দিবনে?"</string>
+    <string name="profile_name_glasses" msgid="3506504967216601277">"ডিভাইচ"</string>
+    <string name="summary_glasses" msgid="5469208629679579157">"এই এপ্‌টোক আপোনাৰ <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>ত এই অনুমতিসমূহ এক্সেছ কৰিবলৈ অনুমতি দিয়া হ’ব"</string>
+    <string name="profile_name_medical" msgid="5617160509499466400">"চিকিৎসা সম্পৰ্কীয় ডিভাইচ"</string>
+    <string name="title_app_streaming" msgid="237666000400427614">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;ক আপোনাৰ <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> আৰু &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;ৰ মাজত এপ্ আৰু ছিষ্টেমৰ সুবিধাসমূহ ষ্ট্ৰীম কৰিবলৈ দিবনে?"</string>
+    <string name="summary_app_streaming" msgid="8346968726357732862">"<xliff:g id="APP_NAME">%1$s</xliff:g>ক তলত দিয়া অনুমতিসমূহ দিয়া হ’ব:"</string>
+    <string name="summary_app_streaming_legacy" msgid="8994180646987541606">"<xliff:g id="APP_NAME_0">%1$s</xliff:g>এ আপোনাৰ <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>ত দৃশ্যমান বা প্লে’ কৰা অডিঅ’, ফট’ পৰিশোধৰ তথ্য, পাছৱৰ্ড আৰু বাৰ্তাকে ধৰি যিকোনো বস্তু এক্সেছ কৰিব পাৰিব।&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_1">%1$s</xliff:g>এ আপুনি এই অনুমতিৰ এক্সেছ আঁতৰাই নিদিয়া পৰ্যন্ত <xliff:g id="DEVICE_NAME">%3$s</xliff:g>ত এপ্‌সমূহ ষ্ট্ৰীম কৰিব পাৰিব।"</string>
+    <string name="helper_summary_app_streaming" msgid="160149899100957545">"<xliff:g id="APP_NAME">%1$s</xliff:g>এ আপোনাৰ ডিভাইচসমূহৰ মাজত এপ্ আৰু ছিষ্টেমৰ সুবিধাসমূহ ষ্ট্ৰীম কৰিবলৈ <xliff:g id="DEVICE_NAME">%2$s</xliff:g>ৰ হৈ অনুমতি বিচাৰি অনুৰোধ জনাইছে"</string>
+    <string name="title_automotive_projection" msgid="3296005598978412847"></string>
+    <string name="summary_automotive_projection" msgid="8683801274662496164"></string>
+    <string name="title_computer" msgid="5040395223341777259">"&lt;strong&gt;<xliff:g id="DISPLAY_NAME">%3$s</xliff:g>&lt;/strong&gt;ক আপোনাৰ <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>ৰ পৰা এই তথ্যখিনি এক্সেছ কৰিবলৈ দিয়ক"</string>
+    <string name="helper_summary_computer" msgid="2298803016482139668">"<xliff:g id="APP_NAME">%1$s</xliff:g>এ আপোনাৰ <xliff:g id="DEVICE_NAME">%2$s</xliff:g>ৰ হৈ আপোনাৰ <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>ৰ ফট’, মিডিয়া আৰু জাননী এক্সেছ কৰাৰ বাবে অনুমতি বিচাৰি অনুৰোধ জনাইছে"</string>
+    <string name="title_nearby_device_streaming" msgid="5342768208699657581">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;ক আপোনাৰ <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> আৰু &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;ৰ মাজত এপ্ আৰু ছিষ্টেমৰ সুবিধাসমূহ ষ্ট্ৰীম কৰিবলৈ দিবনে?"</string>
+    <string name="summary_nearby_device_streaming" msgid="7940640272770197219">"<xliff:g id="APP_NAME">%1$s</xliff:g>ক তলত দিয়া অনুমতিসমূহ দিয়া হ’ব:"</string>
+    <string name="summary_nearby_device_streaming_legacy" msgid="4306665203887990326">"<xliff:g id="APP_NAME_0">%1$s</xliff:g>এ <xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>ত দৃশ্যমান হোৱা বা প্লে’ কৰা অডিঅ’, ফট’ পাছৱৰ্ড আৰু বাৰ্তাকে ধৰি যিকোনো বস্তু এক্সেছ কৰিব পাৰিব।&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_2">%1$s</xliff:g>এ আপুনি এই অনুমতিৰ এক্সেছ আঁতৰাই নিদিয়া পৰ্যন্ত <xliff:g id="DEVICE_NAME_3">%3$s</xliff:g>ত এপ্‌সমূহ ষ্ট্ৰীম কৰিব পাৰিব।"</string>
+    <string name="helper_summary_nearby_device_streaming" msgid="4712712177819370967">"<xliff:g id="APP_NAME">%1$s</xliff:g>এ আপোনাৰ <xliff:g id="DEVICE_NAME">%2$s</xliff:g>ৰ হৈ আপোনাৰ <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>ৰ পৰা এপ্‌সমূহ ষ্ট্ৰীম কৰিবলৈ অনুমতি বিচাৰি অনুৰোধ জনাইছে"</string>
+    <string name="title_virtual_device" msgid="6556338763070329395">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;ক আপোনাৰ <xliff:g id="DEVICE_TYPE">%3$s</xliff:g> আৰু &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;ৰ মাজত অডিঅ’ আৰু ছিষ্টেমৰ সুবিধাসমূহ ষ্ট্ৰীম কৰিবলৈ দিবনে?"</string>
+    <string name="summary_virtual_device" msgid="1062189396947962635">"<xliff:g id="APP_NAME">%2$s</xliff:g>ক তলত দিয়া অনুমতিসমূহ দিয়া হ’ব:"</string>
+    <string name="profile_name_generic" msgid="6851028682723034988">"ডিভাইচ"</string>
+    <string name="summary_generic" msgid="1761976003668044801">"এই এপ্‌টোৱে আপোনাৰ ফ’ন আৰু বাছনি কৰা ডিভাইচটোৰ মাজত কল কৰোঁতাৰ নামৰ দৰে তথ্য ছিংক কৰিব পাৰিব"</string>
+    <string name="consent_yes" msgid="8344487259618762872">"অনুমতি দিয়ক"</string>
+    <string name="consent_no" msgid="2640796915611404382">"অনুমতি নিদিব"</string>
+    <string name="consent_cancel" msgid="5655005528379285841">"বাতিল কৰক"</string>
+    <string name="consent_back" msgid="2560683030046918882">"উভতি যাওক"</string>
+    <string name="downward_arrow_action" msgid="2327165938832076333">"সূচীখনত তললৈ স্ক্ৰ’ল কৰক"</string>
+    <string name="downward_arrow" msgid="2292427714411156088">"তলমুৱা কাঁড়"</string>
+    <string name="permission_expand" msgid="893185038020887411">"<xliff:g id="PERMISSION_TYPE">%1$s</xliff:g> বিস্তাৰ কৰক"</string>
+    <string name="permission_collapse" msgid="3320833884220844084">"<xliff:g id="PERMISSION_TYPE">%1$s</xliff:g> সংকোচন কৰক"</string>
+    <string name="permission_sync_confirmation_title" msgid="4409622174437248702">"এপ্‌সমূহক &lt;strong&gt;<xliff:g id="PRIMARY_DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;ত দিয়াৰ দৰে &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME">%1$s</xliff:g>&lt;/strong&gt;তো একে অনুমতি প্ৰদান কৰিবনে?"</string>
+    <string name="permission_sync_summary" msgid="765497944331294275">"এইটোত &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_0">%1$s</xliff:g>&lt;/strong&gt;ৰ &lt;strong&gt;মাইক্ৰ’ফ’ন&lt;/strong&gt;, &lt;strong&gt;কেমেৰা&lt;/strong&gt;, আৰু &lt;strong&gt;অৱস্থানৰ এক্সেছ&lt;/strong&gt;, আৰু অন্য সংবেদনশীল অনুমতিসমূহ অন্তৰ্ভুক্ত হ’ব পাৰে। &lt;br/&gt;&lt;br/&gt;আপুনি যিকোনো সময়তে &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_1">%1$s</xliff:g>&lt;/strong&gt;ত থকা আপোনাৰ ছেটিঙত এই অনুমতিসমূহ সলনি কৰিব পাৰে।"</string>
+    <string name="vendor_header_button_description" msgid="7994879208461111473">"অধিক তথ্য"</string>
+    <string name="permission_phone" msgid="2661081078692784919">"ফ’ন"</string>
+    <string name="permission_sms" msgid="6337141296535774786">"এছএমএছ"</string>
+    <string name="permission_contacts" msgid="3858319347208004438">"সম্পৰ্ক"</string>
+    <string name="permission_calendar" msgid="6805668388691290395">"কেলেণ্ডাৰ"</string>
+    <string name="permission_microphone" msgid="2152206421428732949">"মাইক্ৰ’ফ’ন"</string>
+    <string name="permission_call_logs" msgid="5546761417694586041">"কল লগ"</string>
+    <string name="permission_nearby_devices" msgid="7530973297737123481">"নিকটৱৰ্তী ডিভাইচ"</string>
+    <string name="permission_media_routing_control" msgid="5498639511586715253">"মিডিয়া আউটপুট সলনি কৰক"</string>
+    <string name="permission_storage" msgid="6831099350839392343">"ফট’ আৰু মিডিয়া"</string>
+    <string name="permission_notifications" msgid="4099418516590632909">"জাননী"</string>
+    <string name="permission_create_virtual_device" msgid="1102905050922460040">"আপোনাৰ <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>ত ডেটা ষ্ট্ৰীম কৰক"</string>
+    <string name="permission_add_mirror_display" msgid="3743433250535606288">"আপোনাৰ স্ক্ৰীন মিৰ’ৰ কৰক"</string>
+    <string name="permission_add_trusted_display" msgid="9052824856626276723">"এপ্‌ ষ্ট্ৰীম কৰক"</string>
+    <string name="permission_schedule_exact_alarm" msgid="5680932535987512225">"এলাৰ্ম আৰু ৰিমাইণ্ডাৰ ছেট কৰক"</string>
+    <string name="permission_bypass_dnd" msgid="1241123166903040347">"অসুবিধা নিদিবৰ ছেটিং বাইপাছ কৰক"</string>
+    <string name="permission_phone_summary" msgid="8246321093970051702">"ফ’ন কল কৰক আৰু সেয়া পৰিচলনা কৰক"</string>
+    <string name="permission_call_logs_summary" msgid="7545243592757693321">"ফ’নৰ কল লগ পঢ়ক আৰু লিখক"</string>
+    <string name="permission_sms_summary" msgid="8499509535410068616">"এছএমএছ বার্তাবোৰ প্ৰেৰণ কৰক আৰু চাওক"</string>
+    <string name="permission_contacts_summary" msgid="2840800622763086808">"আপোনাৰ সম্পৰ্কসূচী এক্সেছ কৰক"</string>
+    <string name="permission_calendar_summary" msgid="8430353935747336165">"আপোনাৰ কেলেণ্ডাৰ এক্সেছ কৰক"</string>
+    <string name="permission_microphone_summary" msgid="4862628553869973259">"অডিঅ’ ৰেকৰ্ড কৰক"</string>
+    <string name="permission_nearby_devices_summary" msgid="1306752848196464817">"নিকটৱৰ্তী ডিভাইচসমূহ বিচাৰক, সেইসমূহৰ সৈতে সংযোগ কৰক আৰু সেইসমূহৰ প্ৰাসংগিক অৱস্থান নিৰ্ধাৰণ কৰক"</string>
+    <string name="permission_notification_listener_access_summary" msgid="7856071768185367749">"সম্পৰ্কসূচী, বাৰ্তা আৰু ফট’ৰ দৰে তথ্যকে ধৰি আটাইবোৰ জাননী পঢ়ক"</string>
+    <string name="permission_notifications_summary" msgid="6819393427371255636">"• সম্পৰ্কসূচী, বাৰ্তা আৰু ফট’ৰ দৰে তথ্যকে ধৰি আটাইবোৰ জাননী পঢ়ক&lt;br/&gt;• আপোনালৈ জাননী পঠিয়াওক&lt;br/&gt;&lt;br/&gt;আপুনি যিকোনো সময়তে ছেটিং &gt; জাননীলৈ গৈ এই এপ্‌টোৰ জাননী পঢ়া আৰু পঠিওৱাৰ সক্ষমতা পৰিচালনা কৰিব পাৰে।"</string>
+    <string name="permission_storage_summary" msgid="3918240895519506417"></string>
+    <string name="permission_post_notifications_summary" msgid="1099188848900200165">"আপোনালৈ জাননী প্ৰেৰণ কৰা"</string>
+    <string name="permission_create_virtual_device_summary" msgid="3570256456647725172">"&lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;ৰ মাইক্ৰ’ফ’ন, কেমেৰা আৰু অন্য ছেন্সৰৰ ডেটা আপোনাৰ <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>ত ষ্ট্ৰীম কৰক।"</string>
+    <string name="permission_add_mirror_display_summary" msgid="1385423940454941534">"আপোনাৰ <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g>ৰ স্ক্ৰীন &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;ত ৰেকৰ্ড, কাষ্ট বা শ্বেয়াৰ কৰক।&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>এ আপোনাৰ <xliff:g id="DEVICE_TYPE_1">%2$s</xliff:g>ত দৃশ্যমান বা প্লে’ কৰা যিকোনো সমল এক্সেছ কৰিব পাৰিব, য’ত অডিঅ’, ফট’, পৰিশোধৰ তথ্য, পাছৱৰ্ড আৰু বাৰ্তা অন্তৰ্ভুক্ত।"</string>
+    <string name="permission_add_trusted_display_summary" msgid="7399955172055281447">"আপোনাৰ <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g>ৰ এপ্‌ &lt;strong&gt;<xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>&lt;/strong&gt;ত ষ্ট্ৰীম কৰক।&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>এ <xliff:g id="DEVICE_NAME_2">%3$s</xliff:g>ত দৃশ্যমান বা প্লে’ কৰা হোৱা যিকোনো সমল আপোনাৰ <xliff:g id="DEVICE_TYPE_3">%2$s</xliff:g>লক কৰি থোৱা থাকিলেও এক্সেছ কৰিব পাৰিব, য’ত অডিঅ’, ফট’, পৰিশোধৰ তথ্য, পাছৱৰ্ড আৰু বাৰ্তা অন্তৰ্ভুক্ত।"</string>
+    <string name="permission_media_routing_control_summary" msgid="2714631092321412250">"উপলব্ধ ডিভাইচৰ সূচী এখন এক্সেছ কৰক আৰু কোনটোৱে ষ্ট্ৰীম কৰে অথবা অন্য এপৰ পৰা অডিঅ’ অথবা ভিডিঅ’ কাষ্ট কৰে সেয়া নিয়ন্ত্ৰণ কৰক"</string>
+    <string name="permission_schedule_exact_alarm_summary" msgid="5938321911309800377"></string>
+    <string name="permission_bypass_dnd_summary" msgid="6221709271927387626"></string>
+    <string name="device_type" product="default" msgid="8268703872070046263">"ফ’ন"</string>
+    <string name="device_type" product="tablet" msgid="5038791954983067774">"টেবলেট"</string>
+    <string name="device_type" product="tv" msgid="5355611506659405636">"টিভি"</string>
+    <string name="device_type" product="device" msgid="1526125965802507189">"ডিভাইচ"</string>
+</resources>

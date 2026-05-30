@@ -1,0 +1,327 @@
+/*
+ * Copyright (C) 2016 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.power.stats;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import android.annotation.NonNull;
+import android.app.usage.NetworkStatsManager;
+import android.net.NetworkStats;
+import android.os.ConditionVariable;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.SparseArray;
+
+import com.android.internal.annotations.GuardedBy;
+import com.android.internal.os.BatteryStatsHistory;
+import com.android.internal.os.Clock;
+import com.android.internal.os.CpuScalingPolicies;
+import com.android.internal.os.KernelCpuSpeedReader;
+import com.android.internal.os.KernelCpuUidTimeReader.KernelCpuUidActiveTimeReader;
+import com.android.internal.os.KernelCpuUidTimeReader.KernelCpuUidClusterTimeReader;
+import com.android.internal.os.KernelCpuUidTimeReader.KernelCpuUidFreqTimeReader;
+import com.android.internal.os.KernelCpuUidTimeReader.KernelCpuUidUserSysTimeReader;
+import com.android.internal.os.KernelSingleUidTimeReader;
+import com.android.internal.os.MonotonicClock;
+import com.android.internal.os.PowerProfile;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Queue;
+
+/**
+ * Mocks a BatteryStatsImpl object.
+ */
+public class MockBatteryStatsImpl extends BatteryStatsImpl {
+    public static final BatteryHistoryDirectory.Compressor PASS_THROUGH_COMPRESSOR =
+            new BatteryHistoryDirectory.Compressor() {
+                @Override
+                public void compress(OutputStream stream, byte[] data) throws IOException {
+                    stream.write(data);
+                }
+
+                @Override
+                public void uncompress(byte[] data, InputStream stream) throws IOException {
+                    readFully(data, stream);
+                }
+            };
+    public boolean mForceOnBattery;
+    // The mNetworkStats will be used for both wifi and mobile categories
+    private NetworkStats mNetworkStats;
+    private DummyExternalStatsSync mExternalStatsSync = new DummyExternalStatsSync();
+    public static final BatteryStatsConfig DEFAULT_CONFIG =
+            new BatteryStatsConfig.Builder().build();
+
+    MockBatteryStatsImpl() {
+        this(new MockClock());
+    }
+
+    MockBatteryStatsImpl(Clock clock) {
+        this(clock, null);
+    }
+
+    MockBatteryStatsImpl(Clock clock, File historyDirectory) {
+        this(clock, historyDirectory, new Handler(Looper.getMainLooper()), mockPowerProfile());
+    }
+
+    MockBatteryStatsImpl(Clock clock, File historyDirectory, Handler handler,
+            PowerProfile powerProfile) {
+        this(DEFAULT_CONFIG, clock, new MonotonicClock(0, clock), historyDirectory, handler,
+                powerProfile, new PowerStatsUidResolver());
+    }
+
+    MockBatteryStatsImpl(BatteryStatsConfig config, Clock clock, File historyDirectory,
+            Handler handler, PowerStatsUidResolver powerStatsUidResolver) {
+        this(config, clock, new MonotonicClock(0, clock), historyDirectory, handler,
+                mockPowerProfile(), powerStatsUidResolver);
+    }
+
+    MockBatteryStatsImpl(BatteryStatsConfig config, Clock clock, MonotonicClock monotonicClock,
+            File historyDirectory, Handler handler, PowerProfile powerProfile,
+            PowerStatsUidResolver powerStatsUidResolver) {
+        super(config, clock, monotonicClock, historyDirectory,
+                historyDirectory != null ? new BatteryHistoryDirectory(
+                        new File(historyDirectory, "battery-history"),
+                        config.getMaxHistorySizeBytes(), PASS_THROUGH_COMPRESSOR) : null,
+                handler,
+                mock(PlatformIdleStateCallback.class), mock(EnergyStatsRetriever.class),
+                mock(UserInfoProvider.class), powerProfile,
+                new CpuScalingPolicies(new SparseArray<>(), new SparseArray<>()),
+                powerStatsUidResolver, mock(FrameworkStatsLogger.class),
+                mock(BatteryStatsHistory.TraceDelegate.class),
+                mock(BatteryStatsHistory.EventLogger.class));
+        mConstants.MAX_HISTORY_BUFFER = 128 * 1024;
+        mConstants.onChange();
+
+        setExternalStatsSyncLocked(mExternalStatsSync);
+        informThatAllExternalStatsAreFlushed();
+
+        mHandler = handler;
+
+        mCpuUidFreqTimeReader = mock(KernelCpuUidFreqTimeReader.class);
+        mKernelWakelockReader = null;
+    }
+
+    private static PowerProfile mockPowerProfile() {
+        PowerProfile powerProfile = mock(PowerProfile.class);
+        when(powerProfile.getNumDisplays()).thenReturn(1);
+        return powerProfile;
+    }
+
+    public void awaitCompletion() {
+        ConditionVariable done = new ConditionVariable();
+        mHandler.post(done::open);
+        done.block();
+    }
+
+    public TimeBase getOnBatteryTimeBase() {
+        return mOnBatteryTimeBase;
+    }
+
+    public TimeBase getOnBatteryScreenOffTimeBase() {
+        return mOnBatteryScreenOffTimeBase;
+    }
+
+    public int getScreenState() {
+        return mScreenState;
+    }
+
+    public Queue<UidToRemove> getPendingRemovedUids() {
+        return mPendingRemovedUids;
+    }
+
+    public boolean isOnBattery() {
+        return mForceOnBattery ? true : super.isOnBattery();
+    }
+
+    public TimeBase getOnBatteryBackgroundTimeBase(int uid) {
+        return getUidStatsLocked(uid).mOnBatteryBackgroundTimeBase;
+    }
+
+    public TimeBase getOnBatteryScreenOffBackgroundTimeBase(int uid) {
+        return getUidStatsLocked(uid).mOnBatteryScreenOffBackgroundTimeBase;
+    }
+
+    public long getMobileRadioPowerStateUpdateRateLimit() {
+        return MOBILE_RADIO_POWER_STATE_UPDATE_FREQ_MS;
+    }
+
+    public MockBatteryStatsImpl setNetworkStats(NetworkStats networkStats) {
+        mNetworkStats = networkStats;
+        return this;
+    }
+
+    @Override
+    protected NetworkStats readMobileNetworkStatsLocked(
+            @NonNull NetworkStatsManager networkStatsManager) {
+        return mNetworkStats;
+    }
+
+    @Override
+    protected NetworkStats readWifiNetworkStatsLocked(
+            @NonNull NetworkStatsManager networkStatsManager) {
+        return mNetworkStats;
+    }
+
+    public MockBatteryStatsImpl setTestCpuScalingPolicies() {
+        SparseArray<int[]> cpusByPolicy = new SparseArray<>();
+        cpusByPolicy.put(0, new int[]{0});
+        SparseArray<int[]> freqsByPolicy = new SparseArray<>();
+        freqsByPolicy.put(0, new int[]{100, 200, 300});
+
+        setCpuScalingPolicies(new CpuScalingPolicies(freqsByPolicy, freqsByPolicy));
+        return this;
+    }
+
+    public MockBatteryStatsImpl setCpuScalingPolicies(CpuScalingPolicies cpuScalingPolicies) {
+        mCpuScalingPolicies = cpuScalingPolicies;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelCpuUidFreqTimeReader(KernelCpuUidFreqTimeReader reader) {
+        mCpuUidFreqTimeReader = reader;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelCpuUidActiveTimeReader(
+            KernelCpuUidActiveTimeReader reader) {
+        mCpuUidActiveTimeReader = reader;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelCpuUidClusterTimeReader(
+            KernelCpuUidClusterTimeReader reader) {
+        mCpuUidClusterTimeReader = reader;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelCpuUidUserSysTimeReader(
+            KernelCpuUidUserSysTimeReader reader) {
+        mCpuUidUserSysTimeReader = reader;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelSingleUidTimeReader(KernelSingleUidTimeReader reader) {
+        mKernelSingleUidTimeReader = reader;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelCpuSpeedReaders(KernelCpuSpeedReader[] readers) {
+        mKernelCpuSpeedReaders = readers;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setKernelWakelockReader(KernelWakelockReader reader) {
+        mKernelWakelockReader = reader;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setUserInfoProvider(UserInfoProvider provider) {
+        mUserInfoProvider = provider;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setPartialTimers(ArrayList<StopwatchTimer> partialTimers) {
+        mPartialTimers = partialTimers;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setLastPartialTimers(ArrayList<StopwatchTimer> lastPartialTimers) {
+        mLastPartialTimers = lastPartialTimers;
+        return this;
+    }
+
+    public MockBatteryStatsImpl setOnBatteryInternal(boolean onBatteryInternal) {
+        mOnBatteryInternal = onBatteryInternal;
+        return this;
+    }
+
+    @GuardedBy("this")
+    public MockBatteryStatsImpl setPerUidModemModel(int perUidModemModel) {
+        mConstants.PER_UID_MODEM_MODEL = perUidModemModel;
+        mConstants.onChange();
+        return this;
+    }
+
+    public MockBatteryStatsImpl setConsumedEnergyRetriever(
+            PowerStatsCollector.ConsumedEnergyRetriever retriever) {
+        mConsumedEnergyRetriever = retriever;
+        return this;
+    }
+
+    public int getAndClearExternalStatsSyncFlags() {
+        final int flags = mExternalStatsSync.flags;
+        mExternalStatsSync.flags = 0;
+        return flags;
+    }
+
+    public void setDummyExternalStatsSync(DummyExternalStatsSync externalStatsSync) {
+        mExternalStatsSync = externalStatsSync;
+        setExternalStatsSyncLocked(mExternalStatsSync);
+    }
+
+    @Override
+    public void writeSyncLocked() {
+    }
+
+    @Override
+    protected void updateBatteryPropertiesLocked() {
+    }
+
+    @Override
+    protected NetworkStats networkStatsDelta(NetworkStats stats, NetworkStats oldStats) {
+        return NetworkStatsTestUtils.networkStatsDelta(stats, oldStats);
+    }
+
+    public static class DummyExternalStatsSync implements ExternalStatsSync {
+        public int flags = 0;
+
+        @Override
+        public void scheduleSync(String reason, int flags) {
+        }
+
+        @Override
+        public void scheduleCleanupDueToRemovedUser(int userId) {
+        }
+
+        @Override
+        public void scheduleCpuSyncDueToRemovedUid(int uid) {
+        }
+
+        @Override
+        public void scheduleSyncDueToScreenStateChange(int flag, boolean onBattery,
+                boolean onBatteryScreenOff, int screenState, int[] perDisplayScreenStates) {
+            flags |= flag;
+        }
+
+        @Override
+        public void scheduleCpuSyncDueToWakelockChange(long delayMillis) {
+        }
+
+        @Override
+        public void cancelCpuSyncDueToWakelockChange() {
+        }
+
+        @Override
+        public void scheduleSyncDueToProcessStateChange(int flags, long delayMillis) {
+        }
+    }
+}

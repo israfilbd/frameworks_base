@@ -1,0 +1,104 @@
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+
+    // OWNER: g/ravenwood
+    // Bug component: 25698
+    default_team: "trendy_team_ravenwood",
+}
+
+// Visibility only for ravenwood prototype uses.
+genrule_defaults {
+    name: "ravenwood-internal-only-visibility-genrule",
+    visibility: [
+        ":__subpackages__",
+        "//frameworks/base",
+        "//frameworks/base/ravenwood:__subpackages__",
+    ],
+}
+
+// Visibility only for ravenwood prototype uses.
+java_defaults {
+    name: "ravenwood-internal-only-visibility-java",
+    visibility: [
+        ":__subpackages__",
+        "//frameworks/base",
+        "//frameworks/base/ravenwood:__subpackages__",
+    ],
+}
+
+// Visibility only for ravenwood prototype uses.
+filegroup_defaults {
+    name: "ravenwood-internal-only-visibility-filegroup",
+    visibility: [
+        ":__subpackages__",
+        "//frameworks/base",
+        "//frameworks/base/ravenwood:__subpackages__",
+    ],
+}
+
+// This library contains the standard hoststubgen annotations.
+// This is only for the prototype. The productionized version is "ravenwood-annotations".
+java_library {
+    name: "hoststubgen-annotations",
+    defaults: ["ravenwood-internal-only-visibility-java"],
+    srcs: [
+        "annotations-src/**/*.java",
+    ],
+    host_supported: true,
+
+    sdk_version: "core_current",
+}
+
+// This library contains helper classes used in the host side test environment at runtime.
+java_library {
+    name: "hoststubgen-helper-runtime",
+    defaults: ["ravenwood-internal-only-visibility-java"],
+    srcs: ["helper-runtime-src/**/*.java"],
+    libs: ["junit"],
+    static_libs: ["guava"],
+    sdk_version: "core_current",
+    jarjar_rules: "jarjar-rules.txt",
+    host_supported: true,
+}
+
+// For sharing the code with other tools
+java_library_host {
+    name: "hoststubgen-lib",
+    defaults: ["ravenwood-internal-only-visibility-java"],
+    srcs: ["lib/**/*.kt"],
+    static_libs: [
+        "hoststubgen-helper-runtime",
+        "junit",
+        "ow2-asm",
+        "ow2-asm-analysis",
+        "ow2-asm-commons",
+        "ow2-asm-tree",
+        "ow2-asm-util",
+        "apache-commons-compress",
+    ],
+}
+
+// Host-side stub generator tool.
+java_binary_host {
+    name: "hoststubgen",
+    main_class: "com.android.hoststubgen.HostStubGenMain",
+    srcs: ["src/**/*.kt"],
+    static_libs: ["hoststubgen-lib"],
+    visibility: ["//visibility:public"],
+}
+
+java_test_host {
+    name: "hoststubgentest",
+    srcs: ["test/**/*.kt"],
+    static_libs: [
+        "hoststubgen",
+        "truth",
+    ],
+    test_suites: ["general-tests"],
+    visibility: ["//visibility:private"],
+}

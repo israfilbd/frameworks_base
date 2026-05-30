@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+-->
+<resources>
+
+    <!-- Default line spacing multiplier between hours and minutes of the keyguard clock -->
+    <item name="keyguard_clock_line_spacing_scale" type="dimen" format="float">.7</item>
+
+    <!-- Pocket Mode -->
+    <dimen name="pocket_mode_illustration_width">175dp</dimen>
+    <dimen name="pocket_mode_illustration_height">350dp</dimen>
+    <dimen name="pocket_mode_illustration_margin_top">56dp</dimen>
+    <dimen name="pocket_mode_title_size">24sp</dimen>
+    <dimen name="pocket_mode_title_margin_horizontal">56dp</dimen>
+    <dimen name="pocket_mode_instructions_container_margin_horizontal">24dp</dimen>
+    <dimen name="pocket_mode_instructions_container_margin_top">56dp</dimen>
+    <dimen name="pocket_mode_instructions_title_size">16sp</dimen>
+    <dimen name="pocket_mode_instructions_steps_margin_top">8dp</dimen>
+    <dimen name="pocket_mode_instructions_step_size">14sp</dimen>
+    <dimen name="pocket_mode_instructions_step_margin_top">8dp</dimen>
+
+    <!-- Custom clocks -->
+    <dimen name="presentation_clock_text_size">50dp</dimen>
+    <dimen name="large_clock_text_size">150dp</dimen>
+    <dimen name="small_clock_text_size">86dp</dimen>
+</resources>

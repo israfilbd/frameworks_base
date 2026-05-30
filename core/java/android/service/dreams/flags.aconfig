@@ -1,0 +1,163 @@
+package: "android.service.dreams"
+container: "system"
+
+flag {
+  name: "dream_overlay_host"
+  namespace: "communal"
+  description: "This flag enables using a host to handle displaying a dream's overlay rather than "
+      "relying on the dream's window"
+  bug: "291990564"
+}
+
+flag {
+  name: "dream_handles_confirm_keys"
+  namespace: "communal"
+  description: "This flag enables dreams processing confirm keys to show the bouncer or dismiss "
+       "the keyguard"
+  bug: "326975875"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}
+
+flag {
+  name: "dream_wake_redirect"
+  namespace: "systemui"
+  description: "This flag enables using a host to handle displaying a dream's overlay rather than "
+      "relying on the dream's window"
+  bug: "334083490"
+}
+
+flag {
+    name: "dismiss_dream_on_keyguard_dismiss"
+    namespace: "systemui"
+    description: "Dismisses the dream in the keyguard-going-away transition, preventing it from being visible"
+    bug: "333829441"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+  name: "dream_handles_being_obscured"
+  namespace: "communal"
+  description: "This flag enables the ability for dreams to handle being obscured"
+  bug: "337302237"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}
+
+flag {
+    name: "start_and_stop_dozing_in_background"
+    namespace: "systemui"
+    description: "Move the start-dozing and stop-dozing operation to the background"
+    bug: "330287187"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "publish_preview_state_to_overlay"
+    namespace: "systemui"
+    description: "send preview information from dream to overlay"
+    bug: "333734282"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "cleanup_dream_settings_on_uninstall"
+    namespace: "systemui"
+    description: "Cleans up dream settings if dream package is uninstalled."
+    bug: "338210427"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "allow_dream_when_postured"
+    namespace: "systemui"
+    description: "Allow dreaming when device is stationary and upright"
+    bug: "383208131"
+}
+
+flag {
+    name: "dreams_v2"
+    namespace: "systemui"
+    description: "Enables various improvements to the dream experience "
+        "such as new triggers and various bug fixes"
+    bug: "403579494"
+}
+
+flag {
+  name: "dreams_v2_resources"
+  namespace: "systemui"
+  description: "Read only flag for rolling out dream v2 resource values"
+  bug: "403579494"
+  is_fixed_read_only: true
+}
+
+flag {
+    name: "nap_when_dream_enabled"
+    namespace: "systemui"
+    description: "Allows napping only when dream settings is enabled"
+    bug: "436573884"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "allow_dream_with_charge_limit"
+    namespace: "systemui"
+    description: "Allows dreaming even when a charge limit is active"
+    bug: "397717022"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "disallow_dream_on_auto_projection"
+    namespace: "systemui"
+    description: "Disallows dreaming when Android Auto projected display is active"
+    bug: "413508543"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "allow_dream_attach_failure"
+    namespace: "systemui"
+    description: "Fails starting dream when attaching to a service that is already attached"
+    bug: "434674824"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "wake_on_stopping_doze"
+    namespace: "systemui"
+    description: "Sends a wakeUp when explicitly stopping the doze dream"
+    bug: "298073718"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+
+flag {
+    name: "dream_overlay_started_fix"
+    namespace: "systemui"
+    description: "Guards fix for the lifetime of when the dream is considered started"
+    bug: "432039567"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

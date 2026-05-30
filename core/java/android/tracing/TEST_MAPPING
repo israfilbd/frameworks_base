@@ -1,0 +1,13 @@
+{
+  "presubmit": [
+    {
+      "name": "TracingTests"
+    }
+  ],
+  "wm": [
+    {
+      "name": "TracingTests"
+    }
+  ]
+
+}

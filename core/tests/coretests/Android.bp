@@ -1,0 +1,871 @@
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+filegroup {
+    name: "FrameworksCoreTests-aidl",
+    srcs: [
+        "aidl/**/I*.aidl",
+        "src/**/I*.aidl",
+    ],
+    visibility: ["//visibility:private"],
+}
+
+filegroup {
+    name: "FrameworksCoreTests-helpers",
+    srcs: [
+        "AppThatCallsBinderMethods/src/**/*.kt",
+        "BinderDeathRecipientHelperApp/src/**/*.java",
+        "BinderFrozenStateChangeCallbackTestApp/src/**/*.java",
+        "BinderProxyCountingTestApp/src/**/*.java",
+        "BinderProxyCountingTestService/src/**/*.java",
+        "DisabledTestApp/src/**/*.java",
+        "EnabledTestApp/src/**/*.java",
+    ],
+    visibility: ["//visibility:private"],
+}
+
+java_defaults {
+    name: "FrameworksCoreTests-resources",
+    aaptflags: [
+        "-0 .dat",
+        "-0 .gld",
+        "-c fa",
+    ],
+    resource_dirs: ["res"],
+}
+
+android_test {
+    name: "FrameworksCoreTests",
+    defaults: ["FrameworksCoreTests-resources"],
+
+    srcs: [
+        ":FrameworksCoreTestDoubles-sources",
+        ":FrameworksCoreTests-aidl",
+        ":FrameworksCoreTests-helpers",
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+
+    aidl: {
+        generate_get_transaction_name: true,
+        local_include_dirs: ["aidl"],
+    },
+
+    dxflags: ["--core-library"],
+
+    static_libs: [
+        "TestParameterInjector",
+        "android-common",
+        "android.app.usage.flags-aconfig-java",
+        "android.content.res.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
+        "android.view.accessibility.flags-aconfig-java",
+        "androidx.core_core",
+        "androidx.core_core-ktx",
+        "androidx.test.core",
+        "androidx.test.espresso.core",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
+        "collector-device-lib-platform",
+        "com.android.text.flags-aconfig-java",
+        "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
+        "core-tests-support",
+        "cts-input-lib",
+        "device-time-shell-utils",
+        "flag-junit",
+        "flag-junit",
+        "flickerlib-parsers",
+        "flickerlib-trace_processor_shell",
+        "frameworks-base-testutils",
+        "frameworks-core-util-lib",
+        "guava",
+        "guava-android-testlib",
+        "junit-params",
+        "kotlin-test",
+        "mockito-kotlin2",
+        "mockito-target-extended-minus-junit4",
+        "mockito-target-minus-junit4",
+        "mockwebserver",
+        "perfetto_trace_android_track_event_extension_java_protos",
+        "perfetto_trace_java_protos",
+        "platform-compat-test-rules",
+        "platform-parametric-runner-lib",
+        "platform-test-annotations",
+        "print-test-util-lib",
+        "ravenwood-junit",
+        "servicestests-utils",
+        "testables",
+        "testng",
+        "truth",
+    ],
+
+    libs: [
+        "android.test.base.stubs",
+        "android.test.mock.stubs",
+        "android.test.runner.stubs",
+        "android.view.flags-aconfig-java",
+        "ext",
+        "framework",
+        "framework-res",
+        "libprotobuf-java-lite",
+        "org.apache.http.legacy.stubs",
+    ],
+    jni_libs: [
+        "libAppOpsTest_jni",
+        "libpowermanagertest_jni",
+        "libviewRootImplTest_jni",
+        "libworksourceparceltest_jni",
+    ],
+
+    sdk_version: "core_platform",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+
+    certificate: "platform",
+
+    resource_zips: [":FrameworksCoreTests_apks_as_resources"],
+    java_resources: [":FrameworksCoreTests_unit_test_cert_der"],
+
+    data: [
+        ":AppThatCallsBinderMethods",
+        ":AppThatUsesAppOps",
+        ":BinderDeathRecipientHelperApp1",
+        ":BinderDeathRecipientHelperApp2",
+        ":BinderFrozenStateChangeCallbackTestApp",
+        ":BinderProxyCountingTestApp",
+        ":BinderProxyCountingTestService",
+        ":CtsStaticSharedLibConsumerApp1",
+        ":CtsStaticSharedLibConsumerApp3",
+        ":CtsStaticSharedLibProviderApp1",
+        ":HelloWorldSdk1",
+        ":HelloWorldUsingSdk1And2",
+        ":HelloWorldUsingSdk1AndSdk1",
+        ":HelloWorldUsingSdkMalformedNegativeVersion",
+        ":NoUpdateAppWidgetTestApp",
+        ":com.android.cts.helpers.aosp",
+    ],
+}
+
+// Rules to copy all the test apks to the intermediate raw resource directory
+java_genrule {
+    name: "FrameworksCoreTests_apks_as_resources",
+    srcs: [
+        ":FrameworksCoreTests_install_jni_lib_open_from_apk",
+        ":FrameworksCoreTests_install_verifier_bad",
+        ":FrameworksCoreTests_install_verifier_good",
+        ":FrameworksCoreTests_locales",
+        ":FrameworksCoreTests_overlay_config",
+        ":FrameworksCoreTests_version_1",
+        ":FrameworksCoreTests_version_1_diff",
+        ":FrameworksCoreTests_version_1_nosys",
+        ":FrameworksCoreTests_version_2",
+        ":FrameworksCoreTests_version_2_diff",
+        ":FrameworksCoreTests_version_3",
+    ],
+    out: ["FrameworkCoreTests_apks_as_resources.res.zip"],
+    tools: ["soong_zip"],
+
+    cmd: "mkdir -p $(genDir)/res/raw && " +
+        "for i in $(in); do " +
+        "  x=$${i##*FrameworksCoreTests_}; echo $${x}; cp $$i $(genDir)/res/raw/$${x%.apk};" +
+        "done && " +
+        "$(location soong_zip) -o $(out) -C $(genDir)/res -D $(genDir)/res",
+}
+
+// In addition to running as part of FrameworksCoreTests, we run (a subclass of)
+// ChooserActivityTest against the unbundled ChooserActivity implementation in
+// //packages/modules/IntentResolver/. The following library provides the
+// minimum dependencies required to build that test in the unbundled package.
+android_library {
+    name: "ChooserActivityTestsLib",
+    visibility: ["//packages/modules/IntentResolver/java/tests:__pkg__"],
+
+    srcs: [
+        "src/com/android/internal/app/ChooserActivityLoggerFake.java",
+        "src/com/android/internal/app/ChooserActivityOverrideData.java",
+        "src/com/android/internal/app/ChooserActivityTest.java",
+        "src/com/android/internal/app/ChooserWrapperActivity.java",
+        "src/com/android/internal/app/IChooserWrapper.java",
+        "src/com/android/internal/app/MatcherUtils.java",
+        "src/com/android/internal/app/ResolverDataProvider.java",
+    ],
+
+    static_libs: [
+        "androidx.test.espresso.core",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "mockito-target-minus-junit4",
+        "truth",
+    ],
+
+    libs: [
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
+        "android.test.runner.stubs.system",
+        "framework",
+        "framework-res",
+    ],
+}
+
+android_ravenwood_test {
+    name: "FrameworksCoreTestsRavenwood",
+    defaults: ["FrameworksCoreTests-resources"],
+    build_resources: true,
+    libs: [
+        "android.test.base.stubs",
+        "android.test.mock.stubs",
+        "android.test.runner.stubs",
+        "android.view.flags-aconfig-java",
+        "ext",
+        "framework",
+        "frameworks-base-testutils",
+        "framework-res",
+        "libprotobuf-java-lite",
+        "org.apache.http.legacy.stubs",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.core_core",
+        "androidx.core_core-ktx",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt-ravenwood",
+        "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
+        "flag-junit",
+        "perfetto_trace_android_track_event_extension_java_protos",
+        "perfetto_trace_java_protos",
+        "platform-compat-test-rules",
+        "platform-parametric-runner-lib",
+        "platform-test-annotations",
+        "testng",
+        "TestParameterInjector",
+    ],
+    srcs: [
+        "src/android/app/ActivityManagerTest.java",
+        "src/android/app/PropertyInvalidatedCacheTests.java",
+        "src/android/colormodel/CamTest.java",
+        "src/android/content/ContextTest.java",
+        "src/android/content/TestComponentCallbacks2.java",
+        "src/android/content/pm/PackageManagerTest.java",
+        "src/android/content/res/*.java",
+        "src/android/content/res/*.kt",
+        "src/android/database/CursorWindowTest.java",
+        "src/android/graphics/**/*.java",
+        "src/android/graphics/**/*.kt",
+        "src/android/os/**/*.java",
+        "src/android/telephony/PinResultTest.java",
+        "src/android/text/**/*.java",
+        "src/android/text/**/*.kt",
+        "src/android/util/**/*.java",
+        "src/android/view/DisplayAdjustmentsTests.java",
+        "src/android/view/DisplayInfoTest.java",
+        "src/android/view/DisplayTest.java",
+        "src/com/android/internal/logging/**/*.java",
+        "src/com/android/internal/os/**/*.java",
+        "src/com/android/internal/ravenwood/**/*.java",
+        "src/com/android/internal/util/**/*.java",
+
+        ":FrameworksCoreTestDoubles-sources",
+        ":FrameworksCoreTests-aidl",
+        ":FrameworksCoreTests-helpers",
+    ],
+    exclude_srcs: [
+        "src/android/content/res/FontScaleConverterActivityTest.java",
+        "src/android/graphics/GraphicsPerformanceTests.java",
+        "src/android/graphics/drawable/StateListDrawableTest.java",
+    ],
+    aidl: {
+        generate_get_transaction_name: true,
+        local_include_dirs: ["aidl"],
+    },
+    java_resources: [
+        "res/xml/power_profile_test.xml",
+        "res/xml/power_profile_test_cpu_legacy.xml",
+        "res/xml/power_profile_test_modem.xml",
+    ],
+    resource_zips: [":FrameworksCoreTests_apks_as_resources"],
+    sdk_version: "core_platform",
+    auto_gen_config: true,
+    team: "trendy_team_ravenwood",
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_Presubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_inputmethod",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.view.inputmethod",
+        "com.android.internal.inputmethod",
+    ],
+    exclude_annotations: ["androidx.test.filters.FlakyTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_context",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.ContextTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_keyguard_manager",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.app.KeyguardManagerTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_property_invalidated_cache",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.app.PropertyInvalidatedCacheTests"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_content",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.content.ComponentCallbacksControllerTest",
+        "android.content.ContextTest",
+        "android.content.ContextWrapperTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_sqlite",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.database.sqlite.SQLiteRawStatementTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_net",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.net"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_battery_stats",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.os.BatteryStatsTests"],
+    exclude_annotations: ["com.android.internal.os.SkipPresubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_environment",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.os.EnvironmentTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_util_data_charset",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.util.CharsetUtilsTest",
+        "com.android.internal.util.FastDataTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_xml",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.util.BinaryXmlTest",
+        "android.util.XmlTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_util_apk",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.util.apk.SourceStampVerifierTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_textclassifier",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.view.textclassifier"],
+    exclude_annotations: ["androidx.test.filters.FlakyTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_app",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.app."],
+    exclude_filters: [
+        "com.android.internal.app.IntentForwarderActivityTest",
+        "com.android.internal.app.WindowDecorActionBarTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_content",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.content."],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_infra",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.infra."],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_jank",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.jank"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_all_binder",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.os.BinderDeathRecipientTest",
+        "android.os.BinderFrozenStateChangeNotificationTest",
+        "android.os.BinderProxyCountingTest",
+        "android.os.BinderProxyTest",
+        "android.os.BinderThreadPriorityTest",
+        "android.os.BinderUncaughtExceptionHandlerTest",
+        "android.os.BinderWorkSourceTest",
+        "android.os.ParcelNullabilityTest",
+        "android.os.ParcelTest",
+        "com.android.internal.os.BinderDeathDispatcherTest",
+    ],
+    exclude_annotations: ["com.android.internal.os.SkipPresubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_os_kernel",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "com.android.internal.os.KernelCpuUidActiveTimeReaderTest",
+        "com.android.internal.os.KernelCpuUidBpfMapReaderTest",
+        "com.android.internal.os.KernelCpuUidClusterTimeReaderTest",
+        "com.android.internal.os.KernelCpuUidFreqTimeReaderTest",
+        "com.android.internal.os.KernelSingleUidTimeReaderTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_server_power",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.server.power.stats.BstatsCpuTimesValidationTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_security",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.security."],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_internal_util_latency_tracker",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.util.LatencyTrackerTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_content_capture_options",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.ContentCaptureOptionsTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_content_integrity",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.integrity."],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_content_pm_PreSubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.pm."],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_content_pm_PostSubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.pm."],
+    include_annotations: ["android.platform.test.annotations.Postsubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_content_res",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.res."],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: [
+        "android.platform.test.annotations.Postsubmit",
+        "androidx.test.filters.FlakyTest",
+        "org.junit.Ignore",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_content_res_PostSubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.res."],
+    include_annotations: ["android.platform.test.annotations.Postsubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_service",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.service.controls",
+        "android.service.controls.actions",
+        "android.service.controls.templates",
+        "android.service.euicc",
+        "android.service.notification",
+        "android.service.quicksettings",
+        "android.service.settings.suggestions",
+    ],
+    exclude_annotations: ["org.junit.Ignore"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_view_contentcapture",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.view.contentcapture"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_view_contentprotection",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.view.contentprotection"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_com_android_internal_content_Presubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.content."],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_drawable",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.graphics.drawable.IconTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_accessibility",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.accessibilityservice",
+        "android.view.accessibility",
+        "com.android.internal.accessibility",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_usage",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.app.usage"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_fastdata",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.internal.util.FastDataTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_hardware_input",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.hardware.input"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_view_verified",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.view.VerifiedKeyEventTest",
+        "android.view.VerifiedMotionEventTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_net_Presubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.net"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_content_pm_Postsubmit",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: ["android.content.pm."],
+    include_annotations: ["android.platform.test.annotations.Postsubmit"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_jank",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "com.android.internal.jank.FrameTrackerTest",
+        "com.android.internal.jank.InteractionJankMonitorTest",
+        "com.android.internal.util.LatencyTrackerTest",
+    ],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_Platinum",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_android_tracing",
+    base: "FrameworksCoreTests",
+    team: "trendy_team_windowing_tools",
+    test_suites: ["device-tests"],
+    include_filters: ["android.tracing"],
+}
+
+test_module_config {
+    name: "FrameworksCoreTests_messagequeue",
+    base: "FrameworksCoreTests",
+    test_suites: [
+        "automotive-tests",
+        "device-platinum-tests",
+        "device-tests",
+    ],
+    include_filters: [
+        "android.os.MessageHeapTest",
+        "android.os.MessageStackTest",
+        "android.os.WaitStateTest",
+    ],
+}

@@ -1,0 +1,41 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        package="com.android.inputdevices"
+        coreApp="true"
+        android:sharedUserId="android.uid.system">
+
+    <application
+            android:allowClearUserData="false"
+            android:label="@string/app_label"
+            android:process="system"
+            android:defaultToDeviceProtectedStorage="true"
+            android:directBootAware="true">
+
+        <receiver android:name=".InputDeviceReceiver"
+            android:label="@string/keyboard_layouts_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.hardware.input.action.QUERY_KEYBOARD_LAYOUTS" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.input.metadata.KEYBOARD_LAYOUTS"
+                    android:resource="@xml/keyboard_layouts" />
+        </receiver>
+
+        <receiver android:name=".KeyGlyphMapProvider"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.hardware.input.action.QUERY_KEYBOARD_GLYPH_MAPS" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.input.metadata.KEYBOARD_GLYPH_MAPS"
+                       android:resource="@xml/keyboard_glyph_maps" />
+        </receiver>
+
+        <receiver android:name=".OverlayKeyGlyphMapProvider"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.hardware.input.action.QUERY_KEYBOARD_GLYPH_MAPS" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.input.metadata.KEYBOARD_GLYPH_MAPS"
+                       android:resource="@xml/keyboard_glyph_maps_overlay" />
+        </receiver>
+    </application>
+</manifest>

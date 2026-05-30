@@ -1,0 +1,1213 @@
+/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.autofill;
+
+import static android.service.autofill.FillEventHistory.Event.UI_TYPE_DIALOG;
+import static android.service.autofill.FillEventHistory.Event.UI_TYPE_INLINE;
+import static android.service.autofill.FillEventHistory.Event.UI_TYPE_MENU;
+import static android.service.autofill.FillEventHistory.Event.UiType;
+import static android.view.autofill.AutofillManager.COMMIT_REASON_ACTIVITY_FINISHED;
+import static android.view.autofill.AutofillManager.COMMIT_REASON_VIEW_CHANGED;
+import static android.view.autofill.AutofillManager.COMMIT_REASON_VIEW_CLICKED;
+import static android.view.autofill.AutofillManager.COMMIT_REASON_VIEW_COMMITTED;
+
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_FILL_RESPONSE_REPORTED__DETECTION_PREFERENCE__DETECTION_PREFER_AUTOFILL_PROVIDER;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_FILL_RESPONSE_REPORTED__DETECTION_PREFERENCE__DETECTION_PREFER_PCC;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_FILL_RESPONSE_REPORTED__DETECTION_PREFERENCE__DETECTION_PREFER_UNKONWN;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_RESULT__AUTHENTICATION_FAILURE;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_RESULT__AUTHENTICATION_RESULT_UNKNOWN;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_RESULT__AUTHENTICATION_SUCCESS;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_TYPE__AUTHENTICATION_TYPE_UNKNOWN;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_TYPE__DATASET_AUTHENTICATION;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_TYPE__FULL_AUTHENTICATION;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__DIALOG;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__INLINE;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__MENU;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__UNKNOWN_AUTOFILL_DISPLAY_PRESENTATION_TYPE;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_DELAY_AFTER_ANIMATION_END;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_FILL_DIALOG_DISABLED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_LAST_TRIGGERED_ID_CHANGED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_SCREEN_HAS_CREDMAN_FIELD;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_TIMEOUT_AFTER_DELAY;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_TIMEOUT_SINCE_IME_ANIMATED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_UNKNOWN;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_WAIT_FOR_IME_ANIMATION;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__ANY_SHOWN;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_ACTIVITY_FINISHED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_FILL_REQUEST_FAILED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_NO_FOCUS;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_REQUEST_TIMEOUT;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_SESSION_COMMITTED_PREMATURELY;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_SUGGESTION_FILTER_OUT;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_UNKNOWN_REASON;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_VIEW_CHANGED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_VIEW_FOCUSED_BEFORE_FILL_DIALOG_RESPONSE;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_VIEW_FOCUS_CHANGED;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_NO_PCC;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PCC_DETECTION_ONLY;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PCC_DETECTION_PREFERRED_WITH_PROVIDER;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PROVIDER_DETECTION_ONLY;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PROVIDER_DETECTION_PREFERRED_WITH_PCC;
+import static com.android.internal.util.FrameworkStatsLog.AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_UNKNOWN;
+import static com.android.server.autofill.Helper.sVerbose;
+
+import android.annotation.IntDef;
+import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.SystemClock;
+import android.provider.Settings;
+import android.service.autofill.Dataset;
+import android.text.TextUtils;
+import android.util.ArraySet;
+import android.util.Slog;
+import android.view.autofill.AutofillId;
+import android.view.autofill.AutofillManager;
+import android.view.autofill.AutofillValue;
+
+import com.android.internal.util.FrameworkStatsLog;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.util.List;
+import java.util.Optional;
+
+/** Helper class to track and log Autofill presentation stats. */
+public final class PresentationStatsEventLogger {
+    private static final String TAG = "PresentationStatsEventLogger";
+
+    /**
+     * Reasons why presentation was not shown. These are wrappers around
+     * {@link com.android.os.AtomsProto.AutofillPresentationEventReported.PresentationEventResult}.
+     */
+    @IntDef(prefix = {"NOT_SHOWN_REASON"}, value = {
+            NOT_SHOWN_REASON_ANY_SHOWN,
+            NOT_SHOWN_REASON_VIEW_FOCUS_CHANGED,
+            NOT_SHOWN_REASON_VIEW_FOCUSED_BEFORE_FILL_DIALOG_RESPONSE,
+            NOT_SHOWN_REASON_VIEW_CHANGED,
+            NOT_SHOWN_REASON_ACTIVITY_FINISHED,
+            NOT_SHOWN_REASON_REQUEST_TIMEOUT,
+            NOT_SHOWN_REASON_REQUEST_FAILED,
+            NOT_SHOWN_REASON_NO_FOCUS,
+            NOT_SHOWN_REASON_SESSION_COMMITTED_PREMATURELY,
+            NOT_SHOWN_REASON_SUGGESTION_FILTERED,
+            NOT_SHOWN_REASON_UNKNOWN
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface NotShownReason {}
+
+    /**
+     * Reasons why presentation was not shown. These are wrappers around
+     * {@link com.android.os.AtomsProto.AutofillPresentationEventReported.AuthenticationType}.
+     */
+    @IntDef(prefix = {"AUTHENTICATION_TYPE"}, value = {
+            AUTHENTICATION_TYPE_UNKNOWN,
+            AUTHENTICATION_TYPE_DATASET_AUTHENTICATION,
+            AUTHENTICATION_TYPE_FULL_AUTHENTICATION
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface AuthenticationType {
+    }
+
+    /**
+     * Reasons why presentation was not shown. These are wrappers around
+     * {@link com.android.os.AtomsProto.AutofillPresentationEventReported.AuthenticationResult}.
+     */
+    @IntDef(prefix = {"AUTHENTICATION_RESULT"}, value = {
+            AUTHENTICATION_RESULT_UNKNOWN,
+            AUTHENTICATION_RESULT_SUCCESS,
+            AUTHENTICATION_RESULT_FAILURE
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface AuthenticationResult {
+    }
+
+    /**
+     * Reasons why the picked dataset was present. These are wrappers around
+     * {@link com.android.os.AtomsProto.AutofillPresentationEventReported.DatasetPickedReason}.
+     * This enum is similar to {@link android.service.autofill.Dataset.DatasetEligibleReason}
+     */
+    @IntDef(prefix = {"PICK_REASON"}, value = {
+            PICK_REASON_UNKNOWN,
+            PICK_REASON_NO_PCC,
+            PICK_REASON_PROVIDER_DETECTION_ONLY,
+            PICK_REASON_PROVIDER_DETECTION_PREFERRED_WITH_PCC,
+            PICK_REASON_PCC_DETECTION_ONLY,
+            PICK_REASON_PCC_DETECTION_PREFERRED_WITH_PROVIDER,
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface DatasetPickedReason {}
+
+    /**
+     * The type of detection that was preferred. These are wrappers around
+     * {@link com.android.os.AtomsProto.AutofillPresentationEventReported.DetectionPreference}.
+     */
+    @IntDef(prefix = {"DETECTION_PREFER"}, value = {
+            DETECTION_PREFER_UNKNOWN,
+            DETECTION_PREFER_AUTOFILL_PROVIDER,
+            DETECTION_PREFER_PCC
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface DetectionPreference {}
+
+    /**
+     * The fill dialog not shown reason. These are wrappers around
+     * {@link com.android.os.AtomsProto.AutofillPresentationEventReported.FillDialogNotShownReason}.
+     */
+    @IntDef(prefix = {"FILL_DIALOG_NOT_SHOWN_REASON"}, value = {
+        FILL_DIALOG_NOT_SHOWN_REASON_UNKNOWN,
+        FILL_DIALOG_NOT_SHOWN_REASON_FILL_DIALOG_DISABLED,
+        FILL_DIALOG_NOT_SHOWN_REASON_SCREEN_HAS_CREDMAN_FIELD,
+        FILL_DIALOG_NOT_SHOWN_REASON_LAST_TRIGGERED_ID_CHANGED,
+        FILL_DIALOG_NOT_SHOWN_REASON_WAIT_FOR_IME_ANIMATION,
+        FILL_DIALOG_NOT_SHOWN_REASON_TIMEOUT_SINCE_IME_ANIMATED,
+        FILL_DIALOG_NOT_SHOWN_REASON_DELAY_AFTER_ANIMATION_END,
+        FILL_DIALOG_NOT_SHOWN_REASON_TIMEOUT_AFTER_DELAY
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface FillDialogNotShownReason {}
+
+    public static final int NOT_SHOWN_REASON_ANY_SHOWN =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__ANY_SHOWN;
+    public static final int NOT_SHOWN_REASON_VIEW_FOCUS_CHANGED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_VIEW_FOCUS_CHANGED;
+    public static final int NOT_SHOWN_REASON_VIEW_FOCUSED_BEFORE_FILL_DIALOG_RESPONSE =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_VIEW_FOCUSED_BEFORE_FILL_DIALOG_RESPONSE;
+    public static final int NOT_SHOWN_REASON_VIEW_CHANGED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_VIEW_CHANGED;
+    public static final int NOT_SHOWN_REASON_ACTIVITY_FINISHED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_ACTIVITY_FINISHED;
+    public static final int NOT_SHOWN_REASON_REQUEST_TIMEOUT =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_REQUEST_TIMEOUT;
+    public static final int NOT_SHOWN_REASON_REQUEST_FAILED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_FILL_REQUEST_FAILED;
+    public static final int NOT_SHOWN_REASON_NO_FOCUS =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_NO_FOCUS;
+    public static final int NOT_SHOWN_REASON_SESSION_COMMITTED_PREMATURELY =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_SESSION_COMMITTED_PREMATURELY;
+    public static final int NOT_SHOWN_REASON_UNKNOWN =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_UNKNOWN_REASON;
+    public static final int NOT_SHOWN_REASON_SUGGESTION_FILTERED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__PRESENTATION_EVENT_RESULT__NONE_SHOWN_SUGGESTION_FILTER_OUT;
+
+    public static final int AUTHENTICATION_TYPE_UNKNOWN =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_TYPE__AUTHENTICATION_TYPE_UNKNOWN;
+    public static final int AUTHENTICATION_TYPE_DATASET_AUTHENTICATION =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_TYPE__DATASET_AUTHENTICATION;
+    public static final int AUTHENTICATION_TYPE_FULL_AUTHENTICATION =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_TYPE__FULL_AUTHENTICATION;
+
+    public static final int AUTHENTICATION_RESULT_UNKNOWN =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_RESULT__AUTHENTICATION_RESULT_UNKNOWN;
+    public static final int AUTHENTICATION_RESULT_SUCCESS =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_RESULT__AUTHENTICATION_SUCCESS;
+    public static final int AUTHENTICATION_RESULT_FAILURE =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__AUTHENTICATION_RESULT__AUTHENTICATION_FAILURE;
+
+    public static final int PICK_REASON_UNKNOWN =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_UNKNOWN;
+    public static final int PICK_REASON_NO_PCC =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_NO_PCC;
+     public static final int PICK_REASON_PROVIDER_DETECTION_ONLY =
+             AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PROVIDER_DETECTION_ONLY;
+    public static final int PICK_REASON_PROVIDER_DETECTION_PREFERRED_WITH_PCC =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PROVIDER_DETECTION_PREFERRED_WITH_PCC;
+    public static final int PICK_REASON_PCC_DETECTION_ONLY =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PCC_DETECTION_ONLY;
+    public static final int PICK_REASON_PCC_DETECTION_PREFERRED_WITH_PROVIDER =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__SELECTED_DATASET_PICKED_REASON__PICK_REASON_PCC_DETECTION_PREFERRED_WITH_PROVIDER;
+
+
+    // Values for AutofillFillResponseReported.detection_preference
+    public static final int DETECTION_PREFER_UNKNOWN =
+            AUTOFILL_FILL_RESPONSE_REPORTED__DETECTION_PREFERENCE__DETECTION_PREFER_UNKONWN;
+    public static final int DETECTION_PREFER_AUTOFILL_PROVIDER =
+            AUTOFILL_FILL_RESPONSE_REPORTED__DETECTION_PREFERENCE__DETECTION_PREFER_AUTOFILL_PROVIDER;
+    public static final int DETECTION_PREFER_PCC =
+            AUTOFILL_FILL_RESPONSE_REPORTED__DETECTION_PREFERENCE__DETECTION_PREFER_PCC;
+
+    // Values for AutofillFillResponseReported.fill_dialog_not_shown_reason
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_UNKNOWN =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_UNKNOWN;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_FILL_DIALOG_DISABLED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_FILL_DIALOG_DISABLED;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_SCREEN_HAS_CREDMAN_FIELD =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_SCREEN_HAS_CREDMAN_FIELD;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_LAST_TRIGGERED_ID_CHANGED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_LAST_TRIGGERED_ID_CHANGED;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_WAIT_FOR_IME_ANIMATION =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_WAIT_FOR_IME_ANIMATION;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_TIMEOUT_SINCE_IME_ANIMATED =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_TIMEOUT_SINCE_IME_ANIMATED;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_DELAY_AFTER_ANIMATION_END =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_DELAY_AFTER_ANIMATION_END;
+    public static final int FILL_DIALOG_NOT_SHOWN_REASON_TIMEOUT_AFTER_DELAY =
+            AUTOFILL_PRESENTATION_EVENT_REPORTED__FILL_DIALOG_NOT_SHOWN_REASON__REASON_TIMEOUT_AFTER_DELAY;
+
+
+    private static final int DEFAULT_VALUE_INT = -1;
+
+    private final int mSessionId;
+    /**
+     * For app_package_uid.
+     */
+    private final int mCallingAppUid;
+    private Optional<PresentationStatsEventInternal> mEventInternal;
+    private final long mSessionStartTimestamp;
+
+    private PresentationStatsEventLogger(int sessionId, int callingAppUid, long timestamp) {
+        mSessionId = sessionId;
+        mCallingAppUid = callingAppUid;
+        mSessionStartTimestamp = timestamp;
+        mEventInternal = Optional.empty();
+    }
+
+    /**
+     * Create PresentationStatsEventLogger, populated with sessionId and the callingAppUid
+     */
+    public static PresentationStatsEventLogger createPresentationLog(
+            int sessionId, int callingAppUid, long timestamp) {
+        return new PresentationStatsEventLogger(sessionId, callingAppUid, timestamp);
+    }
+
+    public void startNewEvent() {
+        if (mEventInternal.isPresent()) {
+            Slog.e(TAG, "Failed to start new event because already have active event.");
+            return;
+        }
+        Slog.d(TAG, "Started new PresentationStatsEvent");
+        mEventInternal = Optional.of(new PresentationStatsEventInternal());
+    }
+
+    /**
+     * Test use only, returns a copy of the events object
+     */
+    Optional<PresentationStatsEventInternal> getInternalEvent() {
+        return mEventInternal;
+    }
+
+    /**
+     * Set request_id
+     */
+    public void maybeSetRequestId(int requestId) {
+        mEventInternal.ifPresent(event -> event.mRequestId = requestId);
+    }
+
+    /**
+     * Set is_credential_request
+     */
+    public void maybeSetIsCredentialRequest(boolean isCredentialRequest) {
+        mEventInternal.ifPresent(event -> event.mIsCredentialRequest = isCredentialRequest);
+    }
+
+    /**
+     * Set webview_requested_credential
+     */
+    public void maybeSetWebviewRequestedCredential(boolean webviewRequestedCredential) {
+        mEventInternal.ifPresent(event ->
+                event.mWebviewRequestedCredential = webviewRequestedCredential);
+    }
+
+    public void maybeSetNoPresentationEventReason(@NotShownReason int reason) {
+        mEventInternal.ifPresent(event -> {
+            if (event.mCountShown == 0) {
+                event.mNoPresentationReason = reason;
+            }
+        });
+    }
+
+    /**
+     * Call this when first entering the View. It will check if there are pre-existing characters
+     * in the view, and sets NOT_SHOWN_REASON_SUGGESTION_FILTERED if there is
+     */
+    public void maybeSetNoPresentationEventReasonSuggestionsFiltered(AutofillValue value) {
+        mEventInternal.ifPresent(
+                event -> {
+                    if (value == null || !value.isText()) {
+                        return;
+                    }
+
+                    int length = value.getTextValue().length();
+
+                    if (length > 0) {
+                        maybeSetNoPresentationEventReason(NOT_SHOWN_REASON_SUGGESTION_FILTERED);
+                    }
+                });
+    }
+
+    public void maybeSetNoPresentationEventReasonIfNoReasonExists(@NotShownReason int reason) {
+        mEventInternal.ifPresent(
+                event -> {
+                    if (event.mCountShown != 0) {
+                        return;
+                    }
+
+                    // The only events that can be overwritten.
+                    // NOT_SHOWN_REASON_UNKNOWN is the default for inline/dropdown
+                    // NOT_SHOWN_REASON_NO_FOCUS is the default for fill dialog
+                    if (event.mNoPresentationReason != NOT_SHOWN_REASON_UNKNOWN
+                            || event.mNoPresentationReason != NOT_SHOWN_REASON_NO_FOCUS) {
+                        Slog.d(TAG, "Not setting no presentation reason because it already exists");
+                        return;
+                    }
+
+                    event.mNoPresentationReason = reason;
+                });
+    }
+
+    public void maybeSetAvailableCount(@Nullable List<Dataset> datasetList,
+            AutofillId currentViewId) {
+        mEventInternal.ifPresent(event -> {
+            CountContainer container = getDatasetCountForAutofillId(datasetList, currentViewId);
+            event.mAvailableCount = container.mAvailableCount;
+            event.mAvailablePccCount = container.mAvailablePccCount;
+            event.mAvailablePccOnlyCount = container.mAvailablePccOnlyCount;
+            event.mIsDatasetAvailable = container.mAvailableCount > 0;
+        });
+    }
+
+    /**
+     * Called for inline suggestions - inflated one at
+     * a time. If InlineSuggestions were filtered,
+     * reset the count be incrementing
+     */
+    public void maybeIncrementCountShown() {
+        mEventInternal.ifPresent(event -> {
+            if (event.shouldResetShownCount) {
+                event.shouldResetShownCount = false;
+                event.mCountShown = 0;
+            }
+
+            if (event.mCountShown == 0) {
+                // The first time suggestions are rendered
+                // set time stamp
+                maybeSetSuggestionPresentedTimestampMs();
+            }
+
+            event.mCountShown += 1;
+        });
+    }
+
+    /**
+     * Call this when UI is hidden. This will set a flag to reset count for inline. We do this
+     * instead of resetting right away in case there are 0 inline presentations after.
+     */
+    public void markShownCountAsResettable() {
+        mEventInternal.ifPresent(event -> {
+            event.shouldResetShownCount = true;
+        });
+    }
+
+    public void maybeSetCountShown(@Nullable List<Dataset> datasetList,
+            AutofillId currentViewId) {
+        mEventInternal.ifPresent(event -> {
+            CountContainer container = getDatasetCountForAutofillId(datasetList, currentViewId);
+            event.mCountShown = container.mAvailableCount;
+            if (container.mAvailableCount > 0) {
+                event.mNoPresentationReason = NOT_SHOWN_REASON_ANY_SHOWN;
+            }
+        });
+    }
+
+    /**
+     * This is called when a dataset is shown to the user. Will set the count shown,
+     * related timestamps and presentation reason.
+     */
+    public void logWhenDatasetShown(int datasets) {
+        mEventInternal.ifPresent(
+                event -> {
+                    maybeSetSuggestionPresentedTimestampMs();
+                    event.mCountShown = datasets;
+                    event.mNoPresentationReason = NOT_SHOWN_REASON_ANY_SHOWN;
+                });
+    }
+
+    private static CountContainer getDatasetCountForAutofillId(@Nullable List<Dataset> datasetList,
+            AutofillId currentViewId) {
+
+        CountContainer container = new CountContainer();
+        if (datasetList != null) {
+            for (int i = 0; i < datasetList.size(); i++) {
+                Dataset data = datasetList.get(i);
+                if (data != null && data.getFieldIds() != null
+                        && data.getFieldIds().contains(currentViewId)) {
+                    container.mAvailableCount += 1;
+                    if (data.getEligibleReason() == PICK_REASON_PCC_DETECTION_ONLY) {
+                        container.mAvailablePccOnlyCount++;
+                        container.mAvailablePccCount++;
+                    } else if (data.getEligibleReason()
+                            == PICK_REASON_PCC_DETECTION_PREFERRED_WITH_PROVIDER) {
+                        container.mAvailablePccCount++;
+                    }
+                }
+            }
+        }
+        return container;
+    }
+
+    private static class CountContainer{
+        int mAvailableCount = 0;
+        int mAvailablePccCount = 0;
+        int mAvailablePccOnlyCount = 0;
+
+        CountContainer() {}
+
+        CountContainer(int availableCount, int availablePccCount,
+                int availablePccOnlyCount) {
+            mAvailableCount = availableCount;
+            mAvailablePccCount = availablePccCount;
+            mAvailablePccOnlyCount = availablePccOnlyCount;
+        }
+    }
+
+    public void maybeSetCountFilteredUserTyping(int countFilteredUserTyping) {
+        mEventInternal.ifPresent(event -> {
+            event.mCountFilteredUserTyping = countFilteredUserTyping;
+        });
+    }
+
+    public void maybeSetCountNotShownImePresentationNotDrawn(
+            int countNotShownImePresentationNotDrawn) {
+        mEventInternal.ifPresent(event -> {
+            event.mCountNotShownImePresentationNotDrawn = countNotShownImePresentationNotDrawn;
+        });
+    }
+
+    public void maybeSetCountNotShownImeUserNotSeen(int countNotShownImeUserNotSeen) {
+        mEventInternal.ifPresent(event -> {
+            event.mCountNotShownImeUserNotSeen = countNotShownImeUserNotSeen;
+        });
+    }
+
+    public void maybeSetDisplayPresentationType(@UiType int uiType) {
+        mEventInternal.ifPresent(event -> {
+            // There are cases in which another UI type will show up after selects a dataset
+            // such as with Inline after Fill Dialog. Set as the first presentation type only.
+            if (event.mDisplayPresentationType
+                    == AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__UNKNOWN_AUTOFILL_DISPLAY_PRESENTATION_TYPE) {
+                event.mDisplayPresentationType = getDisplayPresentationType(uiType);
+            }
+        });
+    }
+
+    public void maybeSetFillRequestSentTimestampMs(int timestamp) {
+        mEventInternal.ifPresent(event -> {
+            event.mFillRequestSentTimestampMs = timestamp;
+        });
+    }
+
+    public void maybeSetFillRequestSentTimestampMs() {
+        maybeSetFillRequestSentTimestampMs(getElapsedTime());
+    }
+
+    public void maybeSetFillResponseReceivedTimestampMs(int timestamp) {
+        mEventInternal.ifPresent(event -> {
+            event.mFillResponseReceivedTimestampMs = timestamp;
+        });
+    }
+
+    public void maybeSetFillResponseReceivedTimestampMs() {
+        maybeSetFillResponseReceivedTimestampMs(getElapsedTime());
+    }
+
+    public void maybeSetSuggestionSentTimestampMs(int timestamp) {
+        mEventInternal.ifPresent(
+                event -> {
+                    if (event.mSuggestionSentTimestampMs == DEFAULT_VALUE_INT) {
+                        event.mSuggestionSentTimestampMs = timestamp;
+                    }
+                });
+    }
+
+    public void maybeSetSuggestionSentTimestampMs() {
+        maybeSetSuggestionSentTimestampMs(getElapsedTime());
+    }
+
+    public void maybeSetSuggestionPresentedTimestampMs(int timestamp) {
+        mEventInternal.ifPresent(event -> {
+            // mSuggestionPresentedTimestampMs only tracks the first suggested timestamp.
+            if (event.mSuggestionPresentedTimestampMs == DEFAULT_VALUE_INT) {
+                event.mSuggestionPresentedTimestampMs = timestamp;
+            }
+
+            event.mSuggestionPresentedLastTimestampMs = timestamp;
+        });
+    }
+
+    public void maybeSetSuggestionPresentedTimestampMs() {
+        maybeSetSuggestionPresentedTimestampMs(getElapsedTime());
+    }
+
+    public void maybeSetSelectedDatasetId(int selectedDatasetId) {
+        mEventInternal.ifPresent(event -> {
+            event.mSelectedDatasetId = selectedDatasetId;
+        });
+        setPresentationSelectedTimestamp();
+    }
+
+    public void maybeSetDialogDismissed(boolean dialogDismissed) {
+        mEventInternal.ifPresent(event -> {
+            event.mDialogDismissed = dialogDismissed;
+        });
+    }
+
+    public void maybeSetNegativeCtaButtonClicked(boolean negativeCtaButtonClicked) {
+        mEventInternal.ifPresent(event -> {
+            event.mNegativeCtaButtonClicked = negativeCtaButtonClicked;
+        });
+    }
+
+    public void maybeSetPositiveCtaButtonClicked(boolean positiveCtaButtonClicked) {
+        mEventInternal.ifPresent(event -> {
+            event.mPositiveCtaButtonClicked = positiveCtaButtonClicked;
+        });
+    }
+
+    public void maybeSetInlinePresentationAndSuggestionHostUid(Context context, int userId) {
+        mEventInternal.ifPresent(event -> {
+            String imeString = Settings.Secure.getStringForUser(context.getContentResolver(),
+                    Settings.Secure.DEFAULT_INPUT_METHOD, userId);
+            if (TextUtils.isEmpty(imeString)) {
+                Slog.w(TAG, "No default IME found");
+                return;
+            }
+            ComponentName imeComponent = ComponentName.unflattenFromString(imeString);
+            if (imeComponent == null) {
+                Slog.w(TAG, "No default IME found");
+                return;
+            }
+            int imeUid;
+            String packageName = imeComponent.getPackageName();
+            try {
+                imeUid = context.getPackageManager().getApplicationInfoAsUser(packageName,
+                        PackageManager.ApplicationInfoFlags.of(0), userId).uid;
+            } catch (PackageManager.NameNotFoundException e) {
+                Slog.w(TAG, "Couldn't find packageName: " + packageName);
+                return;
+            }
+            event.mInlineSuggestionHostUid = imeUid;
+        });
+    }
+
+    public void maybeSetAutofillServiceUid(int uid) {
+        mEventInternal.ifPresent(event -> {
+            event.mAutofillServiceUid = uid;
+        });
+    }
+
+    public void maybeSetIsNewRequest(boolean isRequestTriggered) {
+        mEventInternal.ifPresent(event -> {
+            event.mIsRequestTriggered = isRequestTriggered;
+        });
+    }
+
+    /**
+     * Set authentication_type as long as mEventInternal presents.
+     */
+    public void maybeSetAuthenticationType(@AuthenticationType int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mAuthenticationType = val;
+        });
+    }
+
+    /**
+     * Set authentication_result as long as mEventInternal presents.
+     */
+    public void maybeSetAuthenticationResult(@AuthenticationResult int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mAuthenticationResult = val;
+        });
+    }
+
+    /**
+     * Set latency_authentication_ui_display_millis as long as mEventInternal presents.
+     */
+    public void maybeSetLatencyAuthenticationUiDisplayMillis(int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mLatencyAuthenticationUiDisplayMillis = val;
+        });
+    }
+
+    /** Set latency_authentication_ui_display_millis as long as mEventInternal presents. */
+    public void maybeSetLatencyAuthenticationUiDisplayMillis() {
+        maybeSetLatencyAuthenticationUiDisplayMillis(getElapsedTime());
+    }
+
+    /**
+     * Set latency_dataset_display_millis as long as mEventInternal presents.
+     */
+    public void maybeSetLatencyDatasetDisplayMillis(int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mLatencyDatasetDisplayMillis = val;
+        });
+    }
+
+    /** Set latency_dataset_display_millis as long as mEventInternal presents. */
+    public void maybeSetLatencyDatasetDisplayMillis() {
+        maybeSetLatencyDatasetDisplayMillis(getElapsedTime());
+    }
+
+    /**
+     * Set available_pcc_count.
+     */
+    public void maybeSetAvailablePccCount(int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mAvailablePccCount = val;
+        });
+    }
+
+    /**
+     * Set available_pcc_only_count.
+     */
+    public void maybeSetAvailablePccOnlyCount(int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mAvailablePccOnlyCount = val;
+        });
+    }
+
+    /**
+     * Set selected_dataset_picked_reason.
+     */
+    public void maybeSetSelectedDatasetPickReason(@Dataset.DatasetEligibleReason int val) {
+        mEventInternal.ifPresent(event -> {
+            event.mSelectedDatasetPickedReason = convertDatasetPickReason(val);
+        });
+    }
+
+    /**
+     * Set detection_pref
+     */
+    public void maybeSetDetectionPreference(@DetectionPreference int detectionPreference) {
+        mEventInternal.ifPresent(event -> {
+            event.mDetectionPreference = detectionPreference;
+        });
+    }
+
+    /**
+     * Sets the field length whenever the text changes. Will keep track of the first
+     * and last modification lengths.
+     */
+    public void updateTextFieldLength(AutofillValue value) {
+        mEventInternal.ifPresent(event -> {
+            if (value == null || !value.isText()) {
+                return;
+            }
+
+            int length = value.getTextValue().length();
+
+            if (event.mFieldFirstLength == DEFAULT_VALUE_INT) {
+                event.mFieldFirstLength = length;
+            }
+            event.mFieldLastLength = length;
+        });
+    }
+
+    /**
+     * Set various timestamps whenever the ViewState is modified
+     *
+     * <p>If the ViewState contains ViewState.STATE_AUTOFILLED, sets field_autofilled_timestamp_ms
+     * else, set field_first_modified_timestamp_ms (if unset) and field_last_modified_timestamp_ms
+     */
+    public void onFieldTextUpdated(ViewState state, AutofillValue value) {
+        mEventInternal.ifPresent(event -> {
+            int timestamp = getElapsedTime();
+            // Focused id should be set before this is called
+            if (state == null || state.id == null || state.id.getViewId() != event.mFocusedId) {
+                // if these don't match, the currently field different than before
+                Slog.w(
+                        TAG,
+                        "Bad view state for: " + event.mFocusedId + ", state: " + state);
+                return;
+            }
+
+            updateTextFieldLength(value);
+
+            // Text changed because filling into form, just log Autofill timestamp
+            if ((state.getState() & ViewState.STATE_AUTOFILLED) != 0) {
+                event.mAutofilledTimestampMs = timestamp;
+                return;
+            }
+
+
+            // Set timestamp variables
+            if (event.mFieldModifiedFirstTimestampMs == DEFAULT_VALUE_INT) {
+                event.mFieldModifiedFirstTimestampMs = timestamp;
+            }
+            event.mFieldModifiedLastTimestampMs = timestamp;
+        });
+    }
+
+    public void setPresentationSelectedTimestamp() {
+        mEventInternal.ifPresent(event -> {
+            event.mSelectionTimestamp = getElapsedTime();
+        });
+    }
+
+    /**
+     * Returns timestamp (relative to mSessionStartTimestamp)
+     */
+    private int getElapsedTime() {
+        return (int)(SystemClock.elapsedRealtime() - mSessionStartTimestamp);
+    }
+
+
+    private int convertDatasetPickReason(@Dataset.DatasetEligibleReason int val) {
+        switch (val) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                return val;
+        }
+        return PICK_REASON_UNKNOWN;
+    }
+
+    /**
+     * Set field_classification_request_id as long as mEventInternal presents.
+     */
+    public void maybeSetFieldClassificationRequestId(int requestId) {
+        mEventInternal.ifPresent(event -> {
+            event.mFieldClassificationRequestId = requestId;
+        });
+    }
+
+    /**
+     * Set views_fillable_total_count as long as mEventInternal presents.
+     */
+    public void maybeSetViewFillablesAndCount(List<AutofillId> autofillIds) {
+        mEventInternal.ifPresent(event -> {
+            event.mAutofillIdsAttemptedAutofill = new ArraySet<>(autofillIds);
+            event.mViewFillableTotalCount = event.mAutofillIdsAttemptedAutofill.size();
+        });
+    }
+
+    /**
+     * Set views_fillable_total_count as long as mEventInternal presents.
+     */
+    public void maybeUpdateViewFillablesForRefillAttempt(List<AutofillId> autofillIds) {
+        mEventInternal.ifPresent(event -> {
+            // These autofill ids would be the ones being re-attempted.
+            event.mAutofillIdsAttemptedAutofill = new ArraySet<>(autofillIds);
+            // These autofill id's are being refilled, so they had failed previously.
+            // Note that these autofillIds correspond to the new autofill ids after relayout.
+            event.mFailedAutofillIds = new ArraySet<>(autofillIds);
+            setHasRelayoutLog();
+        });
+    }
+
+    /**
+     * Set how many views are filtered from fill because they are not in current session
+     */
+    public void maybeSetFilteredFillableViewsCount(int filteredViewsCount) {
+        mEventInternal.ifPresent(event -> {
+            event.mFilteredFillabaleViewCount = filteredViewsCount;
+        });
+    }
+
+    /**
+     * Set views_filled_failure_count using failure count as long as mEventInternal
+     * presents.
+     */
+    public void maybeSetViewFillFailureCounts(@NonNull List<AutofillId> ids, boolean isRefill) {
+        mEventInternal.ifPresent(event -> {
+            int failureCount = ids.size();
+            if (isRefill) {
+                event.mViewFailedOnRefillCount = failureCount;
+                setHasRelayoutLog();
+            } else {
+                event.mViewFillFailureCount = failureCount;
+                event.mViewFailedPriorToRefillCount = failureCount;
+                event.mFailedAutofillIds = new ArraySet<>(ids);
+            }
+        });
+    }
+
+    /** Sets focused_autofill_id using view id */
+    public void maybeSetFocusedId(AutofillId id) {
+        mEventInternal.ifPresent(
+                event -> {
+                    event.mFocusedId = id.getViewId();
+                    if (id.isVirtualInt()) {
+                        event.mFocusedVirtualAutofillId =
+                                id.getVirtualChildIntId() % 100;
+                    }
+                });
+    }
+
+    /**
+     * Set views_filled_failure_count using failure count as long as mEventInternal
+     * presents.
+     */
+    public synchronized void maybeAddSuccessId(AutofillId autofillId) {
+        mEventInternal.ifPresent(event -> {
+            ArraySet<AutofillId> autofillIds = event.mAutofillIdsAttemptedAutofill;
+            if (autofillIds == null) {
+                Slog.w(TAG, "Attempted autofill ids is null, but received autofillId:" + autofillId
+                        + " successfully filled");
+                event.mViewFilledButUnexpectedCount++;
+            } else if (autofillIds.contains(autofillId)) {
+                ArraySet<AutofillId> failedIds = event.mFailedAutofillIds;
+                if (failedIds.contains(autofillId)) {
+                    if (sVerbose) {
+                        Slog.v(TAG, "Logging autofill refill of id:" + autofillId);
+                    }
+                    // This indicates the success after refill attempt
+                    event.mViewFilledSuccessfullyOnRefillCount++;
+                    // Remove so if we don't reprocess duplicate requests
+                    failedIds.remove(autofillId);
+                } else {
+                    if (sVerbose) {
+                        Slog.v(TAG, "Logging autofill for id:" + autofillId);
+                    }
+                }
+                // Common actions to take irrespective of being filled by refill attempt or not.
+                event.mViewFillSuccessCount++;
+                autofillIds.remove(autofillId);
+                event.mAlreadyFilledAutofillIds.add(autofillId);
+            } else if (event.mAlreadyFilledAutofillIds.contains(autofillId)) {
+                if (sVerbose) {
+                    Slog.v(TAG, "Successfully filled autofillId:" + autofillId
+                            + " already processed ");
+                }
+            } else {
+                Slog.w(TAG, "Successfully filled autofillId:" + autofillId
+                        + " not found in list of attempted autofill ids: " + autofillIds);
+                event.mViewFilledButUnexpectedCount++;
+            }
+        });
+    }
+
+    /**
+     * Set how many views are filtered from fill because they are not in current session
+     */
+    public void maybeSetNotifyNotExpiringResponseDuringAuth() {
+        mEventInternal.ifPresent(event -> {
+            event.mFixExpireResponseDuringAuthCount++;
+        });
+    }
+    /**
+     * Set how many views are filtered from fill because they are not in current session
+     */
+    public void notifyViewEnteredIgnoredDuringAuthCount() {
+        mEventInternal.ifPresent(event -> {
+            event.mNotifyViewEnteredIgnoredDuringAuthCount++;
+        });
+    }
+
+    /**
+     * Set fill_dialog_not_shown_reason
+     * @param reason
+     */
+    public void maybeSetFillDialogNotShownReason(@FillDialogNotShownReason int reason) {
+        mEventInternal.ifPresent(event -> {
+            if ((event.mFillDialogNotShownReason
+                    == FILL_DIALOG_NOT_SHOWN_REASON_DELAY_AFTER_ANIMATION_END
+                    || event.mFillDialogNotShownReason
+                    == FILL_DIALOG_NOT_SHOWN_REASON_WAIT_FOR_IME_ANIMATION) && reason
+                    == FILL_DIALOG_NOT_SHOWN_REASON_TIMEOUT_SINCE_IME_ANIMATED) {
+                event.mFillDialogNotShownReason = FILL_DIALOG_NOT_SHOWN_REASON_TIMEOUT_AFTER_DELAY;
+            } else {
+                event.mFillDialogNotShownReason = reason;
+            }
+        });
+    }
+
+    /**
+     * Set fill_dialog_ready_to_show_ms
+     * @param val
+     */
+    public void maybeSetFillDialogReadyToShowMs(long val) {
+        mEventInternal.ifPresent(event -> {
+            event.mFillDialogReadyToShowMs = (int) (val - mSessionStartTimestamp);
+        });
+    }
+
+    /**
+     * Set ime_animation_finish_ms
+     * @param val
+     */
+    public void maybeSetImeAnimationFinishMs(long val) {
+        mEventInternal.ifPresent(event -> {
+            event.mImeAnimationFinishMs = (int) (val - mSessionStartTimestamp);
+        });
+    }
+    /**
+     * Set the log contains relayout metrics.
+     * This is being added as a temporary measure to add logging.
+     * In future, when we map Session's old view states to the new autofill id's as part of fixing
+     * save for relayout cases, we no longer would need this. But till then, this is needed to set
+     * autofill logs for relayout cases.
+     */
+    private void setHasRelayoutLog() {
+        mEventInternal.ifPresent(event -> {
+            event.mHasRelayoutLog = true;
+        });
+    }
+
+    /**
+     * Finish and log the event.
+     */
+    public void logAndEndEvent(String caller) {
+        if (!mEventInternal.isPresent()) {
+            Slog.w(TAG, "Shouldn't be logging AutofillPresentationEventReported again for same "
+                    + "event");
+            return;
+        }
+
+        PresentationStatsEventInternal event = mEventInternal.get();
+        boolean ignoreLogging = !event.mIsDatasetAvailable
+                && !event.mHasRelayoutLog
+                && !(event.mFixExpireResponseDuringAuthCount > 0)
+                && !(event.mNotifyViewEnteredIgnoredDuringAuthCount > 0);
+        if (sVerbose) {
+            Slog.v(TAG, "(" + caller + ") "
+                    + (ignoreLogging ? "IGNORING - following event won't be logged: " : "")
+                    + "Log AutofillPresentationEventReported:"
+                    + " requestId=" + event.mRequestId
+                    + " sessionId=" + mSessionId
+                    + " mNoPresentationEventReason=" + event.mNoPresentationReason
+                    + " mAvailableCount=" + event.mAvailableCount
+                    + " mCountShown=" + event.mCountShown
+                    + " mCountFilteredUserTyping=" + event.mCountFilteredUserTyping
+                    + " mCountNotShownImePresentationNotDrawn="
+                    + event.mCountNotShownImePresentationNotDrawn
+                    + " mCountNotShownImeUserNotSeen=" + event.mCountNotShownImeUserNotSeen
+                    + " mDisplayPresentationType=" + event.mDisplayPresentationType
+                    + " mAutofillServiceUid=" + event.mAutofillServiceUid
+                    + " mInlineSuggestionHostUid=" + event.mInlineSuggestionHostUid
+                    + " mIsRequestTriggered=" + event.mIsRequestTriggered
+                    + " mFillRequestSentTimestampMs=" + event.mFillRequestSentTimestampMs
+                    + " mFillResponseReceivedTimestampMs=" + event.mFillResponseReceivedTimestampMs
+                    + " mSuggestionSentTimestampMs=" + event.mSuggestionSentTimestampMs
+                    + " mSuggestionPresentedTimestampMs=" + event.mSuggestionPresentedTimestampMs
+                    + " mSelectedDatasetId=" + event.mSelectedDatasetId
+                    + " mDialogDismissed=" + event.mDialogDismissed
+                    + " mNegativeCtaButtonClicked=" + event.mNegativeCtaButtonClicked
+                    + " mPositiveCtaButtonClicked=" + event.mPositiveCtaButtonClicked
+                    + " mAuthenticationType=" + event.mAuthenticationType
+                    + " mAuthenticationResult=" + event.mAuthenticationResult
+                    + " mLatencyAuthenticationUiDisplayMillis="
+                    + event.mLatencyAuthenticationUiDisplayMillis
+                    + " mLatencyDatasetDisplayMillis=" + event.mLatencyDatasetDisplayMillis
+                    + " mAvailablePccCount=" + event.mAvailablePccCount
+                    + " mAvailablePccOnlyCount=" + event.mAvailablePccOnlyCount
+                    + " mSelectedDatasetPickedReason=" + event.mSelectedDatasetPickedReason
+                    + " mDetectionPreference=" + event.mDetectionPreference
+                    + " mFieldClassificationRequestId=" + event.mFieldClassificationRequestId
+                    + " mAppPackageUid=" + mCallingAppUid
+                    + " mIsCredentialRequest=" + event.mIsCredentialRequest
+                    + " mWebviewRequestedCredential=" + event.mWebviewRequestedCredential
+                    + " mFilteredFillabaleViewCount=" + event.mFilteredFillabaleViewCount
+                    + " mViewFillableTotalCount=" + event.mViewFillableTotalCount
+                    + " mViewFillFailureCount=" + event.mViewFillFailureCount
+                    + " mFocusedId=" + event.mFocusedId
+                    + " mViewFillSuccessCount=" + event.mViewFillSuccessCount
+                    + " mViewFilledButUnexpectedCount=" + event.mViewFilledButUnexpectedCount
+                    + " event.mSelectionTimestamp=" + event.mSelectionTimestamp
+                    + " event.mAutofilledTimestampMs=" + event.mAutofilledTimestampMs
+                    + " event.mFieldModifiedFirstTimestampMs="
+                    + event.mFieldModifiedFirstTimestampMs
+                    + " event.mFieldModifiedLastTimestampMs=" + event.mFieldModifiedLastTimestampMs
+                    + " event.mSuggestionPresentedLastTimestampMs="
+                    + event.mSuggestionPresentedLastTimestampMs
+                    + " event.mFocusedVirtualAutofillId=" + event.mFocusedVirtualAutofillId
+                    + " event.mFieldFirstLength=" + event.mFieldFirstLength
+                    + " event.mFieldLastLength=" + event.mFieldLastLength
+                    + " event.mViewFailedPriorToRefillCount=" + event.mViewFailedPriorToRefillCount
+                    + " event.mViewFilledSuccessfullyOnRefillCount="
+                    + event.mViewFilledSuccessfullyOnRefillCount
+                    + " event.mViewFailedOnRefillCount=" + event.mViewFailedOnRefillCount
+                    + " event.notExpiringResponseDuringAuthCount="
+                    + event.mFixExpireResponseDuringAuthCount
+                    + " event.notifyViewEnteredIgnoredDuringAuthCount="
+                    + event.mNotifyViewEnteredIgnoredDuringAuthCount
+                    + " event.fillDialogNotShownReason="
+                    + event.mFillDialogNotShownReason
+                    + " event.fillDialogReadyToShowMs="
+                    + event.mFillDialogReadyToShowMs
+                    + " event.imeAnimationFinishMs="
+                    + event.mImeAnimationFinishMs);
+        }
+
+        // TODO(b/234185326): Distinguish empty responses from other no presentation reasons.
+        if (ignoreLogging) {
+            Slog.w(TAG, "Empty dataset. Autofill ignoring log");
+            mEventInternal = Optional.empty();
+            return;
+        }
+        FrameworkStatsLog.write(
+                AUTOFILL_PRESENTATION_EVENT_REPORTED,
+                event.mRequestId,
+                mSessionId,
+                event.mNoPresentationReason,
+                event.mAvailableCount,
+                event.mCountShown,
+                event.mCountFilteredUserTyping,
+                event.mCountNotShownImePresentationNotDrawn,
+                event.mCountNotShownImeUserNotSeen,
+                event.mDisplayPresentationType,
+                event.mAutofillServiceUid,
+                event.mInlineSuggestionHostUid,
+                event.mIsRequestTriggered,
+                event.mFillRequestSentTimestampMs,
+                event.mFillResponseReceivedTimestampMs,
+                event.mSuggestionSentTimestampMs,
+                event.mSuggestionPresentedTimestampMs,
+                event.mSelectedDatasetId,
+                event.mDialogDismissed,
+                event.mNegativeCtaButtonClicked,
+                event.mPositiveCtaButtonClicked,
+                event.mAuthenticationType,
+                event.mAuthenticationResult,
+                event.mLatencyAuthenticationUiDisplayMillis,
+                event.mLatencyDatasetDisplayMillis,
+                event.mAvailablePccCount,
+                event.mAvailablePccOnlyCount,
+                event.mSelectedDatasetPickedReason,
+                event.mDetectionPreference,
+                event.mFieldClassificationRequestId,
+                mCallingAppUid,
+                event.mIsCredentialRequest,
+                event.mWebviewRequestedCredential,
+                event.mViewFillableTotalCount,
+                event.mViewFillFailureCount,
+                event.mFocusedId,
+                event.mViewFillSuccessCount,
+                event.mViewFilledButUnexpectedCount,
+                event.mSelectionTimestamp,
+                event.mAutofilledTimestampMs,
+                event.mFieldModifiedFirstTimestampMs,
+                event.mFieldModifiedLastTimestampMs,
+                event.mSuggestionPresentedLastTimestampMs,
+                event.mFocusedVirtualAutofillId,
+                event.mFieldFirstLength,
+                event.mFieldLastLength,
+                event.mFilteredFillabaleViewCount,
+                event.mViewFailedPriorToRefillCount,
+                event.mViewFilledSuccessfullyOnRefillCount,
+                event.mViewFailedOnRefillCount,
+                event.mFixExpireResponseDuringAuthCount,
+                event.mNotifyViewEnteredIgnoredDuringAuthCount,
+                event.mFillDialogNotShownReason,
+                event.mFillDialogReadyToShowMs,
+                event.mImeAnimationFinishMs);
+        mEventInternal = Optional.empty();
+    }
+
+    static final class PresentationStatsEventInternal {
+        int mRequestId;
+        @NotShownReason int mNoPresentationReason = NOT_SHOWN_REASON_UNKNOWN;
+        boolean mIsDatasetAvailable;
+        int mAvailableCount;
+        int mCountShown = 0;
+        int mCountFilteredUserTyping;
+        int mCountNotShownImePresentationNotDrawn;
+        int mCountNotShownImeUserNotSeen;
+        int mDisplayPresentationType = AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__UNKNOWN_AUTOFILL_DISPLAY_PRESENTATION_TYPE;
+        int mAutofillServiceUid = DEFAULT_VALUE_INT;
+        int mInlineSuggestionHostUid = DEFAULT_VALUE_INT;
+        boolean mIsRequestTriggered;
+        int mFillRequestSentTimestampMs = DEFAULT_VALUE_INT;
+        int mFillResponseReceivedTimestampMs = DEFAULT_VALUE_INT;
+        int mSuggestionSentTimestampMs = DEFAULT_VALUE_INT;
+        int mSuggestionPresentedTimestampMs = DEFAULT_VALUE_INT;
+        int mSelectedDatasetId = DEFAULT_VALUE_INT;
+        boolean mDialogDismissed = false;
+        boolean mNegativeCtaButtonClicked = false;
+        boolean mPositiveCtaButtonClicked = false;
+        int mAuthenticationType = AUTHENTICATION_TYPE_UNKNOWN;
+        int mAuthenticationResult = AUTHENTICATION_RESULT_UNKNOWN;
+        int mLatencyAuthenticationUiDisplayMillis = DEFAULT_VALUE_INT;
+        int mLatencyDatasetDisplayMillis = DEFAULT_VALUE_INT;
+        int mAvailablePccCount = DEFAULT_VALUE_INT;
+        int mAvailablePccOnlyCount = DEFAULT_VALUE_INT;
+        @DatasetPickedReason int mSelectedDatasetPickedReason = PICK_REASON_UNKNOWN;
+        @DetectionPreference int mDetectionPreference = DETECTION_PREFER_UNKNOWN;
+        int mFieldClassificationRequestId = DEFAULT_VALUE_INT;
+        boolean mIsCredentialRequest = false;
+        boolean mWebviewRequestedCredential = false;
+        int mFilteredFillabaleViewCount = DEFAULT_VALUE_INT;
+        int mViewFillableTotalCount = DEFAULT_VALUE_INT;
+        int mViewFillFailureCount = DEFAULT_VALUE_INT;
+        int mFocusedId = DEFAULT_VALUE_INT;
+        int mSelectionTimestamp = DEFAULT_VALUE_INT;
+        int mAutofilledTimestampMs = DEFAULT_VALUE_INT;
+        int mFieldModifiedFirstTimestampMs = DEFAULT_VALUE_INT;
+        int mFieldModifiedLastTimestampMs = DEFAULT_VALUE_INT;
+        int mSuggestionPresentedLastTimestampMs = DEFAULT_VALUE_INT;
+        int mFocusedVirtualAutofillId = DEFAULT_VALUE_INT;
+        int mFieldFirstLength = DEFAULT_VALUE_INT;
+        int mFieldLastLength = DEFAULT_VALUE_INT;
+
+        // Default value for success count is set to 0 explicitly. Setting it to -1 for
+        // uninitialized doesn't help much, as this would be non-zero only if callback is received.
+        int mViewFillSuccessCount = 0;
+        int mViewFilledButUnexpectedCount = 0;
+        int mViewFailedPriorToRefillCount = 0;
+        int mViewFailedOnRefillCount = 0;
+        int mViewFilledSuccessfullyOnRefillCount = 0;
+
+        int mFixExpireResponseDuringAuthCount = 0;
+        int mNotifyViewEnteredIgnoredDuringAuthCount = 0;
+
+        ArraySet<AutofillId> mAutofillIdsAttemptedAutofill;
+        ArraySet<AutofillId> mFailedAutofillIds = new ArraySet<>();
+        ArraySet<AutofillId> mAlreadyFilledAutofillIds = new ArraySet<>();
+
+        // Following are not logged and used only for internal logic
+        boolean shouldResetShownCount = false;
+        boolean mHasRelayoutLog = false;
+        @FillDialogNotShownReason int mFillDialogNotShownReason = FILL_DIALOG_NOT_SHOWN_REASON_UNKNOWN;
+        int mFillDialogReadyToShowMs = DEFAULT_VALUE_INT;
+        int mImeAnimationFinishMs = DEFAULT_VALUE_INT;
+        PresentationStatsEventInternal() {}
+    }
+
+    static int getNoPresentationEventReason(
+            @AutofillManager.AutofillCommitReason int commitReason) {
+        switch (commitReason) {
+            case COMMIT_REASON_VIEW_COMMITTED:
+                return NOT_SHOWN_REASON_SESSION_COMMITTED_PREMATURELY;
+            case COMMIT_REASON_ACTIVITY_FINISHED:
+                return NOT_SHOWN_REASON_ACTIVITY_FINISHED;
+            case COMMIT_REASON_VIEW_CHANGED:
+                return NOT_SHOWN_REASON_VIEW_CHANGED;
+            case COMMIT_REASON_VIEW_CLICKED:
+                // TODO(b/234185326): Add separate reason for view clicked.
+            default:
+                return NOT_SHOWN_REASON_UNKNOWN;
+        }
+    }
+
+    private static int getDisplayPresentationType(@UiType int uiType) {
+        switch (uiType) {
+            case UI_TYPE_MENU:
+                return AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__MENU;
+            case UI_TYPE_INLINE:
+                return AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__INLINE;
+            case UI_TYPE_DIALOG:
+                return AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__DIALOG;
+            default:
+                return AUTOFILL_PRESENTATION_EVENT_REPORTED__DISPLAY_PRESENTATION_TYPE__UNKNOWN_AUTOFILL_DISPLAY_PRESENTATION_TYPE;
+        }
+    }
+}

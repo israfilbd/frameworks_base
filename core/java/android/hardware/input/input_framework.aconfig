@@ -1,0 +1,270 @@
+package: "com.android.hardware.input"
+container: "system"
+
+# Project link: https://gantry.corp.google.com/projects/android_platform_input/changes
+
+# NOTE: the input_native namespace is deprecated. New flags should be added to the input namespace
+# instead.
+
+flag {
+    namespace: "input_native"
+    name: "keyboard_glyph_map"
+    description: "Allows system to provide keyboard specific key drawables and shortcuts via config files"
+    bug: "345440920"
+}
+
+flag {
+    namespace: "input_native"
+    name: "touchpad_visualizer"
+    description: "Enables a developer overlay that displays raw touchpad input data and gesture recognition status in real-time."
+    bug: "286551975"
+}
+
+flag {
+    namespace: "input_native"
+    name: "manage_key_gestures"
+    description: "Manage key gestures through Input APIs"
+    is_exported: true
+    bug: "358569822"
+}
+
+flag {
+    name: "keyboard_repeat_keys"
+    namespace: "input_native"
+    description: "Allow configurable timeout before key repeat and repeat delay rate for key repeats"
+    bug: "336585002"
+}
+
+flag {
+    name: "mouse_reverse_vertical_scrolling"
+    namespace: "input"
+    description: "Controls whether external mouse vertical scrolling can be reversed"
+    bug: "352598211"
+}
+
+flag {
+    name: "mouse_swap_primary_button"
+    namespace: "input"
+    description: "Controls whether the connected mice's primary buttons, left and right, can be swapped."
+    bug: "352598211"
+}
+
+flag {
+    name: "keyboard_a11y_shortcut_control"
+    namespace: "input"
+    description: "Adds shortcuts to toggle and control a11y keyboard features"
+    bug: "373458181"
+}
+
+flag {
+    name: "touchpad_system_gesture_disable"
+    namespace: "input"
+    description: "Adds an accessibility setting to disable system navigation gestures (3- and 4-finger swipes) on touchpads"
+    bug: "353947750"
+}
+
+flag {
+    name: "enable_customizable_input_gestures"
+    namespace: "input"
+    description: "Enables keyboard shortcut customization support"
+    bug: "365064144"
+}
+
+flag {
+    name: "enable_new_25q2_keycodes"
+    namespace: "input"
+    description: "Enables new 25Q2 keycodes"
+    bug: "365920375"
+    is_exported: true
+}
+
+flag {
+    name: "override_power_key_behavior_in_focused_window"
+    namespace: "wallet_integration"
+    description: "Allows privileged focused windows to override the power key double tap behavior."
+    bug: "357144512"
+}
+
+flag {
+    name: "enable_display_color_inversion_key_gestures"
+    namespace: "input"
+    description: "Adds key gestures for display color inversion for accessibility needs"
+    bug: "383730505"
+}
+
+flag {
+    name: "enable_magnify_magnification_key_gesture_dialog"
+    namespace: "accessibility"
+    description: "Enables magnifying the magnification key gesture dialog so that low vision users can see the dialog"
+    bug: "425722546"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_select_to_speak_key_gestures"
+    namespace: "accessibility"
+    description: "Adds key gestures for select to speak"
+    bug: "375277034"
+}
+
+flag {
+    name: "enable_talkback_and_magnifier_key_gestures"
+    namespace: "input"
+    description: "Adds key gestures for Magnification. TalkBack key gesture has been flagged separately under enable_talkback_key_gestures."
+    bug: "375277034"
+}
+
+flag {
+    name: "enable_talkback_key_gestures"
+    namespace: "accessibility"
+    description: "Adds key gesture for TalkBack"
+    bug: "441787329"
+}
+
+flag {
+    name: "enable_voice_access_key_gestures"
+    namespace: "input"
+    description: "Adds key gestures for voice access"
+    bug: "383734125"
+}
+
+flag {
+    name: "can_window_override_power_gesture_api"
+    namespace: "wallet_integration"
+    description: "Adds new API in WindowManager class to check if the window can override the power key double tap behavior."
+    bug: "378736024"
+}
+
+flag {
+    name: "pointer_acceleration"
+    namespace: "input"
+    description: "Allows the user to disable pointer acceleration for mouse and touchpads."
+    bug: "349006858"
+}
+
+flag {
+    name: "mouse_scrolling_acceleration"
+    namespace: "input"
+    description: "Allows the user to disable input scrolling acceleration for mouse."
+    bug: "383555305"
+}
+
+flag {
+    name: "remove_fallback_modifiers"
+    namespace: "input"
+    description: "Removes modifiers from the original key event that activated the fallback, ensuring that only the intended fallback event is sent."
+    bug: "382545048"
+}
+
+flag {
+    name: "abort_slow_multi_press"
+    namespace: "wear_frameworks"
+    description: "If a press that's a part of a multipress takes too long, the multipress gesture will be cancelled."
+    bug: "370095426"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "key_event_activity_detection"
+    namespace: "input"
+    is_exported: true
+    description: "Key Event Activity Detection"
+    bug: "356412905"
+}
+
+flag {
+   name: "enable_backup_and_restore_for_input_gestures"
+   namespace: "input"
+   description: "Adds backup and restore support for custom input gestures"
+   bug: "382184249"
+   is_fixed_read_only: true
+}
+
+flag {
+    name: "request_key_capture_api"
+    namespace: "input"
+    description: "Adds support for key capture APIs"
+    is_exported: true
+    bug: "375435312"
+}
+
+flag {
+    name: "fix_search_modifier_fallbacks"
+    namespace: "input"
+    description: "Fixes a bug in which fallbacks from Search based key combinations were not activating."
+    bug: "384113980"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "create_virtual_keyboard_api"
+    namespace: "input"
+    is_exported: true
+    description: "Adds support for creating a virtual keyboard API"
+    bug: "416054433"
+}
+
+
+
+flag {
+    name: "mouse_to_touch_per_app_compat"
+    namespace: "lse_desktop_experience"
+    description: "Enables per-app overrides compatibility for mouse to touch"
+    bug: "413207127"
+}
+
+flag {
+    name: "enable_quick_settings_panel_shortcut"
+    namespace: "input"
+    description: "Enables shortcut for quick settings panel"
+    bug: "423899230"
+}
+
+flag {
+    name: "touchpad_disable"
+    namespace: "input"
+    description: "Adds an accessibility setting to disable touchpads"
+    bug: "372857036"
+}
+
+flag {
+    name: "disable_settings_for_virtual_devices"
+    namespace: "input"
+    description: "Disable settings pages for virtual devices created using VDM or InputManager"
+    bug: "402596982"
+}
+
+flag {
+    name: "pointer_capture_modes"
+    namespace: "input"
+    description: "Enable pointer capture modes with different touchpad behaviours, and default to relative events from captured touchpads"
+    is_exported: true
+    bug: "403531245"
+}
+
+flag {
+    name: "enable_partial_screenshot_keyboard_shortcut"
+    namespace: "input"
+    description: "Enables keyboard shortcut for taking partial screenshots via large screen capture UI"
+    bug: "420714826"
+}
+
+flag {
+  name: "keyboard_backlight_shortcuts"
+  namespace: "desktop_input"
+  description: "Enables new keyboard shortcuts to adjust keyboard backlight"
+  bug: "401626732"
+}
+
+flag {
+    name: "bluetooth_wakeup_state_check"
+    namespace: "desktop_pnp"
+    description: "Check Bluetooth HID profile connection state is changed before waking up the device."
+    bug: "440645135"
+}

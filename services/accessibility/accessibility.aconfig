@@ -1,0 +1,159 @@
+package: "com.android.server.accessibility"
+container: "system"
+
+# NOTE: Keep alphabetized to help limit merge conflicts from multiple simultaneous editors.
+
+flag {
+    name: "cleanup_a11y_overlays"
+    namespace: "accessibility"
+    description: "Removes all attached accessibility overlays when a service is removed."
+    bug: "271490102"
+}
+
+flag {
+    name: "enable_autoclick_indicator"
+    namespace: "accessibility"
+    description: "Whether to show autoclick indicator when autoclick feature is enabled."
+    bug: "383901288"
+}
+
+flag {
+    name: "enable_a11y_checker_logging"
+    namespace: "accessibility"
+    description: "Whether to identify and log app a11y issues."
+    bug: "325420273"
+}
+
+flag {
+    name: "enable_braille_suw_immediate_connections"
+    namespace: "accessibility"
+    description: "Whether to allow Braille devices to connect automatically in the SUW."
+    bug: "400776305"
+}
+
+flag {
+    name: "enable_low_vision_generic_feedback"
+    namespace: "accessibility"
+    description: "Use generic feedback for low vision."
+    bug: "398736573"
+}
+
+flag {
+    name: "enable_low_vision_hats"
+    namespace: "accessibility"
+    description: "Use HaTS for low vision feedback."
+    bug: "397794341"
+}
+
+flag {
+    name: "enable_magnification_joystick"
+    namespace: "accessibility"
+    description: "Whether to enable joystick controls for magnification"
+    bug: "297211257"
+}
+
+flag {
+    name: "enable_magnification_multiple_finger_multiple_tap_gesture"
+    namespace: "accessibility"
+    description: "Whether to enable multi-finger-multi-tap gesture for magnification"
+    bug: "257274411"
+}
+
+flag {
+    name: "enable_magnification_one_finger_panning_gesture"
+    namespace: "accessibility"
+    description: "Whether to allow easy-mode (one finger panning gesture) for magnification"
+    bug: "282039824"
+}
+
+flag {
+    name: "enable_magnification_follows_mouse_with_pointer_motion_filter"
+    namespace: "accessibility"
+    description: "Whether to enable mouse following using pointer motion filter"
+    bug: "361817142"
+}
+
+flag {
+    name: "enable_magnification_magnify_nav_bar_and_ime"
+    namespace: "accessibility"
+    description: "Whether to enable magnify navigation bar and ime on full screen"
+    bug: "342509709"
+}
+
+flag {
+    name: "enable_mouse_key_enhancement"
+    namespace: "accessibility"
+    description: "Whether user can change mouse key acceleration, speed and use numeric keypad."
+    bug: "409330539"
+}
+
+flag {
+    name: "fullscreen_fling_gesture"
+    namespace: "accessibility"
+    description: "When true, adds a fling gesture animation for fullscreen magnification"
+    bug: "319175022"
+}
+
+flag {
+    name: "handle_multi_device_input"
+    namespace: "accessibility"
+    description: "Select a single active device when a multi-device stream is received by AccessibilityInputFilter"
+    bug: "310014874"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "manager_lifecycle_user_change"
+    namespace: "accessibility"
+    description: "Use A11yManagerService's Lifecycle to change users, instead of listening for user changed events."
+    bug: "393626471"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "notify_qs_tile_changed_after_user_initialization"
+    namespace: "accessibility"
+    description: "Pause SysUI notifying QuickSettings tiles changed until the user in AMS finishes initialization."
+    bug: "392560794"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "send_a11y_events_based_on_state"
+    namespace: "accessibility"
+    description: "Sends accessibility events in TouchExplorer#onAccessibilityEvent based on internal state to keep it consistent. This reduces test flakiness."
+    bug: "295575684"
+}
+
+flag {
+    name: "enable_color_correction_saturation"
+    namespace: "accessibility"
+    description: "Feature allows users to change color correction saturation for daltonizer."
+    bug: "322829049"
+}
+
+flag {
+    name: "throttle_motion_events_for_ui_update"
+    namespace: "accessibility"
+    description: "Throttles motion events for requesting the System UI to update magnification UIs."
+    bug: "435498747"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "touch_explorer_a11y_events_include_display_id"
+    namespace: "accessibility"
+    description: "When sending an A11y event, TouchExplorer will include its displayId"
+    bug: "431092453"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

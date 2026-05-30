@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2017 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="4470785958457506021">"Správca sprievodných zariadení"</string>
+    <string name="confirmation_title" msgid="2244241995958340998">"Chcete povoliť aplikácii &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; prístup k zariadeniu &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="message_discovery_soft_timeout" msgid="473346859407859161">"Uistite sa, že tento typ zariadenia (<xliff:g id="DEVICE_TYPE">%1$s</xliff:g>) má zapnutú funkciu <xliff:g id="DISCOVERY_METHOD">%2$s</xliff:g>, a majte <xliff:g id="PROFILE_NAME">%3$s</xliff:g> nablízku."</string>
+    <string name="message_discovery_hard_timeout" msgid="677514663495711424">"Nenašli sa žiadne zariadenia. Skúste to neskôr."</string>
+    <string name="discovery_bluetooth" msgid="5693557668470016164">"Bluetooth"</string>
+    <string name="discovery_wifi" msgid="1551782459721758773">"Wi-Fi"</string>
+    <string name="discovery_mixed" msgid="7071466134150760127">"Bluetooth a Wi-Fi"</string>
+    <string name="profile_name_watch" msgid="576290739483672360">"hodinky"</string>
+    <string name="chooser_title_non_profile" msgid="6035023914517087400">"Vyberte zariadenie, ktoré bude spravovať aplikácia &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;"</string>
+    <string name="chooser_title" msgid="2235819929238267637">"Vyberte profil <xliff:g id="PROFILE_NAME">%1$s</xliff:g>, ktorý chcete nastaviť"</string>
+    <string name="single_device_title" msgid="4199861437545438606">"Hľadá sa zariadenie <xliff:g id="PROFILE_NAME">%1$s</xliff:g>"</string>
+    <string name="summary_watch" msgid="8134580124808507407">"Táto aplikácia bude môcť synchronizovať informácie, napríklad meno volajúceho, a získavať prístup k týmto povoleniam v zariadení <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="profile_name_fitness_tracker" msgid="3107192493390199691">"treker kondície"</string>
+    <string name="confirmation_title_glasses" msgid="8288346850537727333">"Chcete povoliť aplikácii &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; spravovať zariadenie &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="profile_name_glasses" msgid="3506504967216601277">"zariadenie"</string>
+    <string name="summary_glasses" msgid="5469208629679579157">"Táto aplikácia bude mať prístup k týmto povoleniam v zariadení <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="profile_name_medical" msgid="5617160509499466400">"lekárske zariadenie"</string>
+    <string name="title_app_streaming" msgid="237666000400427614">"Chcete povoliť aplikácii &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; streamovať aplikácie a systémové funkcie medzi zariadeniami <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> a &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="summary_app_streaming" msgid="8346968726357732862">"Aplikácii <xliff:g id="APP_NAME">%1$s</xliff:g> budú udelené nasledujúce povolenia:"</string>
+    <string name="summary_app_streaming_legacy" msgid="8994180646987541606">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> bude mať prístup k všetkému, čo sa zobrazuje alebo prehráva v zariadení <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> vrátane zvuku, fotiek, platobných údajov, hesiel a správ.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_1">%1$s</xliff:g> bude môcť streamovať aplikácie do zariadenia <xliff:g id="DEVICE_NAME">%3$s</xliff:g>, kým prístup k tomuto povoleniu neodstránite."</string>
+    <string name="helper_summary_app_streaming" msgid="160149899100957545">"<xliff:g id="APP_NAME">%1$s</xliff:g> vyžaduje pre zariadenie <xliff:g id="DEVICE_NAME">%2$s</xliff:g> povolenie streamovať aplikácie a systémové funkcie medzi vašimi zariadeniami"</string>
+    <string name="title_automotive_projection" msgid="3296005598978412847"></string>
+    <string name="summary_automotive_projection" msgid="8683801274662496164"></string>
+    <string name="title_computer" msgid="5040395223341777259">"Povoľte zariadeniu &lt;strong&gt;<xliff:g id="DISPLAY_NAME">%3$s</xliff:g>&lt;/strong&gt; prístup k týmto informáciám zo zariadenia <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>"</string>
+    <string name="helper_summary_computer" msgid="2298803016482139668">"Aplikácia <xliff:g id="APP_NAME">%1$s</xliff:g> vyžaduje pre zariadenie <xliff:g id="DEVICE_NAME">%2$s</xliff:g> povolenie na prístup k fotkám, médiám a upozorneniam zariadenia <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_nearby_device_streaming" msgid="5342768208699657581">"Chcete povoliť aplikácii &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; streamovať aplikácie a systémové funkcie medzi zariadeniami <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> a &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="summary_nearby_device_streaming" msgid="7940640272770197219">"Aplikácii <xliff:g id="APP_NAME">%1$s</xliff:g> budú udelené nasledujúce povolenia:"</string>
+    <string name="summary_nearby_device_streaming_legacy" msgid="4306665203887990326">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> bude mať prístup k všetkému, čo sa zobrazuje alebo prehráva v zariadení <xliff:g id="DEVICE_NAME_1">%3$s</xliff:g> vrátane zvuku, fotiek, platobných údajov, hesiel a správ.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_2">%1$s</xliff:g> bude môcť streamovať aplikácie do zariadenia <xliff:g id="DEVICE_NAME_3">%3$s</xliff:g>, kým prístup k tomuto povoleniu neodstránite."</string>
+    <string name="helper_summary_nearby_device_streaming" msgid="4712712177819370967">"<xliff:g id="APP_NAME">%1$s</xliff:g> vyžaduje v mene zariadenia <xliff:g id="DEVICE_NAME">%2$s</xliff:g> povolenie streamovať aplikácie z vášho zariadenia <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_virtual_device" msgid="6556338763070329395">"Chcete povoliť aplikácii &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; streamovať zvuk a systémové funkcie medzi zariadeniami <xliff:g id="DEVICE_TYPE">%3$s</xliff:g> a &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="summary_virtual_device" msgid="1062189396947962635">"Aplikácii <xliff:g id="APP_NAME">%2$s</xliff:g> budú udelené nasledujúce povolenia:"</string>
+    <string name="profile_name_generic" msgid="6851028682723034988">"zariadenie"</string>
+    <string name="summary_generic" msgid="1761976003668044801">"Táto aplikácia bude môcť synchronizovať informácie, napríklad meno volajúceho, medzi telefónom a vybraným zariadením"</string>
+    <string name="consent_yes" msgid="8344487259618762872">"Povoliť"</string>
+    <string name="consent_no" msgid="2640796915611404382">"Nepovoliť"</string>
+    <string name="consent_cancel" msgid="5655005528379285841">"Zrušiť"</string>
+    <string name="consent_back" msgid="2560683030046918882">"Späť"</string>
+    <string name="downward_arrow_action" msgid="2327165938832076333">"Posunúť zoznam nadol"</string>
+    <string name="downward_arrow" msgid="2292427714411156088">"Šípka nadol"</string>
+    <string name="permission_expand" msgid="893185038020887411">"Rozbaliť sekciu <xliff:g id="PERMISSION_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_collapse" msgid="3320833884220844084">"Zbaliť sekciu <xliff:g id="PERMISSION_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_sync_confirmation_title" msgid="4409622174437248702">"Chcete udeliť aplikáciám v zariadení &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME">%1$s</xliff:g>&lt;/strong&gt; rovnaké povolenia ako v zariadení &lt;strong&gt;<xliff:g id="PRIMARY_DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="permission_sync_summary" msgid="765497944331294275">"Môžu zahŕňať prístup k &lt;strong&gt;mikrofónu&lt;/strong&gt;, &lt;strong&gt;kamere&lt;/strong&gt; a &lt;strong&gt;polohe&lt;/strong&gt;, a ďalšie citlivé povolenia v zariadení &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_0">%1$s</xliff:g>&lt;/strong&gt;. &lt;br/&gt;&lt;br/&gt;Tieto povolenia môžete kedykoľvek zmeniť v nastaveniach zariadenia &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_1">%1$s</xliff:g>&lt;/strong&gt;."</string>
+    <string name="vendor_header_button_description" msgid="7994879208461111473">"Ďalšie informácie"</string>
+    <string name="permission_phone" msgid="2661081078692784919">"Telefón"</string>
+    <string name="permission_sms" msgid="6337141296535774786">"SMS"</string>
+    <string name="permission_contacts" msgid="3858319347208004438">"Kontakty"</string>
+    <string name="permission_calendar" msgid="6805668388691290395">"Kalendár"</string>
+    <string name="permission_microphone" msgid="2152206421428732949">"Mikrofón"</string>
+    <string name="permission_call_logs" msgid="5546761417694586041">"Zoznam hovorov"</string>
+    <string name="permission_nearby_devices" msgid="7530973297737123481">"Zariadenia v okolí"</string>
+    <string name="permission_media_routing_control" msgid="5498639511586715253">"Zmena výstupu médií"</string>
+    <string name="permission_storage" msgid="6831099350839392343">"Fotky a médiá"</string>
+    <string name="permission_notifications" msgid="4099418516590632909">"Upozornenia"</string>
+    <string name="permission_create_virtual_device" msgid="1102905050922460040">"Streamovanie údajov do zar. <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_add_mirror_display" msgid="3743433250535606288">"Zrkadlenie obrazovky"</string>
+    <string name="permission_add_trusted_display" msgid="9052824856626276723">"Streamovanie aplikácií"</string>
+    <string name="permission_schedule_exact_alarm" msgid="5680932535987512225">"Nastaviť budíky a pripomenutia"</string>
+    <string name="permission_bypass_dnd" msgid="1241123166903040347">"Obísť nast. režimu bez vyruš."</string>
+    <string name="permission_phone_summary" msgid="8246321093970051702">"Volanie a správa telefonických hovorov"</string>
+    <string name="permission_call_logs_summary" msgid="7545243592757693321">"Čítanie a zapisovanie do zoznamu telefonických hovorov"</string>
+    <string name="permission_sms_summary" msgid="8499509535410068616">"Posielanie a zobrazovanie správ SMS"</string>
+    <string name="permission_contacts_summary" msgid="2840800622763086808">"Prístup ku kontaktom"</string>
+    <string name="permission_calendar_summary" msgid="8430353935747336165">"Prístup ku kalendáru"</string>
+    <string name="permission_microphone_summary" msgid="4862628553869973259">"Nahrávanie zvuku"</string>
+    <string name="permission_nearby_devices_summary" msgid="1306752848196464817">"Vyhľadajte zariadenia v okolí, pripojte sa k nim a určite ich relatívnu polohu"</string>
+    <string name="permission_notification_listener_access_summary" msgid="7856071768185367749">"Čítajte všetky upozornenia vrátane informácií, ako sú kontakty, správy a fotky"</string>
+    <string name="permission_notifications_summary" msgid="6819393427371255636">"• Čítajte všetky upozornenia vrátane informácií, ako sú kontakty, správy a fotky&lt;br/&gt;• Odosielajte upozornenia&lt;br/&gt;&lt;br/&gt;Schopnosť tejto aplikácie čítať a odosielať upozornenia môžete kedykoľvek spravovať v sekcii Nastavenia &gt; Upozornenia."</string>
+    <string name="permission_storage_summary" msgid="3918240895519506417"></string>
+    <string name="permission_post_notifications_summary" msgid="1099188848900200165">"Odosielanie upozornení"</string>
+    <string name="permission_create_virtual_device_summary" msgid="3570256456647725172">"Streamujte údaje z mikrofónu, kamery a ďalších senzorov zo zariadenia &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt; do zariadenia <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>."</string>
+    <string name="permission_add_mirror_display_summary" msgid="1385423940454941534">"Nahrávajte, prenášajte alebo zdieľajte obrazovku zariadenia <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g> v zariadení &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;.Aplikácia <xliff:g id="APP_NAME">%1$s</xliff:g> bude mať prístup k všetkému, čo sa zobrazuje alebo prehráva v zariadení <xliff:g id="DEVICE_TYPE_1">%2$s</xliff:g> vrátane zvuku, fotiek, platobných údajov, hesiel a správ."</string>
+    <string name="permission_add_trusted_display_summary" msgid="7399955172055281447">"Streamujte aplikácie zo zariadenia <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g> do zariadenia &lt;strong&gt;<xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g> bude mať prístup k všetkému, čo sa zobrazuje alebo prehráva v zariadení <xliff:g id="DEVICE_NAME_2">%3$s</xliff:g> vrátane zvuku, fotiek, platobných údajov, hesiel a správ, a to aj v prípade, že je zariadenie <xliff:g id="DEVICE_TYPE_3">%2$s</xliff:g> uzamknuté."</string>
+    <string name="permission_media_routing_control_summary" msgid="2714631092321412250">"Získajte prístup k dostupným zariadeniam a ovládajte, ktoré bude streamovať alebo prenášať zvuk či video z iných aplikácií"</string>
+    <string name="permission_schedule_exact_alarm_summary" msgid="5938321911309800377"></string>
+    <string name="permission_bypass_dnd_summary" msgid="6221709271927387626"></string>
+    <string name="device_type" product="default" msgid="8268703872070046263">"telefón"</string>
+    <string name="device_type" product="tablet" msgid="5038791954983067774">"tablet"</string>
+    <string name="device_type" product="tv" msgid="5355611506659405636">"televízor"</string>
+    <string name="device_type" product="device" msgid="1526125965802507189">"zariadenie"</string>
+</resources>

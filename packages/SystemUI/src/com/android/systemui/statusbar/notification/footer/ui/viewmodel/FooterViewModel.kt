@@ -1,0 +1,158 @@
+/*
+ * Copyright (C) 2023 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.statusbar.notification.footer.ui.viewmodel
+
+import android.annotation.SuppressLint
+import com.android.internal.jank.InteractionJankMonitor
+import com.android.systemui.res.R
+import com.android.systemui.scene.shared.flag.SceneContainerFlag
+import com.android.systemui.shade.domain.interactor.ShadeInteractor
+import com.android.systemui.shared.notifications.domain.interactor.NotificationSettingsInteractor
+import com.android.systemui.statusbar.notification.NotificationActivityStarter.SettingsIntent
+import com.android.systemui.statusbar.notification.domain.interactor.ActiveNotificationsInteractor
+import com.android.systemui.statusbar.notification.domain.interactor.SeenNotificationsInteractor
+import com.android.systemui.statusbar.notification.footer.ui.view.FooterView
+import com.android.systemui.util.kotlin.sample
+import com.android.systemui.util.ui.AnimatableEvent
+import com.android.systemui.util.ui.AnimatedValue
+import com.android.systemui.util.ui.toAnimatedValueFlow
+import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+
+/** ViewModel for [FooterView]. */
+@SuppressLint("FlowExposedFromViewModel")
+class FooterViewModel
+@AssistedInject
+constructor(
+    activeNotificationsInteractor: ActiveNotificationsInteractor,
+    notificationSettingsInteractor: NotificationSettingsInteractor,
+    seenNotificationsInteractor: SeenNotificationsInteractor,
+    shadeInteractor: ShadeInteractor,
+    windowRootViewBlurInteractor: WindowRootViewBlurInteractor,
+) {
+    /** A message to show instead of the footer buttons. */
+    val message: FooterMessageViewModel =
+        FooterMessageViewModel(
+            messageId = R.string.unlock_to_see_notif_text,
+            iconId = R.drawable.ic_friction_lock_closed,
+            isVisible =
+                if (SceneContainerFlag.isEnabled) {
+                    // Only show the footer message if there are notifications present.
+                    // Otherwise the empty shade will show it instead, so the footer only needs
+                    // to show the buttons.
+                    combine(
+                        seenNotificationsInteractor.hasFilteredOutSeenNotifications,
+                        activeNotificationsInteractor.areAnyNotificationsPresent,
+                    ) { hasFilteredOutSeenNotifications, areAnyNotificationsPresent ->
+                        hasFilteredOutSeenNotifications && areAnyNotificationsPresent
+                    }
+                } else {
+                    seenNotificationsInteractor.hasFilteredOutSeenNotifications
+                },
+        )
+
+    private val clearAllButtonVisible =
+        activeNotificationsInteractor.hasClearableNotifications
+            .combine(message.isVisible) { hasClearableNotifications, isMessageVisible ->
+                if (isMessageVisible) {
+                    // If the message is visible, the button never is
+                    false
+                } else {
+                    hasClearableNotifications
+                }
+            }
+            .distinctUntilChanged()
+
+    /** The button for clearing notifications. */
+    val clearAllButton: FooterButtonViewModel =
+        FooterButtonViewModel(
+            labelId = flowOf(R.string.clear_all_notifications_text),
+            accessibilityDescriptionId = flowOf(R.string.accessibility_clear_all),
+            isVisible =
+                clearAllButtonVisible
+                    .sample(
+                        // TODO(b/322167853): This check is currently duplicated in
+                        //  NotificationListViewModel, but instead it should be a field in
+                        //  ShadeAnimationInteractor.
+                        combine(
+                                shadeInteractor.isShadeFullyExpanded,
+                                shadeInteractor.isShadeTouchable,
+                                ::Pair,
+                            )
+                            .onStart { emit(Pair(false, false)) }
+                    ) { clearAllButtonVisible, (isShadeFullyExpanded, animationsEnabled) ->
+                        val shouldAnimate = isShadeFullyExpanded && animationsEnabled
+                        AnimatableEvent(clearAllButtonVisible, shouldAnimate)
+                    }
+                    .toAnimatedValueFlow(),
+        )
+
+    // Settings buttons are not visible when the message is.
+    val settingsButtonVisible: Flow<Boolean> = message.isVisible.map { !it }
+    val historyButtonVisible: Flow<Boolean> = message.isVisible.map { !it }
+
+    val manageOrHistoryButtonClick: Flow<SettingsIntent> by lazy {
+        notificationSettingsInteractor.isNotificationHistoryEnabled.map {
+            isNotificationHistoryEnabled ->
+            if (isNotificationHistoryEnabled) {
+                SettingsIntent.forNotificationHistory(
+                    cujType = InteractionJankMonitor.CUJ_SHADE_APP_LAUNCH_FROM_HISTORY_BUTTON
+                )
+            } else {
+                SettingsIntent.forNotificationSettings(
+                    cujType = InteractionJankMonitor.CUJ_SHADE_APP_LAUNCH_FROM_HISTORY_BUTTON
+                )
+            }
+        }
+    }
+
+    val isBlurSupported = windowRootViewBlurInteractor.isBlurCurrentlySupported
+
+    private val manageOrHistoryButtonText: Flow<Int> =
+        notificationSettingsInteractor.isNotificationHistoryEnabled.map { shouldLaunchHistory ->
+            if (shouldLaunchHistory) R.string.manage_notifications_history_text
+            else R.string.manage_notifications_text
+        }
+
+    /**
+     * The button for managing notification settings or opening notification history. This is
+     * replaced by two separate buttons in the redesign. These are currently static, and therefore
+     * not modeled here, but if that changes we can also add them as FooterButtonViewModels.
+     */
+    val manageOrHistoryButton: FooterButtonViewModel =
+        FooterButtonViewModel(
+            labelId = manageOrHistoryButtonText,
+            accessibilityDescriptionId = manageOrHistoryButtonText,
+            isVisible =
+                // Hide the manage button if the message is visible
+                message.isVisible.map { messageVisible ->
+                    AnimatedValue.NotAnimating(!messageVisible)
+                },
+        )
+
+    @AssistedFactory
+    interface Factory {
+        fun create(): FooterViewModel
+    }
+}

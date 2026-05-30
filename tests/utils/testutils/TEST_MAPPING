@@ -1,0 +1,18 @@
+{
+  "presubmit": [
+    {
+      "name": "frameworks-base-testutils-tests"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "frameworks-base-testutils-tests",
+      "options": [
+        {
+          "exclude-annotation": "org.junit.Ignore"
+        }
+      ]
+    }
+  ]
+}
+

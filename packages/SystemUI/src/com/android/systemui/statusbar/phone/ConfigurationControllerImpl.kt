@@ -1,0 +1,194 @@
+/*
+ * Copyright (C) 2018 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
+package com.android.systemui.statusbar.phone
+
+import android.content.Context
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
+import android.graphics.Rect
+import android.graphics.fonts.FontStyle.FONT_WEIGHT_MIN
+import android.os.LocaleList
+import android.view.View.LAYOUT_DIRECTION_RTL
+import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
+import com.android.systemui.statusbar.policy.ConfigurationController
+import com.android.systemui.statusbar.policy.ConfigurationController.ConfigurationListener
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+
+class ConfigurationControllerImpl
+@AssistedInject
+constructor(@Assisted private val context: Context) :
+    ConfigurationController, StatusBarConfigurationController {
+
+    private val listeners: MutableList<ConfigurationListener> = ArrayList()
+    private val lastConfig = Configuration()
+    private var density: Int = 0
+    private var smallestScreenWidth: Int = 0
+    private var maxBounds = Rect()
+    private var fontScale: Float = 0.toFloat()
+    private val inCarMode: Boolean
+    private var uiMode: Int = 0
+    private var localeList: LocaleList? = null
+    private var layoutDirection: Int
+    private var orientation = Configuration.ORIENTATION_UNDEFINED
+    private var fontWeightAdjustment: Int = FONT_WEIGHT_MIN
+
+    init {
+        val currentConfig = context.resources.configuration
+        fontScale = currentConfig.fontScale
+        density = currentConfig.densityDpi
+        smallestScreenWidth = currentConfig.smallestScreenWidthDp
+        maxBounds.set(currentConfig.windowConfiguration.maxBounds)
+        inCarMode =
+            currentConfig.uiMode and Configuration.UI_MODE_TYPE_MASK ==
+                Configuration.UI_MODE_TYPE_CAR
+        uiMode = currentConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        localeList = currentConfig.locales
+        layoutDirection = currentConfig.layoutDirection
+        fontWeightAdjustment = currentConfig.fontWeightAdjustment
+    }
+
+    private inline fun forEachListener(block: (ConfigurationListener) -> Unit) {
+        // Avoid concurrent modification exception
+        val snapshot = synchronized(listeners) { listeners.toList() }
+        snapshot.filterNotNull().forEach(block)
+    }
+
+    override fun notifyThemeChanged() {
+        forEachListener { it.onThemeChanged() }
+    }
+
+    override fun dispatchOnMovedToDisplay(newDisplayId: Int, newConfiguration: Configuration) {
+        forEachListener {
+            it.onMovedToDisplay(newDisplayId, newConfiguration)
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        // Avoid concurrent modification exception
+        forEachListener { it.onConfigChanged(newConfig) }
+        val fontScale = newConfig.fontScale
+        val density = newConfig.densityDpi
+        val uiMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val fontWeightAdjustment = newConfig.fontWeightAdjustment
+        val uiModeChanged = uiMode != this.uiMode
+        if (density != this.density || fontScale != this.fontScale || inCarMode && uiModeChanged
+            || fontWeightAdjustment != this.fontWeightAdjustment) {
+            forEachListener {
+                it.onDensityOrFontScaleChanged()
+            }
+            this.density = density
+            this.fontScale = fontScale
+            this.fontWeightAdjustment = fontWeightAdjustment
+        }
+
+        val smallestScreenWidth = newConfig.smallestScreenWidthDp
+        if (smallestScreenWidth != this.smallestScreenWidth) {
+            this.smallestScreenWidth = smallestScreenWidth
+            forEachListener {
+                it.onSmallestScreenWidthChanged()
+            }
+        }
+
+        val maxBounds = newConfig.windowConfiguration.maxBounds
+        if (maxBounds != this.maxBounds) {
+            // Update our internal rect to have the same bounds, instead of using
+            // `this.maxBounds = maxBounds` directly. Setting it directly means that `maxBounds`
+            // would be a direct reference to windowConfiguration.maxBounds, so the if statement
+            // above would always fail. See b/245799099 for more information.
+            this.maxBounds.set(maxBounds)
+            forEachListener { it.onMaxBoundsChanged() }
+        }
+
+        val localeList = newConfig.locales
+        if (localeList != this.localeList) {
+            this.localeList = localeList
+            forEachListener { it.onLocaleListChanged() }
+        }
+
+        if (uiModeChanged) {
+            // We need to force the style re-evaluation to make sure that it's up to date
+            // and attrs were reloaded.
+            context.theme.applyStyle(context.themeResId, true)
+
+            this.uiMode = uiMode
+            forEachListener { it.onUiModeChanged() }
+        }
+
+        if (layoutDirection != newConfig.layoutDirection) {
+            layoutDirection = newConfig.layoutDirection
+            forEachListener {
+                it.onLayoutDirectionChanged(layoutDirection == LAYOUT_DIRECTION_RTL)
+            }
+        }
+
+        if (lastConfig.updateFrom(newConfig) and ActivityInfo.CONFIG_ASSETS_PATHS != 0) {
+            forEachListener { it.onThemeChanged() }
+        }
+
+        val newOrientation = newConfig.orientation
+        if (orientation != newOrientation) {
+            orientation = newOrientation
+            forEachListener {
+                it.onOrientationChanged(orientation)
+            }
+        }
+    }
+
+    override fun addCallback(listener: ConfigurationListener) {
+        if (listener == null) return
+        synchronized(listeners) { listeners.add(listener) }
+        listener.onDensityOrFontScaleChanged()
+    }
+
+    override fun removeCallback(listener: ConfigurationListener) {
+        if (listener == null) return
+        synchronized(listeners) { listeners.remove(listener) }
+    }
+
+    override fun isLayoutRtl(): Boolean {
+        return layoutDirection == LAYOUT_DIRECTION_RTL
+    }
+
+    override fun getNightModeName(): String {
+        return when (uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_YES -> "night"
+            Configuration.UI_MODE_NIGHT_NO -> "day"
+            Configuration.UI_MODE_NIGHT_UNDEFINED -> "undefined"
+            else -> "err"
+        }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        /**
+         * Creates a [ConfigurationController] that uses [context] to resolve the current
+         * configuration and resources.
+         */
+        fun create(context: Context): ConfigurationControllerImpl
+    }
+}
+
+// This could be done with a Collection.filter and Collection.forEach, but Collection.filter
+// creates a new array to store them in and we really don't need that here, so this provides
+// a little more optimized inline version.
+inline fun <T> Collection<T>.filterForEach(f: (T) -> Boolean, execute: (T) -> Unit) {
+    forEach {
+        if (f.invoke(it)) {
+            execute.invoke(it)
+        }
+    }
+}

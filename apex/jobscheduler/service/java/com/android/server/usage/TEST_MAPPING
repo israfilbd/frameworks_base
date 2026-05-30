@@ -1,0 +1,21 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsUsageStatsTestCases_cts_usagestatstest"
+    },
+    {
+      "name": "CtsBRSTestCases"
+    },
+    {
+      "name": "FrameworksServicesTests_com_android_server_usage"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsUsageStatsTestCases"
+    },
+    {
+      "name": "FrameworksServicesTests_com_android_server_usage"
+    }
+  ]
+}

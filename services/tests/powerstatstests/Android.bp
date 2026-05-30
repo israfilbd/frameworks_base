@@ -1,0 +1,104 @@
+package {
+    // See: http://go/android-license-faq
+    default_applicable_licenses: ["frameworks_base_license"],
+    default_team: "trendy_team_framework_bpm",
+}
+
+android_test {
+    name: "PowerStatsTests",
+
+    // Include all test java files.
+    srcs: [
+        "src/**/*.java",
+    ],
+
+    static_libs: [
+        "services.core",
+        "coretests-aidl",
+        "platformprotosnano",
+        "junit",
+        "truth",
+        "androidx.test.runner",
+        "androidx.test.ext.junit",
+        "androidx.test.ext.truth",
+        "androidx.test.uiautomator_uiautomator",
+        "mockito-target-minus-junit4",
+        "ravenwood-junit",
+        "servicestests-utils",
+        "platform-test-annotations",
+        "flag-junit",
+        "apct-perftests-utils",
+    ],
+
+    libs: [
+        "android.test.base.stubs.system",
+    ],
+
+    resource_dirs: ["res/"],
+
+    data: [
+        ":BstatsTestApp",
+    ],
+
+    test_suites: [
+        "automotive-tests",
+        "device-tests",
+    ],
+
+    platform_apis: true,
+
+    certificate: "platform",
+
+    dxflags: ["--multi-dex"],
+
+    optimize: {
+        enabled: false,
+    },
+}
+
+android_ravenwood_test {
+    name: "PowerStatsTestsRavenwood",
+    static_libs: [
+        "services.core",
+        "platformprotosnano",
+        "coretests-aidl",
+        "ravenwood-junit",
+        "truth",
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "modules-utils-binary-xml",
+        "flag-junit",
+        "apct-perftests-utils",
+    ],
+    srcs: [
+        "src/com/android/server/power/stats/*.java",
+        "src/com/android/server/power/stats/format/*.java",
+        "src/com/android/server/power/stats/processor/*.java",
+    ],
+    java_resources: [
+        "res/xml/power_profile*.xml",
+    ],
+    auto_gen_config: true,
+}
+
+test_module_config {
+    name: "PowerStatsTests_stats_bstatscputimesvalidationtest",
+    base: "PowerStatsTests",
+    test_suites: [
+        "automotive-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.server.power.stats.BstatsCpuTimesValidationTest"],
+}
+
+test_module_config {
+    name: "PowerStatsTests_power_stats",
+    base: "PowerStatsTests",
+    test_suites: [
+        "automotive-tests",
+        "device-tests",
+    ],
+    include_filters: ["com.android.server.power.stats"],
+}

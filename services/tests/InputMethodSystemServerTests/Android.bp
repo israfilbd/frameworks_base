@@ -1,0 +1,155 @@
+// Copyright (C) 2022 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {
+    default_team: "trendy_team_input_method_framework",
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+android_test {
+    name: "FrameworksInputMethodSystemServerTests",
+    defaults: [
+        "modules-utils-testable-device-config-defaults",
+    ],
+
+    srcs: [
+        "src/com/android/server/inputmethod/**/*.java",
+    ],
+
+    static_libs: [
+        "androidx.test.core",
+        "androidx.test.espresso.contrib",
+        "androidx.test.espresso.core",
+        "androidx.test.ext.truth",
+        "androidx.test.runner",
+        "frameworks-base-testutils",
+        "mockito-target-extended-minus-junit4",
+        "platform-test-annotations",
+        "ravenwood-junit",
+        "service-permission.stubs.system_server",
+        "services.core",
+        "servicestests-core-utils",
+        "servicestests-utils-mockito-extended",
+        "truth",
+    ],
+
+    libs: [
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
+        "android.test.runner.stubs.system",
+    ],
+
+    data: [
+        ":SimpleTestIme",
+    ],
+
+    certificate: "platform",
+    platform_apis: true,
+    test_suites: ["device-tests"],
+
+    optimize: {
+        enabled: false,
+    },
+}
+
+android_ravenwood_test {
+    name: "FrameworksInputMethodSystemServerTestsRavenwood",
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.rules",
+        "services.core",
+    ],
+    libs: [
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
+    ],
+    srcs: [
+        "src/com/android/server/inputmethod/**/ClientControllerTest.java",
+    ],
+    auto_gen_config: true,
+    team: "trendy_team_ravenwood",
+}
+
+android_test {
+    name: "FrameworksImeTests",
+    defaults: [
+        "modules-utils-testable-device-config-defaults",
+    ],
+
+    srcs: [
+        "src/com/android/inputmethodservice/**/*.java",
+    ],
+
+    manifest: "src/com/android/inputmethodservice/AndroidManifest.xml",
+    test_config: "src/com/android/inputmethodservice/AndroidTest.xml",
+
+    static_libs: [
+        "SimpleImeImsLib",
+        "SimpleImeTestingLib",
+        "androidx.test.core",
+        "androidx.test.espresso.contrib",
+        "androidx.test.espresso.core",
+        "androidx.test.ext.truth",
+        "androidx.test.runner",
+        "cts-input-lib",
+        "cts-wm-util",
+        "frameworks-base-testutils",
+        "mockito-target-extended-minus-junit4",
+        "platform-test-annotations",
+        "ravenwood-junit",
+        "service-permission.stubs.system_server",
+        "services.core",
+        "servicestests-core-utils",
+        "servicestests-utils-mockito-extended",
+        "truth",
+        "ui-trace-collector",
+    ],
+
+    libs: [
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
+        "android.test.runner.stubs.system",
+    ],
+
+    data: [
+        ":SimpleTestIme",
+    ],
+
+    certificate: "platform",
+    platform_apis: true,
+    test_suites: ["device-tests"],
+
+    optimize: {
+        enabled: false,
+    },
+}
+
+test_module_config {
+    name: "FrameworksInputMethodSystemServerTests_server_inputmethod",
+    base: "FrameworksInputMethodSystemServerTests",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.inputmethod"],
+}
+
+test_module_config {
+    name: "FrameworksImeTests_android_inputmethodservice",
+    base: "FrameworksImeTests",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.inputmethodservice"],
+}
