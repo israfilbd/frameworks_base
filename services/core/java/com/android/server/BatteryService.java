@@ -550,6 +550,10 @@ public final class BatteryService extends SystemService {
                 updateBatteryWarningLevelLocked();
             }
         } else if (phase == PHASE_BOOT_COMPLETED) {
+            // Safe to start reading the Oplus charging sysfs nodes: doing so during
+            // early boot while the oplus_chg driver stack is still initializing can
+            // hang/crash with a charger attached, restarting the framework.
+            mOemChargeInfoReady = true;
             mLineageBatteryLights = new LineageBatteryLights(mContext,
                     new LineageBatteryLights.LedUpdater() {
                 public void update() {
@@ -1063,11 +1067,44 @@ public final class BatteryService extends SystemService {
                 BatteryManager.EXTRA_TEMPERATURE, mHealthInfo.batteryTemperatureTenthsCelsius);
         intent.putExtra(BatteryManager.EXTRA_TECHNOLOGY, mHealthInfo.batteryTechnology);
         intent.putExtra(BatteryManager.EXTRA_INVALID_CHARGER, mInvalidCharger);
-        intent.putExtra(
-                BatteryManager.EXTRA_MAX_CHARGING_CURRENT, mHealthInfo.maxChargingCurrentMicroamps);
-        intent.putExtra(
-                BatteryManager.EXTRA_MAX_CHARGING_VOLTAGE,
-                mHealthInfo.maxChargingVoltageMicrovolts);
+        int chargeCurrentUa = mHealthInfo.maxChargingCurrentMicroamps;
+        int chargeVoltageUv = mHealthInfo.maxChargingVoltageMicrovolts;
+        int oemRatedWatts = 0;
+        if (mOemChargeInfoReady
+                && (mHealthInfo.chargerAcOnline || mHealthInfo.chargerUsbOnline)) {
+            if (readUsbSupplyInt(VOOC_ACTIVE_PATH) == 1) {
+                // During VOOC/SuperVOOC the usb/current_now node reads 0, but the battery
+                // current stays valid (mA, negative while charging). The OP13 pack is two
+                // cells in series and SVOOC direct-charges it (no conversion): Vbus (~9.1V)
+                // equals pack voltage (2x cell) and Ibus equals Ibat. So Vbus x Ibat is the
+                // true charging power and matches external USB meter readings (~78W peak),
+                // whereas cell voltage x Ibat would understate it by half.
+                int iBatt = readUsbSupplyInt(BATT_CURRENT_PATH);
+                int vBus = readUsbSupplyInt(USB_VOLTAGE_PATH);
+                if (vBus <= 0) {
+                    // Fallback: per-cell voltage (will understate power by ~2x on 2S packs).
+                    vBus = readUsbSupplyInt(BATT_VOLTAGE_PATH);
+                }
+                if (vBus > 0 && iBatt != Integer.MIN_VALUE && iBatt != 0) {
+                    chargeVoltageUv = vBus;
+                    chargeCurrentUa = Math.abs(iBatt) * 1000;
+                }
+                // Real input current is not exposed during VOOC; report the adapter's
+                // negotiated wattage class (like stock OOS) for the UI to show as a label.
+                oemRatedWatts = oemRatedWatts();
+            } else {
+                // Regular charger: usb supply reports real adapter-side uA/uV.
+                int vUsb = readUsbSupplyInt(USB_VOLTAGE_PATH);
+                int iUsb = readUsbSupplyInt(USB_CURRENT_PATH);
+                if (vUsb > 0 && iUsb > 0) {
+                    chargeCurrentUa = iUsb;
+                    chargeVoltageUv = vUsb;
+                }
+            }
+        }
+        intent.putExtra(BatteryManager.EXTRA_MAX_CHARGING_CURRENT, chargeCurrentUa);
+        intent.putExtra(BatteryManager.EXTRA_MAX_CHARGING_VOLTAGE, chargeVoltageUv);
+        intent.putExtra("oem_charger_watts", oemRatedWatts);
         intent.putExtra(BatteryManager.EXTRA_CHARGE_COUNTER, mHealthInfo.batteryChargeCounterUah);
         intent.putExtra(BatteryManager.EXTRA_CYCLE_COUNT, mHealthInfo.batteryCycleCount);
         intent.putExtra(BatteryManager.EXTRA_CHARGING_STATUS, mHealthInfo.chargingState);
@@ -1088,6 +1125,88 @@ public final class BatteryService extends SystemService {
         args.arg2 = intent;
         args.arg3 = forceUpdate;
         mHandler.obtainMessage(MSG_BROADCAST_BATTERY_CHANGED, args).sendToTarget();
+    }
+
+    // --- adapter-side charging info for accurate fast-charge wattage display ---
+    // Sysfs reads are deferred until PHASE_BOOT_COMPLETED; touching the oplus_chg
+    // nodes while the driver stack initializes (boot with charger attached) can
+    // hang the broadcast path and watchdog-restart system_server.
+    private volatile boolean mOemChargeInfoReady;
+    private static final String USB_VOLTAGE_PATH = "/sys/class/power_supply/usb/voltage_now";
+    private static final String USB_CURRENT_PATH = "/sys/class/power_supply/usb/current_now";
+    // VOOC zeroes usb/current_now, so fall back to battery-side nodes when VOOC is active.
+    private static final String VOOC_ACTIVE_PATH = "/sys/class/oplus_chg/battery/voocchg_ing";
+    private static final String FAST_CHG_TYPE_PATH = "/sys/class/oplus_chg/usb/fast_chg_type";
+
+    /**
+     * Determine the adapter's negotiated SuperVOOC wattage class for display, the
+     * way stock OOS derives chargerWattageOrigin. The real input current is never
+     * exposed to the AP during VOOC, so this is a label, not a measurement.
+     *
+     * The class is per-session, not per-brick: the dual-port 100W adapter
+     * negotiates the 100W class on Type-C but only the 80W class on Type-A /
+     * 10A cables (stock logs show chargerWattageOrigin flip 100 <-> 80 on the
+     * same brick). fast_chg_type and the log's adapter_id both read 101 for
+     * every SuperVOOC session, so the negotiated class is recovered from the
+     * handshake sid (vooc_sid), parsed by field name from the charging log to
+     * stay robust against field reordering. Known sids are mapped exactly;
+     * unknown SuperVOOC sessions fall back to the generic class rating.
+     * Returns 0 when not identifiable so the UI leaves the label untouched.
+     */
+    private int oemRatedWatts() {
+        long sid = readVoocSid();
+        if (sid == 0x650A0013L) { // OnePlus 13 100W NA adapter, Type-C / 12A path
+            return 100;
+        }
+        // TODO: add the 80W-class sid (Type-A / 10A cable session) once captured.
+        // Unknown sid but SuperVOOC protocol active: fall back to class rating.
+        if (readUsbSupplyInt(FAST_CHG_TYPE_PATH) == 101) {
+            return 100;
+        }
+        return 0;
+    }
+
+    private static final String BATT_LOG_HEAD_PATH =
+            "/sys/class/oplus_chg/battery/battery_log_head";
+    private static final String BATT_LOG_CONTENT_PATH =
+            "/sys/class/oplus_chg/battery/battery_log_content";
+    private int mVoocSidIndex = -1; // cached; the head is static for a boot
+
+    /** Extract vooc_sid from the Oplus charging log, locating it by field name. */
+    private long readVoocSid() {
+        try {
+            if (mVoocSidIndex < 0) {
+                String[] head = FileUtils.readTextFile(
+                        new File(BATT_LOG_HEAD_PATH), 0, null).trim().split(",", -1);
+                for (int i = 0; i < head.length; i++) {
+                    if ("vooc_sid".equals(head[i].trim())) {
+                        mVoocSidIndex = i;
+                        break;
+                    }
+                }
+            }
+            if (mVoocSidIndex >= 0) {
+                String[] content = FileUtils.readTextFile(
+                        new File(BATT_LOG_CONTENT_PATH), 0, null).trim().split(",", -1);
+                if (mVoocSidIndex < content.length) {
+                    return Long.parseLong(content[mVoocSidIndex].trim());
+                }
+            }
+        } catch (Exception e) {
+            // fall through
+        }
+        return 0;
+    }
+    private static final String BATT_VOLTAGE_PATH = "/sys/class/power_supply/battery/voltage_now";
+    private static final String BATT_CURRENT_PATH = "/sys/class/power_supply/battery/current_now";
+
+    private int readUsbSupplyInt(String path) {
+        try {
+            String s = FileUtils.readTextFile(new File(path), 0, null).trim();
+            return Integer.parseInt(s);
+        } catch (Exception e) {
+            return Integer.MIN_VALUE;
+        }
     }
 
     private static void broadcastBatteryChangedIntent(Context context, Intent intent,
