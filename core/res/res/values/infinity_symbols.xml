@@ -106,4 +106,6 @@
 
     <!-- These are system packages exempted from privacy indicator -->
     <java-symbol type="array" name="config_indicatorExemptedPackageNames" />
+
+    <java-symbol type="integer" name="config_lowBatteryReclaimSkipThreshold" />
 </resources>
