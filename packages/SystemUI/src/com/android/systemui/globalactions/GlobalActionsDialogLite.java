@@ -112,7 +112,9 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LifecycleRegistry;
 
+import com.android.systemui.globalactions.GlobalActionsComposeUI;
 import com.android.app.animation.Interpolators;
+import com.android.systemui.statusbar.BlurUtils;
 import com.android.internal.R;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.colorextraction.ColorExtractor;
@@ -185,6 +187,9 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
+
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
 
 /**
  * Helper to show the global actions dialog.  Each item is an {@link Action} that may show depending
@@ -260,7 +265,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
     protected final ArrayList<Action> mUsersItems = new ArrayList<>();
 
     @VisibleForTesting
-    protected ActionsDialogLite mDialog;
+    protected Dialog mDialog;
 
     private Action mSilentModeAction;
     private ToggleAction mAirplaneModeOn;
@@ -505,7 +510,9 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
                         break;
                     case MESSAGE_REFRESH:
                         refreshSilentMode();
-                        mAdapter.notifyDataSetChanged();
+                        if (mAdapter != null) {
+                            mAdapter.notifyDataSetChanged();
+                        }
                         break;
                 }
             }
@@ -624,9 +631,21 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         mHandler.sendEmptyMessage(MESSAGE_DISMISS);
     }
 
+    @VisibleForTesting
+    protected boolean isComposeStyleEnabled() {
+        return Settings.Secure.getIntForUser(
+                mContext.getContentResolver(),
+                Settings.Secure.POWER_MENU_COMPOSE_STYLE,
+                1,
+                mUserTracker.getUserId()) == 1;
+    }
+
     protected void handleShow(@Nullable Expandable expandable, int displayId) {
         mDialog = createDialog(displayId);
-        prepareDialog();
+        boolean composeStyle = isComposeStyleEnabled();
+        if (!composeStyle) {
+            prepareDialog();
+        }
 
         DialogTransitionAnimator.Controller controller =
                 expandable != null ? expandable.dialogTransitionController(
@@ -639,6 +658,11 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
             mDialog.show();
         }
         mWindowManagerFuncs.onGlobalActionsShown();
+
+        if (composeStyle) {
+            mUiEventLogger.log(GlobalActionsEvent.GA_POWER_MENU_OPEN);
+            mInteractor.onShown();
+        }
 
         rescheduleBurninTimeout(mGlobalActionDialogTimeout);
     }
@@ -878,7 +902,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
      *
      * @return A new dialog.
      */
-    protected ActionsDialogLite createDialog() {
+    protected Dialog createDialog() {
         return createDialog(mContext.getDisplayId());
     }
 
@@ -909,8 +933,42 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
      *
      * @return A new dialog.
      */
-    protected ActionsDialogLite createDialog(int displayId) {
+    protected Dialog createDialog(int displayId) {
         final Context context = getContextForDisplay(displayId);
+
+        if (isComposeStyleEnabled()) {
+            return createComposeDialog(context);
+        }
+        return createLegacyDialog(context);
+    }
+
+    private Dialog createComposeDialog(Context context) {
+        createActionItems();
+        List<Action> allActions = new ArrayList<>();
+        allActions.addAll(mItems);
+        allActions.addAll(mPowerItems);
+
+        return new GlobalActionsComposeUI(
+                context,
+                allActions,
+                mRestartItems,
+                (Function1<Action, Unit>) action -> {
+                    onComposeActionClick(action);
+                    return Unit.INSTANCE;
+                },
+                (Function1<Action, Boolean>) action -> onComposeActionLongClick(action),
+                (kotlin.jvm.functions.Function0<Unit>) () -> {
+                    rescheduleBurninTimeout(mGlobalActionDialogTimeout);
+                    return Unit.INSTANCE;
+                },
+                (kotlin.jvm.functions.Function0<Unit>) () -> {
+                    onComposeDismissed();
+                    return Unit.INSTANCE;
+                },
+                mBlurUtils);
+    }
+
+    private ActionsDialogLite createLegacyDialog(Context context) {
         initDialogItems();
 
         ActionsDialogLite dialog = new ActionsDialogLite(
@@ -946,6 +1004,28 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         dialog.setOnShowListener(this);
 
         return dialog;
+    }
+
+    private void onComposeActionClick(Action action) {
+        if (action instanceof SilentModeTriStateAction) {
+            return;
+        }
+        if (!(action instanceof PowerOptionsAction) && !(action instanceof UsersAction)) {
+            mDialogTransitionAnimator.disableAllCurrentDialogsExitAnimations();
+        }
+        action.onPress();
+    }
+
+    private boolean onComposeActionLongClick(Action action) {
+        if (action instanceof LongPressAction) {
+            mDialogTransitionAnimator.disableAllCurrentDialogsExitAnimations();
+            return ((LongPressAction) action).onLongPress();
+        }
+        return false;
+    }
+
+    private void onComposeDismissed() {
+        onDismiss(mDialog);
     }
 
     @VisibleForTesting
@@ -993,12 +1073,13 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
 
     @Override
     public void onConfigChanged(Configuration newConfig) {
-        if (mDialog != null && mDialog.isShowing()
+        if (mDialog instanceof ActionsDialogLite
+                && mDialog.isShowing()
                 && (newConfig.smallestScreenWidthDp != mSmallestScreenWidthDp
                 || newConfig.orientation != mOrientation)) {
             mSmallestScreenWidthDp = newConfig.smallestScreenWidthDp;
             mOrientation = newConfig.orientation;
-            mDialog.refreshDialog();
+            ((ActionsDialogLite) mDialog).refreshDialog();
         }
     }
 
@@ -1051,8 +1132,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
 
         @Override
         public void onPress() {
-            if (mDialog != null) {
-                mDialog.showPowerOptionsMenu();
+            if (mDialog instanceof ActionsDialogLite) {
+                ((ActionsDialogLite) mDialog).showPowerOptionsMenu();
             }
         }
     }
@@ -1256,8 +1337,10 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
                 return;
             }
             mUiEventLogger.log(GlobalActionsEvent.GA_REBOOT_PRESS);
-            if (mDialog != null && shouldShowRestartSubmenu()) {
-                mDialog.showRestartOptionsMenu();
+            if (mDialog instanceof ActionsDialogLite && shouldShowRestartSubmenu()) {
+                ((ActionsDialogLite) mDialog).showRestartOptionsMenu();
+            } else if (mDialog instanceof GlobalActionsComposeUI) {
+                rebootAction(false);
             } else {
                 rebootAction(false);
             }
@@ -1295,7 +1378,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         }
     }
 
-    private final class RestartRecoveryAction extends SinglePressAction {
+    final class RestartRecoveryAction extends SinglePressAction {
         private RestartRecoveryAction() {
             super(com.android.systemui.res.R.drawable.ic_lock_restart_recovery,
                     com.android.systemui.res.R.string.global_action_restart_recovery);
@@ -1317,7 +1400,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         }
     }
 
-    private final class RestartBootloaderAction extends SinglePressAction {
+    final class RestartBootloaderAction extends SinglePressAction {
         private RestartBootloaderAction() {
             super(com.android.systemui.res.R.drawable.ic_lock_restart_bootloader,
                     com.android.systemui.res.R.string.global_action_restart_bootloader);
@@ -1339,7 +1422,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         }
     }
 
-    private final class RestartFastbootAction extends SinglePressAction {
+    final class RestartFastbootAction extends SinglePressAction {
         private RestartFastbootAction() {
             super(com.android.systemui.res.R.drawable.ic_lock_restart_fastboot,
                     com.android.systemui.res.R.string.global_action_restart_fastboot);
@@ -1383,7 +1466,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         }
     }
 
-    private final class RestartSystemUIAction extends SinglePressAction {
+    final class RestartSystemUIAction extends SinglePressAction {
         private RestartSystemUIAction() {
             super(com.android.systemui.res.R.drawable.ic_restart_systemui, com.android.systemui.res.R.string.global_action_restart_systemui);
         }
@@ -1826,8 +1909,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
 
         @Override
         public void onPress() {
-            if (mDialog != null) {
-                mDialog.showUsersMenu();
+            if (mDialog instanceof ActionsDialogLite) {
+                ((ActionsDialogLite) mDialog).showUsersMenu();
             }
         }
     }
