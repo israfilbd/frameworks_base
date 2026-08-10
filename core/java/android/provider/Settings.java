@@ -14652,6 +14652,11 @@ public final class Settings {
         public static final String CLIPBOARD_AUTO_CLEAR_TIMEOUT = "clipboard_auto_clear_timeout";
 
         /**
+         * @hide
+         */
+        public static final String POWER_MENU_COMPOSE_STYLE = "power_menu_compose_style";
+        
+        /**
          * Whether to turn off Private DNS {@link #PRIVATE_DNS_MODE}
          * when a VPN is connected
          * <p>
