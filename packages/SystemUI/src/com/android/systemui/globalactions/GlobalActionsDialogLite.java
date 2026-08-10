@@ -633,11 +633,16 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
 
     @VisibleForTesting
     protected boolean isComposeStyleEnabled() {
+        return getComposeStyle() != 0;
+    }
+
+    @VisibleForTesting
+    protected int getComposeStyle() {
         return Settings.Secure.getIntForUser(
                 mContext.getContentResolver(),
                 Settings.Secure.POWER_MENU_COMPOSE_STYLE,
                 1,
-                mUserTracker.getUserId()) == 1;
+                mUserTracker.getUserId());
     }
 
     protected void handleShow(@Nullable Expandable expandable, int displayId) {
@@ -941,6 +946,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         List<Action> allActions = new ArrayList<>();
         allActions.addAll(mItems);
         allActions.addAll(mPowerItems);
+        boolean sliderStyle = getComposeStyle() == 2;
 
         return new GlobalActionsComposeUI(
                 context,
@@ -959,7 +965,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
                     onComposeDismissed();
                     return Unit.INSTANCE;
                 },
-                mBlurUtils);
+                mBlurUtils,
+                sliderStyle);
     }
 
     private ActionsDialogLite createLegacyDialog(Context context) {
