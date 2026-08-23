@@ -63,6 +63,9 @@ interface BatteryRepository {
      */
     val isPluggedIn: Flow<Boolean>
 
+    /** True when the battery is actively charging. */
+    val isCharging: Flow<Boolean>
+
     /** Is power saver enabled */
     val isPowerSaveEnabled: Flow<Boolean>
 
@@ -160,7 +163,13 @@ constructor(
                             pluggedIn: Boolean,
                             charging: Boolean,
                         ) {
-                            trySend { prev -> prev.copy(level = level, isPluggedIn = pluggedIn) }
+                            trySend { prev ->
+                                prev.copy(
+                                    level = level,
+                                    isPluggedIn = pluggedIn,
+                                    isCharging = charging,
+                                )
+                            }
                         }
 
                         override fun onPowerSaveChanged(isPowerSave: Boolean) {
@@ -215,6 +224,12 @@ constructor(
                 initialValue = batteryState.value.isPluggedIn,
             )
             .stateIn(scope, SharingStarted.WhileSubscribed(), batteryState.value.isPluggedIn)
+
+    override val isCharging =
+        batteryState
+            .map { it.isCharging }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.WhileSubscribed(), batteryState.value.isCharging)
 
     override val isPowerSaveEnabled =
         batteryState
@@ -443,6 +458,7 @@ constructor(
 private data class BatteryCallbackState(
     val level: Int? = null,
     val isPluggedIn: Boolean = false,
+    val isCharging: Boolean = false,
     val isPowerSaveEnabled: Boolean = false,
     val isExtremePowerSaveEnabled: Boolean = false,
     val isBatteryDefenderEnabled: Boolean = false,

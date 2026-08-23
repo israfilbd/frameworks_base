@@ -262,7 +262,11 @@ public class BatteryControllerImpl extends BroadcastReceiver implements BatteryC
             final int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS,
                     BatteryManager.BATTERY_STATUS_UNKNOWN);
             mCharged = status == BatteryManager.BATTERY_STATUS_FULL;
-            mCharging = mCharged || status == BatteryManager.BATTERY_STATUS_CHARGING;
+            // A full battery can continue to report FULL briefly after the cable is
+            // removed. Do not expose that stale status as charging without a power
+            // source actually being connected.
+            mCharging = mPluggedIn
+                    && (mCharged || status == BatteryManager.BATTERY_STATUS_CHARGING);
             if (mWirelessCharging != (mCharging
                     && intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)
                     == BatteryManager.BATTERY_PLUGGED_WIRELESS)) {
