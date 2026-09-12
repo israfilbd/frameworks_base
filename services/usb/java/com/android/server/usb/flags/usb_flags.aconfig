@@ -1,0 +1,58 @@
+package: "com.android.server.usb.flags"
+container: "system"
+
+flag {
+    name: "allow_restriction_of_overlay_activities"
+    namespace: "usb"
+    description: "This flag controls the restriction of usb overlay activities"
+    bug: "307231174"
+}
+
+flag {
+    name: "enable_bind_to_mtp_service"
+    namespace: "usb"
+    description: "This flag enables binding to MtpService when in mtp/ptp modes"
+    bug: "332256525"
+}
+
+flag {
+    name: "check_user_action_unlocked"
+    namespace: "usb"
+    description: "This flag checks if phone is unlocked after boot"
+    bug: "73654179"
+}
+
+flag {
+    name: "maximize_usb_audio_volume_when_connecting"
+    namespace: "usb"
+    description: "This flag maximizes the usb audio volume when it is connected"
+    bug: "245041322"
+}
+
+flag {
+    name: "wait_for_alsa_scan_results_if_has_audio_interface"
+    namespace: "usb"
+    description: "This flag waits for alsa scan results for audio device"
+    bug: "378826805"
+}
+
+flag {
+    name: "enable_usb4"
+    namespace: "desktop_connectivity"
+    description: "This flag enables USB4 and Thunderbolt support"
+    bug: "369430205"
+}
+
+flag {
+    name: "enable_usb_authorization"
+    namespace: "desktop_connectivity"
+    description: "This flag enables USB authorization"
+    bug: "409385933"
+}
+
+flag {
+    name: "default_allow_pci_tunnels"
+    namespace: "desktop_connectivity"
+    description: "This flag allows PCI tunnels for testing and dogfooding"
+    bug: "369430205"
+}

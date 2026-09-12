@@ -1,0 +1,29 @@
+# Display
+per-file BrightnessLimit.java = file:/services/core/java/com/android/server/display/OWNERS
+
+# Haptics
+per-file *Vibrat*.java = file:/services/core/java/com/android/server/vibrator/OWNERS
+
+# Power
+per-file PowerManager*.java = file:/services/core/java/com/android/server/power/OWNERS
+
+# PerformanceHintManager
+per-file PerformanceHintManagerTest.java = file:/ADPF_OWNERS
+
+# SystemHealthManager
+per-file SystemHealthManagerUnitTest.java = file:/ADPF_OWNERS
+
+# Caching
+per-file IpcDataCache* = file:/PERFORMANCE_OWNERS
+
+# RemoteCallbackList
+per-file RemoteCallbackListTest.java = shayba@google.com
+
+# MessageQueue
+per-file MessageQueueTest.java = file:/MESSAGE_QUEUE_OWNERS
+per-file MessageHeapTest.java = file:/MESSAGE_QUEUE_OWNERS
+per-file MessageStackTest.java = file:/MESSAGE_QUEUE_OWNERS
+per-file WaitStateTest.java = file:/MESSAGE_QUEUE_OWNERS
+
+# Perfetto SDK
+per-file PerfettoTrace*Test.java = file:/PERFETTO_OWNERS

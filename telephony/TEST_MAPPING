@@ -1,0 +1,26 @@
+{
+  "presubmit": [
+    {
+      "name": "TeleServiceTests"
+    },
+    {
+      "name": "TelecomUnitTests"
+    },
+    {
+      "name": "TelephonyProviderTests"
+    },
+    {
+      "name": "CtsTelephony2TestCases"
+    },    
+    {
+      "name": "CtsTelephony3TestCases"
+    },
+    {
+      "name": "CtsSimRestrictedApisTestCases"
+    },
+    {
+      "name": "CtsTelephonyProviderTestCases"
+    }
+  ]
+}
+

@@ -1,0 +1,33 @@
+package: "android.content.flags"
+container: "system"
+
+flag {
+    name: "enable_bind_package_isolated_process"
+    is_exported: true
+    namespace: "machine_learning"
+    description: "This flag enables the newly added flag for binding package-private isolated processes."
+    bug: "312706530"
+}
+
+flag {
+    name: "stop_voice_command"
+    is_exported: true
+    namespace: "bluetooth"
+    description: "Feature flag to stop voice assistant session"
+    bug: "419049796"
+}
+
+flag {
+    name: "enable_system_contacts_picker"
+    namespace: "profile_experiences"
+    description: "Enable the new system contacts picker application components and the new intent action ACTION_PICK_CONTACTS."
+    bug: "427934258"
+}
+
+flag {
+    name: "enable_update_service_bindings"
+    is_exported: true
+    namespace: "desktop_pnp"
+    description: "Allow apps to batch update service bindings."
+    bug: "414865437"
+}

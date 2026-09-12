@@ -1,0 +1,313 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.keyboard.shortcut.ui.viewmodel
+
+import android.app.role.RoleManager
+import android.content.Context
+import android.content.pm.PackageManager.NameNotFoundException
+import android.util.Log
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessibilityNew
+import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.VerticalSplit
+import com.android.compose.ui.graphics.painter.DrawablePainter
+import com.android.systemui.Flags.extendedAppsShortcutCategory
+import com.android.systemui.dagger.qualifiers.Background
+import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.DisplayAware
+import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.PerDisplaySingleton
+import com.android.systemui.keyboard.shortcut.domain.interactor.ShortcutHelperCategoriesInteractor
+import com.android.systemui.keyboard.shortcut.domain.interactor.ShortcutHelperCustomizationModeInteractor
+import com.android.systemui.keyboard.shortcut.domain.interactor.ShortcutHelperStateInteractor
+import com.android.systemui.keyboard.shortcut.shared.model.Shortcut
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategory
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType.Accessibility
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType.AppCategories
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType.CurrentApp
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType.InputMethodEditor
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType.MultiTasking
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutCategoryType.System
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutHelperState
+import com.android.systemui.keyboard.shortcut.shared.model.ShortcutSubCategory
+import com.android.systemui.keyboard.shortcut.ui.model.IconSource
+import com.android.systemui.keyboard.shortcut.ui.model.ShortcutCategoryUi
+import com.android.systemui.keyboard.shortcut.ui.model.ShortcutsUiState
+import com.android.systemui.res.R
+import com.android.systemui.settings.UserTracker
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
+
+@PerDisplaySingleton
+class ShortcutHelperViewModel
+@Inject
+constructor(
+    private val context: Context,
+    private val roleManager: RoleManager,
+    private val userTracker: UserTracker,
+    @Background private val backgroundScope: CoroutineScope,
+    @Background private val backgroundDispatcher: CoroutineDispatcher,
+    private val stateInteractor: ShortcutHelperStateInteractor,
+    categoriesInteractor: ShortcutHelperCategoriesInteractor,
+    private val customizationModeInteractor: ShortcutHelperCustomizationModeInteractor,
+    @DisplayAware private val displayId: Int,
+) {
+
+    private val searchQuery = MutableStateFlow("")
+    private val userContext = userTracker.createCurrentUserContext(userTracker.userContext)
+
+    // TODO: b/429374961 - this flow should be converted to Hydrated States per SysUI best practices
+    val shouldShow =
+        combine(categoriesInteractor.shortcutCategories, stateInteractor.state) { categories, state
+                ->
+                categories.isNotEmpty() &&
+                    (state as? ShortcutHelperState.Active)?.displayId == displayId
+            }
+            .distinctUntilChanged()
+            .flowOn(backgroundDispatcher)
+
+    val shortcutsUiState =
+        combine(
+                searchQuery,
+                categoriesInteractor.shortcutCategories,
+                customizationModeInteractor.isCustomizationModeEnabled,
+            ) { query, categories, isCustomizationModeEnabled ->
+                if (categories.isEmpty()) {
+                    ShortcutsUiState.Inactive
+                } else {
+                    /* temporarily hiding launcher shortcut categories until b/327141011
+                     * is completed. */
+                    val categoriesWithLauncherExcluded = excludeLauncherApp(categories)
+                    val filteredCategories =
+                        filterCategoriesBySearchQuery(query, categoriesWithLauncherExcluded)
+                    val shortcutCategoriesUi = convertCategoriesModelToUiModel(filteredCategories)
+
+                    val allowExtendedAppShortcutsCustomization =
+                        !isExtendedAppsShortcutCustomizationLimitReached(
+                            shortcutCategories = categoriesWithLauncherExcluded
+                        )
+
+                    ShortcutsUiState.Active(
+                        searchQuery = query,
+                        shortcutCategories = shortcutCategoriesUi,
+                        defaultSelectedCategory = getDefaultSelectedCategory(filteredCategories),
+                        isExtendedAppCategoryFlagEnabled = extendedAppsShortcutCategory(),
+                        shouldShowResetButton = shouldShowResetButton(shortcutCategoriesUi),
+                        isCustomizationModeEnabled = isCustomizationModeEnabled,
+                        allowExtendedAppShortcutsCustomization,
+                        shouldShowCustomAppsShortcutLimitHeader =
+                            isCustomizationModeEnabled &&
+                                extendedAppsShortcutCategory() &&
+                                !allowExtendedAppShortcutsCustomization,
+                    )
+                }
+            }
+            .stateIn(
+                scope = backgroundScope,
+                started = SharingStarted.Lazily,
+                initialValue = ShortcutsUiState.Inactive,
+            )
+
+    private fun isExtendedAppsShortcutCustomizationLimitReached(
+        shortcutCategories: List<ShortcutCategory>
+    ): Boolean {
+        val appShortcutCategory = shortcutCategories.firstOrNull { it.type == AppCategories }
+        if (appShortcutCategory == null) {
+            return false
+        }
+
+        return getExtendedAppsShortcutCustomizationCount(appShortcutCategory) >=
+            EXTENDED_APPS_SHORTCUT_CUSTOMIZATION_LIMIT
+    }
+
+    private fun getExtendedAppsShortcutCustomizationCount(
+        appsShortcutCategory: ShortcutCategory
+    ): Int {
+        return appsShortcutCategory.subCategories
+            .flatMap { it.shortcuts }
+            .count { !it.containsDefaultShortcutCommands && it.containsCustomShortcutCommands }
+    }
+
+    private fun shouldShowResetButton(categoriesUi: List<ShortcutCategoryUi>): Boolean {
+        return categoriesUi.any { it.containsCustomShortcuts }
+    }
+
+    private fun convertCategoriesModelToUiModel(
+        categories: List<ShortcutCategory>
+    ): List<ShortcutCategoryUi> {
+        return categories.map { category ->
+            ShortcutCategoryUi(
+                label = getShortcutCategoryLabel(category.type),
+                iconSource = getShortcutCategoryIcon(category.type),
+                shortcutCategory = category,
+            )
+        }
+    }
+
+    private fun getShortcutCategoryIcon(type: ShortcutCategoryType): IconSource {
+        return when (type) {
+            System -> IconSource(imageVector = Icons.Default.Tv)
+            MultiTasking -> IconSource(imageVector = Icons.Default.VerticalSplit)
+            InputMethodEditor -> IconSource(imageVector = Icons.Default.Keyboard)
+            AppCategories -> IconSource(imageVector = Icons.Default.Apps)
+            is CurrentApp -> {
+                try {
+                    val iconDrawable =
+                        userContext.packageManager.getApplicationIcon(type.packageName)
+                    IconSource(painter = DrawablePainter(drawable = iconDrawable))
+                } catch (_: NameNotFoundException) {
+                    Log.w(
+                        "ShortcutHelperViewModel",
+                        "Package not found when retrieving icon for ${type.packageName}",
+                    )
+                    IconSource(imageVector = Icons.Default.Android)
+                }
+            }
+
+            Accessibility -> IconSource(imageVector = Icons.Default.AccessibilityNew)
+        }
+    }
+
+    private fun getShortcutCategoryLabel(type: ShortcutCategoryType): String =
+        when (type) {
+            System -> context.getString(R.string.shortcut_helper_category_system)
+            MultiTasking -> context.getString(R.string.shortcut_helper_category_multitasking)
+            InputMethodEditor -> context.getString(R.string.shortcut_helper_category_input)
+            AppCategories -> context.getString(R.string.shortcut_helper_category_app_shortcuts)
+            is CurrentApp -> getApplicationLabelForCurrentApp(type)
+            Accessibility -> context.getString(R.string.shortcutHelper_category_accessibility)
+        }
+
+    private fun getApplicationLabelForCurrentApp(type: CurrentApp): String {
+        try {
+            val packageManagerForUser = userContext.packageManager
+            val currentAppInfo =
+                packageManagerForUser.getApplicationInfo(type.packageName, /* flags= */ 0)
+            return packageManagerForUser.getApplicationLabel(currentAppInfo).toString()
+        } catch (e: NameNotFoundException) {
+            Log.w(
+                "ShortcutHelperViewModel",
+                "Package Not found when retrieving Label for ${type.packageName}",
+            )
+            return "Current App"
+        }
+    }
+
+    private suspend fun excludeLauncherApp(
+        categories: List<ShortcutCategory>
+    ): List<ShortcutCategory> {
+        val launcherAppCategory =
+            categories.firstOrNull { it.type is CurrentApp && isLauncherApp(it.type.packageName) }
+        return if (launcherAppCategory != null) {
+            categories - launcherAppCategory
+        } else {
+            categories
+        }
+    }
+
+    private suspend fun getDefaultSelectedCategory(
+        categories: List<ShortcutCategory>
+    ): ShortcutCategoryType? {
+        val currentAppShortcuts =
+            categories.firstOrNull { it.type is CurrentApp && !isLauncherApp(it.type.packageName) }
+        return currentAppShortcuts?.type ?: categories.firstOrNull()?.type
+    }
+
+    private suspend fun isLauncherApp(packageName: String): Boolean {
+        return withContext(backgroundDispatcher) {
+            roleManager
+                .getRoleHoldersAsUser(RoleManager.ROLE_HOME, userTracker.userHandle)
+                .firstOrNull() == packageName
+        }
+    }
+
+    private fun filterCategoriesBySearchQuery(
+        query: String,
+        categories: List<ShortcutCategory>,
+    ): List<ShortcutCategory> {
+        val lowerCaseTrimmedQuery = query.trim().lowercase()
+        if (lowerCaseTrimmedQuery.isEmpty()) {
+            return categories
+        }
+        return categories
+            .map { category ->
+                category.copy(
+                    subCategories =
+                        filterSubCategoriesBySearchQuery(
+                            subCategories = category.subCategories,
+                            query = lowerCaseTrimmedQuery,
+                        )
+                )
+            }
+            .filter { it.subCategories.isNotEmpty() }
+    }
+
+    private fun filterSubCategoriesBySearchQuery(
+        subCategories: List<ShortcutSubCategory>,
+        query: String,
+    ) =
+        subCategories
+            .map { subCategory ->
+                subCategory.copy(
+                    shortcuts = filterShortcutsBySearchQuery(subCategory.shortcuts, query)
+                )
+            }
+            .filter { it.shortcuts.isNotEmpty() }
+
+    private fun filterShortcutsBySearchQuery(shortcuts: List<Shortcut>, query: String) =
+        shortcuts.filter { shortcut -> shortcut.label.trim().lowercase().contains(query) }
+
+    fun onViewClosed() {
+        stateInteractor.onViewClosed()
+        resetSearchQuery()
+        resetCustomizationMode()
+    }
+
+    fun onViewOpened() {
+        stateInteractor.onViewOpened()
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        searchQuery.value = query
+    }
+
+    fun toggleCustomizationMode(isCustomizing: Boolean) {
+        customizationModeInteractor.toggleCustomizationMode(isCustomizing)
+    }
+
+    private fun resetSearchQuery() {
+        searchQuery.value = ""
+    }
+
+    private fun resetCustomizationMode() {
+        customizationModeInteractor.toggleCustomizationMode(false)
+    }
+
+    companion object {
+        const val EXTENDED_APPS_SHORTCUT_CUSTOMIZATION_LIMIT = 10
+    }
+}

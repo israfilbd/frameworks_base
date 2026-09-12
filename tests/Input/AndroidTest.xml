@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ * Copyright 2020 Google Inc. All Rights Reserved.
+ -->
+<configuration description="Runs Input Tests">
+    <option name="test-tag" value="InputTests" />
+    <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer" />
+    <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
+        <!-- keeps the screen on during tests -->
+        <option name="screen-always-on" value="on" />
+        <!-- prevents the phone from restarting -->
+        <option name="force-skip-system-props" value="true" />
+        <!-- disables white balance corrections since they may affect screenshot tests -->
+        <option name="set-secure-setting" key="display_white_balance_enabled" value="0" />
+        <option name="restore-settings" value="true" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true"/>
+        <option name="test-file-name" value="InputTests.apk"/>
+    </target_preparer>
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest">
+        <option name="package" value="com.android.test.input"/>
+        <option name="exclude-annotation" value="androidx.test.filters.FlakyTest" />
+        <option name="shell-timeout" value="660s" />
+        <option name="test-timeout" value="600s" />
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
+    </test>
+    <object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController"
+            type="module_controller">
+        <!-- Take screenshot upon test failure -->
+        <option name="screenshot-on-failure" value="true" />
+     </object>
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="pull-pattern-keys" value="input_.*" />
+        <!-- Pull files created by tests, like the output of screenshot tests -->
+        <option name="directory-keys" value="/sdcard/Download/InputTests" />
+        <!-- Pull perfetto traces from DefaultUITraceListener -->
+        <option name="pull-pattern-keys" value="perfetto_file_path"/>
+        <option name="collect-on-run-ended-only" value="false" />
+    </metrics_collector>
+</configuration>

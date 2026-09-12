@@ -1,0 +1,30 @@
+{
+    "presubmit": [
+        {
+            "name": "CtsJobSchedulerTestCases_com_android_server_job"
+        },
+        {
+            "name": "FrameworksMockingServicesTests_com_android_server_job_Presubmit"
+        },
+        {
+            "name": "FrameworksServicesTests_com_android_server_job_Presubmit"
+        }
+    ],
+    "postsubmit": [
+        {
+            "name": "CtsJobSchedulerTestCases"
+        },
+        {
+            "name": "FrameworksMockingServicesTests_com_android_server_job"
+        },
+        {
+            "name": "FrameworksServicesTests_com_android_server_job"
+        },
+        {
+            "name": "CtsHostsideNetworkPolicyTests_com_android_server_job"
+        },
+        {
+            "name": "CtsStatsdAtomHostTestCases_statsdatom_jobscheduler"
+        }
+    ]
+}

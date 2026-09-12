@@ -1,0 +1,21 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksCoreTests_usage"
+    },
+    {
+      "name": "FrameworksServicesTests_android_server_usage"
+    },
+    {
+      "name": "CtsBRSTestCases"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsUsageStatsTestCases_cts_usagestatstest_ExcludeMediumAndLarge"
+    },
+    {
+      "name": "CtsShortcutManagerTestCases_shortcutmanager_shortcutmanagerusagetest"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+    "presubmit": [
+        {
+            "name": "SettingsProviderTest"
+        },
+        {
+            "name": "CtsProviderTestCases_cts_settings"
+        }
+    ],
+    "postsubmit": [
+        {
+            "name": "CtsDeviceConfigTestCases"
+        }
+    ]
+}

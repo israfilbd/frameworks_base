@@ -1,0 +1,169 @@
+//
+// Copyright (C) 2018 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+package {
+    default_team: "trendy_team_input_method_framework",
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+android_test {
+    name: "FlickerTestsIme",
+    defaults: ["FlickerTestsDefault"],
+    manifest: "AndroidManifest.xml",
+    test_config_template: "AndroidTestTemplate.xml",
+    test_suites: [
+        "device-tests",
+        "device-platinum-tests",
+    ],
+    srcs: ["src/**/*"],
+    static_libs: ["FlickerTestsBase"],
+    data: ["trace_config/*"],
+}
+
+// Auto generated section, don't update it manually
+
+test_module_config {
+    name: "FlickerTestsIme-CatchAll",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    exclude_filters: [
+        "com.android.server.wm.flicker.ime.CloseImeOnDismissPopupDialogTest",
+        "com.android.server.wm.flicker.ime.CloseImeOnGoHomeTest",
+        "com.android.server.wm.flicker.ime.CloseImeShownOnAppStartOnGoHomeTest",
+        "com.android.server.wm.flicker.ime.CloseImeShownOnAppStartToAppOnPressBackTest",
+        "com.android.server.wm.flicker.ime.CloseImeToAppOnPressBackTest",
+        "com.android.server.wm.flicker.ime.CloseImeToHomeOnFinishActivityTest",
+        "com.android.server.wm.flicker.ime.OpenImeWindowToFixedPortraitAppTest",
+        "com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppFromFixedOrientationTest",
+        "com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppFromOverviewTest",
+        "com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppFromQuickSwitchTest",
+        "com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppTest",
+        "com.android.server.wm.flicker.ime.ShowImeOnUnlockScreenTest",
+        "com.android.server.wm.flicker.ime.ShowImeWhenFocusingOnInputFieldTest",
+        "com.android.server.wm.flicker.ime.ShowImeWhileDismissingThemedPopupDialogTest",
+        "com.android.server.wm.flicker.ime.ShowImeWhileEnteringOverviewTest",
+    ],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-CloseImeOnDismissPopupDialogTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.CloseImeOnDismissPopupDialogTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-CloseImeOnGoHomeTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.CloseImeOnGoHomeTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-CloseImeShownOnAppStartOnGoHomeTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.CloseImeShownOnAppStartOnGoHomeTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-CloseImeShownOnAppStartToAppOnPressBackTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.CloseImeShownOnAppStartToAppOnPressBackTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-CloseImeToAppOnPressBackTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.CloseImeToAppOnPressBackTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-CloseImeToHomeOnFinishActivityTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.CloseImeToHomeOnFinishActivityTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-OpenImeWindowToFixedPortraitAppTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.OpenImeWindowToFixedPortraitAppTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeOnAppStartWhenLaunchingAppFromFixedOrientationTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppFromFixedOrientationTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeOnAppStartWhenLaunchingAppFromOverviewTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppFromOverviewTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeOnAppStartWhenLaunchingAppFromQuickSwitchTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppFromQuickSwitchTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeOnAppStartWhenLaunchingAppTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeOnAppStartWhenLaunchingAppTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeOnUnlockScreenTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeOnUnlockScreenTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeWhenFocusingOnInputFieldTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeWhenFocusingOnInputFieldTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeWhileDismissingThemedPopupDialogTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeWhileDismissingThemedPopupDialogTest"],
+}
+
+test_module_config {
+    name: "FlickerTestsIme-ShowImeWhileEnteringOverviewTest",
+    base: "FlickerTestsIme",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.server.wm.flicker.ime.ShowImeWhileEnteringOverviewTest"],
+}

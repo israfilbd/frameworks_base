@@ -1,0 +1,666 @@
+/*
+ * Copyright (C) 2023 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.compose.animation.scene
+
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.util.lerp
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.compose.animation.scene.TestScenes.SceneA
+import com.android.compose.animation.scene.TestScenes.SceneB
+import com.android.compose.animation.scene.TestScenes.SceneC
+import com.android.compose.animation.scene.TestScenes.SceneD
+import com.android.compose.animation.scene.TestScenes.SceneE
+import com.android.compose.animation.scene.TestScenes.SceneF
+import com.android.compose.animation.scene.TestScenes.SceneG
+import com.android.compose.test.setContentAndCreateMainScope
+import com.android.compose.test.transition
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class AnimatedSharedAsStateTest {
+    @get:Rule val rule = createComposeRule()
+
+    private data class Values(val int: Int, val float: Float, val dp: Dp, val color: Color)
+
+    private fun lerp(start: Values, stop: Values, fraction: Float): Values {
+        return Values(
+            int = lerp(start.int, stop.int, fraction),
+            float = lerp(start.float, stop.float, fraction),
+            dp = lerp(start.dp, stop.dp, fraction),
+            color = lerp(start.color, stop.color, fraction),
+        )
+    }
+
+    @Composable
+    private fun ContentScope.Foo(targetValues: Values, onCurrentValueChanged: (Values) -> Unit) {
+        val key = TestElements.Foo
+        ElementWithValues(key, Modifier) {
+            val int by animateElementIntAsState(targetValues.int, key = TestValues.Value1)
+            val float by animateElementFloatAsState(targetValues.float, key = TestValues.Value2)
+            val dp by animateElementDpAsState(targetValues.dp, key = TestValues.Value3)
+            val color by animateElementColorAsState(targetValues.color, key = TestValues.Value4)
+
+            content {
+                LaunchedEffect(Unit) {
+                    snapshotFlow { Values(int, float, dp, color) }.collect(onCurrentValueChanged)
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun ContentScope.MovableFoo(
+        key: MovableElementKey,
+        targetValues: Values,
+        onCurrentValueChanged: (Values) -> Unit,
+    ) {
+        MovableElement(key, Modifier) {
+            val int by animateElementIntAsState(targetValues.int, key = TestValues.Value1)
+            val float by animateElementFloatAsState(targetValues.float, key = TestValues.Value2)
+            val dp by animateElementDpAsState(targetValues.dp, key = TestValues.Value3)
+            val color by animateElementColorAsState(targetValues.color, key = TestValues.Value4)
+
+            LaunchedEffect(Unit) {
+                snapshotFlow { Values(int, float, dp, color) }.collect(onCurrentValueChanged)
+            }
+        }
+    }
+
+    @Composable
+    private fun ContentScope.SceneValues(
+        targetValues: Values,
+        onCurrentValueChanged: (Values) -> Unit,
+    ) {
+        val int by animateContentIntAsState(targetValues.int, key = TestValues.Value1)
+        val float by animateContentFloatAsState(targetValues.float, key = TestValues.Value2)
+        val dp by animateContentDpAsState(targetValues.dp, key = TestValues.Value3)
+        val color by animateContentColorAsState(targetValues.color, key = TestValues.Value4)
+
+        LaunchedEffect(Unit) {
+            snapshotFlow { Values(int, float, dp, color) }.collect(onCurrentValueChanged)
+        }
+    }
+
+    @Test
+    fun animateElementValues() {
+        val fromValues = Values(int = 0, float = 0f, dp = 0.dp, color = Color.Red)
+        val toValues = Values(int = 100, float = 100f, dp = 100.dp, color = Color.Blue)
+
+        var lastValueInFrom = fromValues
+        var lastValueInTo = toValues
+
+        rule.testTransition(
+            fromSceneContent = {
+                Foo(targetValues = fromValues, onCurrentValueChanged = { lastValueInFrom = it })
+            },
+            toSceneContent = {
+                Foo(targetValues = toValues, onCurrentValueChanged = { lastValueInTo = it })
+            },
+            transition = {
+                // The transition lasts 64ms = 4 frames.
+                spec = tween(durationMillis = 16 * 4, easing = LinearEasing)
+            },
+            fromScene = SceneA,
+            toScene = SceneB,
+        ) {
+            before {
+                assertThat(lastValueInFrom).isEqualTo(fromValues)
+
+                // to was not composed yet, so lastValueInTo was not set yet.
+                assertThat(lastValueInTo).isEqualTo(toValues)
+            }
+
+            at(16) {
+                // Given that we use Modifier.element() here, animateSharedXAsState is composed in
+                // both scenes and values should be interpolated with the transition fraction.
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.25f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            at(32) {
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.5f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            at(48) {
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.75f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            after { assertThat(lastValueInTo).isEqualTo(toValues) }
+        }
+    }
+
+    @Test
+    fun movableAnimateSharedValues() {
+        val fromValues = Values(int = 0, float = 0f, dp = 0.dp, color = Color.Red)
+        val toValues = Values(int = 100, float = 100f, dp = 100.dp, color = Color.Blue)
+
+        var lastValueInFrom = fromValues
+        var lastValueInTo = toValues
+
+        val key = MovableElementKey("Foo", contents = setOf(SceneA, SceneB))
+
+        rule.testTransition(
+            fromSceneContent = {
+                MovableFoo(
+                    key = key,
+                    targetValues = fromValues,
+                    onCurrentValueChanged = { lastValueInFrom = it },
+                )
+            },
+            toSceneContent = {
+                MovableFoo(
+                    key = key,
+                    targetValues = toValues,
+                    onCurrentValueChanged = { lastValueInTo = it },
+                )
+            },
+            transition = {
+                // The transition lasts 64ms = 4 frames.
+                spec = tween(durationMillis = 16 * 4, easing = LinearEasing)
+            },
+            fromScene = SceneA,
+            toScene = SceneB,
+        ) {
+            before {
+                assertThat(lastValueInFrom).isEqualTo(fromValues)
+
+                // to was not composed yet, so lastValueInTo was not set yet.
+                assertThat(lastValueInTo).isEqualTo(toValues)
+            }
+
+            at(16) {
+                assertThat(lastValueInFrom).isEqualTo(lerp(fromValues, toValues, fraction = 0.25f))
+                assertThat(lastValueInTo).isEqualTo(lerp(fromValues, toValues, fraction = 0.25f))
+            }
+
+            at(32) {
+                assertThat(lastValueInFrom).isEqualTo(lerp(fromValues, toValues, fraction = 0.5f))
+                assertThat(lastValueInTo).isEqualTo(lerp(fromValues, toValues, fraction = 0.5f))
+            }
+
+            at(48) {
+                assertThat(lastValueInFrom).isEqualTo(lerp(fromValues, toValues, fraction = 0.75f))
+                assertThat(lastValueInTo).isEqualTo(lerp(fromValues, toValues, fraction = 0.75f))
+            }
+
+            after { assertThat(lastValueInTo).isEqualTo(toValues) }
+        }
+    }
+
+    @Test
+    fun animateSceneValues() {
+        val fromValues = Values(int = 0, float = 0f, dp = 0.dp, color = Color.Red)
+        val toValues = Values(int = 100, float = 100f, dp = 100.dp, color = Color.Blue)
+
+        var lastValueInFrom = fromValues
+        var lastValueInTo = toValues
+
+        rule.testTransition(
+            fromSceneContent = {
+                SceneValues(
+                    targetValues = fromValues,
+                    onCurrentValueChanged = { lastValueInFrom = it },
+                )
+            },
+            toSceneContent = {
+                SceneValues(targetValues = toValues, onCurrentValueChanged = { lastValueInTo = it })
+            },
+            transition = {
+                // The transition lasts 64ms = 4 frames.
+                spec = tween(durationMillis = 16 * 4, easing = LinearEasing)
+            },
+            fromScene = SceneA,
+            toScene = SceneB,
+        ) {
+            before {
+                assertThat(lastValueInFrom).isEqualTo(fromValues)
+
+                // to was not composed yet, so lastValueInTo was not set yet.
+                assertThat(lastValueInTo).isEqualTo(toValues)
+            }
+
+            at(16) {
+                // Given that we use scene values here, animateSceneXAsState is composed in both
+                // scenes and values should be interpolated with the transition fraction.
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.25f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            at(32) {
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.5f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            at(48) {
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.75f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            after { assertThat(lastValueInTo).isEqualTo(toValues) }
+        }
+    }
+
+    @Test
+    fun readingAnimatedStateValueDuringCompositionIsStillPossible() {
+        @Composable
+        fun ContentScope.SceneValuesDuringComposition(
+            targetValues: Values,
+            onCurrentValueChanged: (Values) -> Unit,
+        ) {
+            val int by
+                animateContentIntAsState(targetValues.int, key = TestValues.Value1)
+                    .unsafeCompositionState(targetValues.int)
+            val float by
+                animateContentFloatAsState(targetValues.float, key = TestValues.Value2)
+                    .unsafeCompositionState(targetValues.float)
+            val dp by
+                animateContentDpAsState(targetValues.dp, key = TestValues.Value3)
+                    .unsafeCompositionState(targetValues.dp)
+            val color by
+                animateContentColorAsState(targetValues.color, key = TestValues.Value4)
+                    .unsafeCompositionState(targetValues.color)
+
+            val values = Values(int, float, dp, color)
+            SideEffect { onCurrentValueChanged(values) }
+        }
+
+        val fromValues = Values(int = 0, float = 0f, dp = 0.dp, color = Color.Red)
+        val toValues = Values(int = 100, float = 100f, dp = 100.dp, color = Color.Blue)
+
+        var lastValueInFrom = fromValues
+        var lastValueInTo = toValues
+
+        rule.testTransition(
+            fromSceneContent = {
+                SceneValuesDuringComposition(
+                    targetValues = fromValues,
+                    onCurrentValueChanged = { lastValueInFrom = it },
+                )
+            },
+            toSceneContent = {
+                SceneValuesDuringComposition(
+                    targetValues = toValues,
+                    onCurrentValueChanged = { lastValueInTo = it },
+                )
+            },
+            transition = {
+                // The transition lasts 64ms = 4 frames.
+                spec = tween(durationMillis = 16 * 4, easing = LinearEasing)
+            },
+        ) {
+            before {
+                assertThat(lastValueInFrom).isEqualTo(fromValues)
+
+                // to was not composed yet, so lastValueInTo was not set yet.
+                assertThat(lastValueInTo).isEqualTo(toValues)
+            }
+
+            at(16) {
+                // Because we are using unsafeCompositionState(), values are one frame behind their
+                // expected progress so at this first frame we are at progress = 0% instead of 25%.
+                val expectedValues = lerp(fromValues, toValues, fraction = 0f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            at(32) {
+                // One frame behind, so 25% instead of 50%.
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.25f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            at(48) {
+                // One frame behind, so 50% instead of 75%.
+                val expectedValues = lerp(fromValues, toValues, fraction = 0.5f)
+                assertThat(lastValueInFrom).isEqualTo(expectedValues)
+                assertThat(lastValueInTo).isEqualTo(expectedValues)
+            }
+
+            after {
+                // from should have been last composed at progress = 100% before it is removed from
+                // composition, but given that we are one frame behind the last values are stuck at
+                // 75%.
+                assertThat(lastValueInFrom).isEqualTo(lerp(fromValues, toValues, fraction = 0.75f))
+
+                // The after {} block resumes the clock and will run as many frames as necessary so
+                // that the application is idle, so the toScene settle to the idle state and to the
+                // final values.
+                assertThat(lastValueInTo).isEqualTo(toValues)
+            }
+        }
+    }
+
+    @Test
+    fun animatedValueIsUsingLastTransition() = runTest {
+        val state =
+            rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneA, transitions {}) }
+
+        val foo = ValueKey("foo")
+        val bar = ValueKey("bar")
+        val lastValues = mutableMapOf<ValueKey, MutableMap<ContentKey, Float>>()
+
+        @Composable
+        fun ContentScope.animateFloat(value: Float, key: ValueKey) {
+            val animatedValue = animateContentFloatAsState(value, key)
+            LaunchedEffect(animatedValue) {
+                snapshotFlow { animatedValue.value }
+                    .collect { lastValues.getOrPut(key) { mutableMapOf() }[contentKey] = it }
+            }
+        }
+
+        val scope =
+            rule.setContentAndCreateMainScope {
+                SceneTransitionLayout(state) {
+                    // foo goes from 0f to 100f in A => B.
+                    scene(SceneA) { animateFloat(0f, foo) }
+                    scene(SceneB) { animateFloat(100f, foo) }
+
+                    // bar goes from 0f to 10f in C => D.
+                    scene(SceneC) { animateFloat(0f, bar) }
+                    scene(SceneD) { animateFloat(10f, bar) }
+                }
+            }
+
+        // A => B is at 30%.
+        scope.launch {
+            state.startTransition(
+                transition(
+                    from = SceneA,
+                    to = SceneB,
+                    progress = { 0.3f },
+                    onFreezeAndAnimate = { /* never finish */ },
+                )
+            )
+        }
+
+        // C => D is at 70%.
+        scope.launch {
+            state.startTransition(transition(from = SceneC, to = SceneD, progress = { 0.7f }))
+        }
+        rule.waitForIdle()
+
+        assertThat(lastValues[foo]?.get(SceneA)).isWithin(0.001f).of(30f)
+        assertThat(lastValues[foo]?.get(SceneB)).isWithin(0.001f).of(30f)
+        assertThat(lastValues[foo]?.get(SceneC)).isNull()
+        assertThat(lastValues[foo]?.get(SceneD)).isNull()
+
+        assertThat(lastValues[bar]?.get(SceneA)).isNull()
+        assertThat(lastValues[bar]?.get(SceneB)).isNull()
+        assertThat(lastValues[bar]?.get(SceneC)).isWithin(0.001f).of(7f)
+        assertThat(lastValues[bar]?.get(SceneD)).isWithin(0.001f).of(7f)
+    }
+
+    @Test
+    fun interpolatedColor() {
+        val a = Color.Red
+        val b = Color.Green
+        val delta = SharedColorType.diff(b, a) // b - a
+        val interpolated = SharedColorType.addWeighted(a, delta, 0.5f) // a + (b - a) * 0.5f
+        rule.setContent { Box(Modifier.fillMaxSize().background(interpolated)) }
+    }
+
+    @Test
+    fun nestedValue() {
+        val valueKey = ValueKey("value")
+
+        @Composable
+        fun ContentScope.AnimatedFloat(targetValue: Float, value: (Float?) -> Unit) {
+            val state = animateContentFloatAsState(targetValue, valueKey)
+            LaunchedEffect(state) {
+                try {
+                    snapshotFlow<Float?> { state.value }.collect(value)
+                } finally {
+                    value(null)
+                }
+            }
+        }
+
+        val outerState = rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneB) }
+        val nestedState = rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneC) }
+
+        var sceneAValue: Float? = null
+        var sceneCValue: Float? = null
+        var sceneDValue: Float? = null
+        val scope =
+            rule.setContentAndCreateMainScope {
+                SceneTransitionLayout(outerState) {
+                    scene(SceneA) { AnimatedFloat(targetValue = 10f) { sceneAValue = it } }
+                    scene(SceneB) {
+                        NestedSceneTransitionLayout(nestedState, Modifier) {
+                            scene(SceneC) { AnimatedFloat(targetValue = 20f) { sceneCValue = it } }
+                            scene(SceneD) { AnimatedFloat(targetValue = 30f) { sceneDValue = it } }
+                        }
+                    }
+                }
+            }
+
+        assertThat(sceneAValue).isEqualTo(null) // not composed
+        assertThat(sceneCValue).isEqualTo(20f)
+        assertThat(sceneDValue).isEqualTo(null) // not composed
+
+        // Start C => D. We interpolate between SceneC (20f) and SceneD (30f).
+        var currentScene by mutableStateOf(SceneC)
+        scope.launch {
+            nestedState.startTransition(
+                transition(
+                    from = SceneC,
+                    to = SceneD,
+                    current = { currentScene },
+                    progress = { 0.5f },
+                )
+            )
+        }
+        rule.waitForIdle()
+        assertThat(sceneAValue).isEqualTo(null) // not composed
+        assertThat(sceneCValue).isEqualTo(25f)
+        assertThat(sceneDValue).isEqualTo(25f)
+
+        // Start B => A. Outer transitions have priority, so we now interpolate between SceneA (10f)
+        // and SceneB = SceneC (20f) given that nestedState.currentScene == SceneC.
+        scope.launch {
+            outerState.startTransition(transition(from = SceneB, to = SceneA, progress = { 0.5f }))
+        }
+        rule.waitForIdle()
+        assertThat(sceneAValue).isEqualTo(15f)
+        assertThat(sceneCValue).isEqualTo(15f)
+        assertThat(sceneDValue).isEqualTo(15f)
+
+        // Interpolate between SceneA (10f) and SceneD (30f).
+        currentScene = SceneD
+        rule.waitForIdle()
+        assertThat(sceneAValue).isEqualTo(20f)
+        assertThat(sceneCValue).isEqualTo(20f)
+        assertThat(sceneDValue).isEqualTo(20f)
+    }
+
+    @Test
+    fun nestedValuePropagation() {
+        val valueKey = ValueKey("value")
+        val state1 = rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneA) }
+        val state2 = rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneB) }
+        val state3 = rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneC) }
+        val state4 = rule.runOnUiThread { MutableSceneTransitionLayoutStateForTests(SceneD) }
+
+        lateinit var layoutImpl: SceneTransitionLayoutImpl
+        val scope =
+            rule.setContentAndCreateMainScope {
+                SceneTransitionLayoutForTesting(state1, onLayoutImpl = { layoutImpl = it }) {
+                    scene(SceneA) {
+                        // no animateContentFloatAsState here, should inherit from
+                        // nested STL.
+                        NestedSceneTransitionLayout(state2, Modifier) {
+                            scene(SceneB) {
+                                animateContentFloatAsState(0f, valueKey)
+
+                                NestedSceneTransitionLayout(state3, Modifier) {
+                                    scene(SceneC) {
+                                        // no animateContentFloatAsState here, should inherit from
+                                        // nested STL.
+                                        NestedSceneTransitionLayout(state4, Modifier) {
+                                            scene(SceneD) {
+                                                animateContentFloatAsState(10f, valueKey)
+                                            }
+                                            scene(SceneE) {
+                                                animateContentFloatAsState(20f, valueKey)
+                                            }
+                                            scene(SceneF) {}
+                                        }
+                                    }
+                                }
+                            }
+                            scene(SceneG) {}
+                        }
+                    }
+                }
+            }
+
+        val targetValues =
+            layoutImpl.sharedValues.getValue(valueKey).getValue(/* elementKey= */ null).targetValues
+        assertThat(targetValues[SceneA]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneB]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneC]?.value).isEqualTo(10f) // inherited from SceneD
+        assertThat(targetValues[SceneD]?.value).isEqualTo(10f) // inherited from SceneD
+        assertThat(targetValues[SceneE]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneF]?.value).isEqualTo(null) // not composed
+
+        // state4: D => E.
+        var currentScene by mutableStateOf(SceneD)
+        val dToE = transition(from = SceneD, to = SceneE, current = { currentScene })
+        scope.launch { state4.startTransition(dToE) }
+        rule.waitForIdle()
+        assertThat(targetValues[SceneA]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneB]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneC]?.value).isEqualTo(10f) // inherited from SceneD
+        assertThat(targetValues[SceneD]?.value).isEqualTo(10f) // inherited from SceneD
+        assertThat(targetValues[SceneE]?.value).isEqualTo(20f) // inherited from SceneE
+        assertThat(targetValues[SceneF]?.value).isEqualTo(null) // not composed
+
+        currentScene = SceneE
+        rule.waitForIdle()
+        assertThat(targetValues[SceneA]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneB]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneC]?.value).isEqualTo(20f) // inherited from SceneE
+        assertThat(targetValues[SceneD]?.value).isEqualTo(10f) // inherited from SceneD
+        assertThat(targetValues[SceneE]?.value).isEqualTo(20f) // inherited from SceneE
+        assertThat(targetValues[SceneF]?.value).isEqualTo(null) // not composed
+
+        dToE.finish()
+        rule.waitForIdle()
+        assertThat(targetValues[SceneA]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneB]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneC]?.value).isEqualTo(20f) // inherited from SceneE
+        assertThat(targetValues[SceneD]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneE]?.value).isEqualTo(20f) // inherited from SceneE
+        assertThat(targetValues[SceneF]?.value).isEqualTo(null) // not composed
+
+        // state4: snap to F.
+        scope.launch { state4.snapTo(SceneF) }
+        rule.waitForIdle()
+        assertThat(targetValues[SceneA]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneB]?.value).isEqualTo(0f) // inherited from SceneB
+        assertThat(targetValues[SceneC]?.value).isEqualTo(null) // inherited from SceneE
+        assertThat(targetValues[SceneD]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneE]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneF]?.value).isEqualTo(null) // no animateContentFloatAsState()
+
+        // state2: snap to G.
+        scope.launch { state2.snapTo(SceneG) }
+        rule.waitForIdle()
+        assertThat(targetValues[SceneA]?.value).isEqualTo(null) // no animateContentFloatAsState()
+        assertThat(targetValues[SceneB]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneC]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneD]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneE]?.value).isEqualTo(null) // not composed
+        assertThat(targetValues[SceneF]?.value).isEqualTo(null) // not composed
+    }
+
+    @Test
+    // Regression test for b/432799675.
+    fun animatedSharedValueInGraphicsLayer() {
+        val lastGraphicsLayerRotationPerContent = mutableMapOf<ContentKey, Float>()
+
+        @Composable
+        fun ContentScope.SharedFoo(rotation: Float, modifier: Modifier = Modifier) {
+            val contentKey = this.contentKey
+            ElementWithValues(TestElements.Foo, modifier) {
+                val animatedRotation by animateElementFloatAsState(rotation, TestValues.Value1)
+                Box(
+                    Modifier.graphicsLayer {
+                        rotationZ =
+                            animatedRotation.also {
+                                lastGraphicsLayerRotationPerContent[contentKey] = it
+                            }
+                    }
+                )
+            }
+        }
+
+        rule.setContent {
+            val scope = rememberCoroutineScope()
+            val state = remember {
+                MutableSceneTransitionLayoutStateForTests(SceneA).apply {
+                    startTransitionImmediately(
+                        scope,
+                        transition(SceneA, SceneB, progress = { 0.5f }),
+                    )
+                }
+            }
+            SceneTransitionLayout(state) {
+                scene(SceneA) { SharedFoo(rotation = 0f, Modifier.fillMaxSize()) }
+                scene(SceneB) { SharedFoo(rotation = 180f, Modifier.fillMaxSize(0.5f)) }
+            }
+        }
+
+        // SharedFoo is only placed in sceneB, the scene with highest zIndex.
+        assertThat(lastGraphicsLayerRotationPerContent[SceneB]).isWithin(0.1f).of(90f)
+    }
+}

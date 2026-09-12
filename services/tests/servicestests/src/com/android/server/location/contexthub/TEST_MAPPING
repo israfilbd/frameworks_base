@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksServicesTests_contexthub_presubmit"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "FrameworksServicesTests_com_android_server_location_contexthub"
+    }
+  ]
+}

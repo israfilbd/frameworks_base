@@ -1,0 +1,280 @@
+/*
+ * Copyright (C) 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.media.controls.ui.view
+
+import android.graphics.Typeface
+import android.provider.Settings
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.SeekBar
+import android.widget.TextView
+import androidx.constraintlayout.widget.Barrier
+import androidx.constraintlayout.widget.ConstraintLayout
+import com.android.internal.widget.CachingIconView
+import com.android.systemui.Flags.enableSuggestedDeviceUi
+import com.android.systemui.FontStyles.GSF_BODY_MEDIUM
+import com.android.systemui.FontStyles.GSF_HEADLINE_SMALL
+import com.android.systemui.FontStyles.GSF_LABEL_MEDIUM
+import com.android.systemui.FontStyles.GSF_TITLE_MEDIUM
+import com.android.systemui.FontStyles.GSF_TITLE_MEDIUM_EMPHASIZED
+import com.android.systemui.res.R
+import com.android.systemui.surfaceeffects.loadingeffect.LoadingEffectView
+import com.android.systemui.surfaceeffects.ripple.MultiRippleView
+import com.android.systemui.surfaceeffects.turbulencenoise.TurbulenceNoiseView
+import com.android.systemui.util.animation.TransitionLayout
+
+private const val TAG = "MediaViewHolder"
+
+/** Holder class for media player view */
+class MediaViewHolder constructor(itemView: View) {
+    val player = itemView as TransitionLayout
+
+    // Player information
+    val albumView = itemView.requireViewById<ImageView>(R.id.album_art)
+    val multiRippleView = itemView.requireViewById<MultiRippleView>(R.id.touch_ripple_view)
+    val turbulenceNoiseView =
+        itemView.requireViewById<TurbulenceNoiseView>(R.id.turbulence_noise_view)
+    val loadingEffectView = itemView.requireViewById<LoadingEffectView>(R.id.loading_effect_view)
+    val appIcon = itemView.requireViewById<ImageView>(R.id.icon)
+    val titleText = itemView.requireViewById<TextView>(R.id.header_title)
+    val artistText = itemView.requireViewById<TextView>(R.id.header_artist)
+    val explicitIndicator = itemView.requireViewById<CachingIconView>(R.id.media_explicit_indicator)
+
+    // Output switcher
+    val seamless = itemView.requireViewById<ViewGroup>(R.id.media_seamless)
+    val seamlessIcon = itemView.requireViewById<ImageView>(R.id.media_seamless_image)
+    val seamlessText = itemView.requireViewById<TextView>(R.id.media_seamless_text)
+    val seamlessButton = itemView.requireViewById<View>(R.id.media_seamless_button)
+
+    // Suggestions
+    val deviceSuggestionContainer =
+        itemView.findViewById<ViewGroup>(R.id.device_suggestion_container)
+    val deviceSuggestionText = itemView.findViewById<TextView>(R.id.device_suggestion_text)
+    val deviceSuggestionIcon = itemView.findViewById<ImageView>(R.id.device_suggestion_icon)
+    val deviceSuggestionConnectingIcon =
+        itemView.findViewById<ProgressBar>(R.id.device_suggestion_progressbar)
+    val deviceSuggestionButton = itemView.findViewById<View>(R.id.device_suggestion_button)
+
+    // Seekbar views - dynamically replaced based on settings
+    var seekBar: SeekBar = itemView.requireViewById(R.id.media_progress_bar)
+    private set
+    // These views are only shown while the user is actively scrubbing
+    val scrubbingElapsedTimeView: TextView =
+        itemView.requireViewById(R.id.media_scrubbing_elapsed_time)
+    val scrubbingTotalTimeView: TextView = itemView.requireViewById(R.id.media_scrubbing_total_time)
+
+    val gutsViewHolder = GutsViewHolder(itemView)
+
+    // Action Buttons
+    val actionPlayPause = itemView.requireViewById<ImageButton>(R.id.actionPlayPause)
+    val actionNext = itemView.requireViewById<ImageButton>(R.id.actionNext)
+    val actionPrev = itemView.requireViewById<ImageButton>(R.id.actionPrev)
+    val action0 = itemView.requireViewById<ImageButton>(R.id.action0)
+    val action1 = itemView.requireViewById<ImageButton>(R.id.action1)
+    val action2 = itemView.requireViewById<ImageButton>(R.id.action2)
+    val action3 = itemView.requireViewById<ImageButton>(R.id.action3)
+    val action4 = itemView.requireViewById<ImageButton>(R.id.action4)
+
+    val actionsTopBarrier = itemView.requireViewById<Barrier>(R.id.media_action_barrier_top)
+
+    // Pagination
+    val pageLeft = itemView.requireViewById<ImageButton>(R.id.page_left)
+    val pageRight = itemView.requireViewById<ImageButton>(R.id.page_right)
+
+    init {
+        replaceSeekBarIfNeeded()
+    }
+
+    private fun replaceSeekBarIfNeeded() {
+        val waveformEnabled = Settings.System.getInt(
+            player.context.contentResolver,
+            Settings.System.MEDIA_WAVEFORM_SEEKBAR,
+            0
+        ) == 1
+
+        if (waveformEnabled && seekBar !is WaveformSeekBar) {
+            val parent = seekBar.parent as ViewGroup
+            val layoutParams = seekBar.layoutParams
+            val index = parent.indexOfChild(seekBar)
+            
+            val oldProgress = seekBar.progress
+            val oldMax = seekBar.max
+            val oldEnabled = seekBar.isEnabled
+            val oldId = seekBar.id
+            
+            parent.removeView(seekBar)
+            
+            val waveformSeekBar = WaveformSeekBar(player.context).apply {
+                id = oldId
+                this.layoutParams = layoutParams
+                progress = oldProgress
+                max = oldMax
+                isEnabled = oldEnabled
+                layoutDirection = View.LAYOUT_DIRECTION_LTR
+            }
+            
+            parent.addView(waveformSeekBar, index)
+            seekBar = waveformSeekBar
+        } else if (!waveformEnabled && seekBar is WaveformSeekBar) {
+            val parent = seekBar.parent as ViewGroup
+            val layoutParams = seekBar.layoutParams
+            val index = parent.indexOfChild(seekBar)
+            
+            val oldProgress = seekBar.progress
+            val oldMax = seekBar.max
+            val oldEnabled = seekBar.isEnabled
+            val oldId = seekBar.id
+            
+            parent.removeView(seekBar)
+            
+            val defaultSeekBar = SeekBar(player.context).apply {
+                id = oldId
+                this.layoutParams = layoutParams
+                progress = oldProgress
+                max = oldMax
+                isEnabled = oldEnabled
+                layoutDirection = View.LAYOUT_DIRECTION_LTR
+            }
+            
+            parent.addView(defaultSeekBar, index)
+            seekBar = defaultSeekBar
+        }
+    }
+
+    fun getAction(id: Int): ImageButton {
+        return when (id) {
+            R.id.actionPlayPause -> actionPlayPause
+            R.id.actionNext -> actionNext
+            R.id.actionPrev -> actionPrev
+            R.id.action0 -> action0
+            R.id.action1 -> action1
+            R.id.action2 -> action2
+            R.id.action3 -> action3
+            R.id.action4 -> action4
+            else -> {
+                throw IllegalArgumentException()
+            }
+        }
+    }
+
+    fun marquee(start: Boolean, delay: Long) {
+        gutsViewHolder.marquee(start, delay, TAG)
+    }
+
+    companion object {
+        /**
+         * Creates a MediaViewHolder.
+         *
+         * @param inflater LayoutInflater to use to inflate the layout.
+         * @param parent Parent of inflated view.
+         */
+        @JvmStatic
+        fun create(inflater: LayoutInflater, parent: ViewGroup): MediaViewHolder {
+            val mediaView =
+                if (enableSuggestedDeviceUi()) {
+                    inflater.inflate(R.layout.media_session_view_with_suggestion, parent, false)
+                } else {
+                    inflater.inflate(R.layout.media_session_view, parent, false)
+                }
+            mediaView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            // Because this media view (a TransitionLayout) is used to measure and layout the views
+            // in various states before being attached to its parent, we can't depend on the default
+            // LAYOUT_DIRECTION_INHERIT to correctly resolve the ltr direction.
+            mediaView.layoutDirection = View.LAYOUT_DIRECTION_LOCALE
+            return MediaViewHolder(mediaView).apply {
+                // Media playback is in the direction of tape, not time, so it stays LTR
+                seekBar.layoutDirection = View.LAYOUT_DIRECTION_LTR
+            }
+        }
+
+        val controlsIds: Set<Int> =
+            mutableSetOf(
+                    R.id.icon,
+                    R.id.app_name,
+                    R.id.header_title,
+                    R.id.header_artist,
+                    R.id.media_explicit_indicator,
+                    R.id.media_seamless,
+                    R.id.media_progress_bar,
+                    R.id.actionPlayPause,
+                    R.id.actionNext,
+                    R.id.actionPrev,
+                    R.id.action0,
+                    R.id.action1,
+                    R.id.action2,
+                    R.id.action3,
+                    R.id.action4,
+                    R.id.icon,
+                    R.id.media_scrubbing_elapsed_time,
+                    R.id.media_scrubbing_total_time,
+                    R.id.page_left,
+                    R.id.page_right,
+                )
+                .apply {
+                    if (enableSuggestedDeviceUi()) {
+                        add(R.id.device_suggestion_container)
+                    }
+                }
+
+        // Buttons used for notification-based actions
+        val genericButtonIds =
+            setOf(R.id.action0, R.id.action1, R.id.action2, R.id.action3, R.id.action4)
+
+        val expandedBottomActionIds =
+            setOf(
+                R.id.media_progress_bar,
+                R.id.actionPrev,
+                R.id.actionNext,
+                R.id.action0,
+                R.id.action1,
+                R.id.action2,
+                R.id.action3,
+                R.id.action4,
+                R.id.media_scrubbing_elapsed_time,
+                R.id.media_scrubbing_total_time,
+            )
+
+        val detailIds =
+            setOf(
+                R.id.header_title,
+                R.id.header_artist,
+                R.id.media_explicit_indicator,
+                R.id.actionPlayPause,
+                R.id.page_left,
+                R.id.page_right,
+            )
+
+        val backgroundIds =
+            setOf(
+                R.id.album_art,
+                R.id.turbulence_noise_view,
+                R.id.loading_effect_view,
+                R.id.touch_ripple_view,
+            )
+
+        val headlineSmallTF: Typeface = Typeface.create(GSF_HEADLINE_SMALL, Typeface.NORMAL)
+        val titleMediumEmphasizedTF: Typeface =
+            Typeface.create(GSF_TITLE_MEDIUM_EMPHASIZED, Typeface.NORMAL)
+        val titleMediumTF: Typeface = Typeface.create(GSF_TITLE_MEDIUM, Typeface.NORMAL)
+        val labelMediumTF: Typeface = Typeface.create(GSF_LABEL_MEDIUM, Typeface.NORMAL)
+        val bodyMediumTF: Typeface = Typeface.create(GSF_BODY_MEDIUM, Typeface.NORMAL)
+    }
+}

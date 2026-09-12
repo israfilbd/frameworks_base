@@ -1,0 +1,41 @@
+{
+  "presubmit": [
+    {
+      "name": "WMJetpackUnitTests_Area"
+    },
+    {
+      "name": "WMJetpackUnitTests_ActivityEmbedding"
+    },
+    {
+      "name": "WMJetpackUnitTests_Layout"
+    },
+    {
+      "name": "WMJetpackUnitTests_Other"
+    },
+    {
+      "name": "CtsWindowManagerJetpackTestCases_Area"
+    },
+    {
+      "name": "CtsWindowManagerJetpackTestCases_ActivityEmbedding"
+    },
+    {
+      "name": "CtsWindowManagerJetpackTestCases_Layout"
+    },
+    {
+      "name": "CtsWindowManagerJetpackTestCases_Other"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "WMJetpackUnitTests_Postsubmit"
+    },
+    {
+      "name": "CtsWindowManagerJetpackTestCases_Postsubmit"
+    }
+  ],
+  "imports": [
+    {
+      "path": "vendor/google_testing/integration/tests/scenarios/src/android/platform/test/scenario/sysui"
+    }
+  ]
+}

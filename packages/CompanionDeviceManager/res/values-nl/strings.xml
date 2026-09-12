@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2017 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="4470785958457506021">"Companion Device Manager"</string>
+    <string name="confirmation_title" msgid="2244241995958340998">"Toestaan dat de app &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; toegang heeft tot de &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="message_discovery_soft_timeout" msgid="473346859407859161">"Zorg dat <xliff:g id="DISCOVERY_METHOD">%2$s</xliff:g> aanstaat op deze <xliff:g id="DEVICE_TYPE">%1$s</xliff:g> en houd je <xliff:g id="PROFILE_NAME">%3$s</xliff:g> in de buurt."</string>
+    <string name="message_discovery_hard_timeout" msgid="677514663495711424">"Geen apparaten gevonden. Probeer het later opnieuw."</string>
+    <string name="discovery_bluetooth" msgid="5693557668470016164">"Bluetooth"</string>
+    <string name="discovery_wifi" msgid="1551782459721758773">"Wifi"</string>
+    <string name="discovery_mixed" msgid="7071466134150760127">"Bluetooth en wifi"</string>
+    <string name="profile_name_watch" msgid="576290739483672360">"smartwatch"</string>
+    <string name="chooser_title_non_profile" msgid="6035023914517087400">"Een apparaat kiezen om te beheren met &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt;"</string>
+    <string name="chooser_title" msgid="2235819929238267637">"Een <xliff:g id="PROFILE_NAME">%1$s</xliff:g> kiezen om in te stellen"</string>
+    <string name="single_device_title" msgid="4199861437545438606">"Zoeken naar een <xliff:g id="PROFILE_NAME">%1$s</xliff:g>"</string>
+    <string name="summary_watch" msgid="8134580124808507407">"Deze app kan informatie synchroniseren (zoals de naam van iemand die belt) en krijgt toegang tot deze rechten op je <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="profile_name_fitness_tracker" msgid="3107192493390199691">"fitnesstracker"</string>
+    <string name="confirmation_title_glasses" msgid="8288346850537727333">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; toestaan &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt; te beheren?"</string>
+    <string name="profile_name_glasses" msgid="3506504967216601277">"apparaat"</string>
+    <string name="summary_glasses" msgid="5469208629679579157">"Deze app krijgt toegang tot deze rechten op je <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="profile_name_medical" msgid="5617160509499466400">"medisch apparaat"</string>
+    <string name="title_app_streaming" msgid="237666000400427614">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; toestaan om apps en systeemfuncties te streamen tussen je <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> en &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="summary_app_streaming" msgid="8346968726357732862">"<xliff:g id="APP_NAME">%1$s</xliff:g> krijgt de volgende rechten:"</string>
+    <string name="summary_app_streaming_legacy" msgid="8994180646987541606">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> krijgt toegang tot alles wat zichtbaar is of wordt afgespeeld op je <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>, waaronder audio, foto\'s, betalingsgegevens, wachtwoorden en berichten.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_1">%1$s</xliff:g> kan apps naar <xliff:g id="DEVICE_NAME">%3$s</xliff:g> streamen totdat je dit recht verwijdert."</string>
+    <string name="helper_summary_app_streaming" msgid="160149899100957545">"<xliff:g id="APP_NAME">%1$s</xliff:g> vraagt namens <xliff:g id="DEVICE_NAME">%2$s</xliff:g> toestemming om apps en systeemfuncties te streamen tussen je apparaten."</string>
+    <string name="title_automotive_projection" msgid="3296005598978412847"></string>
+    <string name="summary_automotive_projection" msgid="8683801274662496164"></string>
+    <string name="title_computer" msgid="5040395223341777259">"&lt;strong&gt;<xliff:g id="DISPLAY_NAME">%3$s</xliff:g>&lt;/strong&gt; toegang geven tot deze informatie op je <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>?"</string>
+    <string name="helper_summary_computer" msgid="2298803016482139668">"<xliff:g id="APP_NAME">%1$s</xliff:g> vraagt namens jouw <xliff:g id="DEVICE_NAME">%2$s</xliff:g> toegang tot de foto\'s, media en meldingen van je <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_nearby_device_streaming" msgid="5342768208699657581">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; toestaan om apps en systeemfuncties te streamen tussen je <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> en &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="summary_nearby_device_streaming" msgid="7940640272770197219">"<xliff:g id="APP_NAME">%1$s</xliff:g> krijgt de volgende rechten:"</string>
+    <string name="summary_nearby_device_streaming_legacy" msgid="4306665203887990326">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> krijgt toegang tot alles wat zichtbaar is of wordt afgespeeld op <xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>, waaronder audio, foto\'s, wachtwoorden en berichten.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_2">%1$s</xliff:g> kan apps naar <xliff:g id="DEVICE_NAME_3">%3$s</xliff:g> streamen totdat je dit recht verwijdert."</string>
+    <string name="helper_summary_nearby_device_streaming" msgid="4712712177819370967">"<xliff:g id="APP_NAME">%1$s</xliff:g> vraagt namens <xliff:g id="DEVICE_NAME">%2$s</xliff:g> toestemming om apps te streamen vanaf je <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_virtual_device" msgid="6556338763070329395">"&lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; toestaan om audio en systeemfuncties te streamen tussen je <xliff:g id="DEVICE_TYPE">%3$s</xliff:g> en &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="summary_virtual_device" msgid="1062189396947962635">"<xliff:g id="APP_NAME">%2$s</xliff:g> krijgt de volgende rechten:"</string>
+    <string name="profile_name_generic" msgid="6851028682723034988">"apparaat"</string>
+    <string name="summary_generic" msgid="1761976003668044801">"Deze app kan informatie synchroniseren (zoals de naam van iemand die belt) tussen je telefoon en het gekozen apparaat"</string>
+    <string name="consent_yes" msgid="8344487259618762872">"Toestaan"</string>
+    <string name="consent_no" msgid="2640796915611404382">"Niet toestaan"</string>
+    <string name="consent_cancel" msgid="5655005528379285841">"Annuleren"</string>
+    <string name="consent_back" msgid="2560683030046918882">"Terug"</string>
+    <string name="downward_arrow_action" msgid="2327165938832076333">"Omlaag scrollen in de lijst"</string>
+    <string name="downward_arrow" msgid="2292427714411156088">"Pijl-omlaag"</string>
+    <string name="permission_expand" msgid="893185038020887411">"<xliff:g id="PERMISSION_TYPE">%1$s</xliff:g> uitvouwen"</string>
+    <string name="permission_collapse" msgid="3320833884220844084">"<xliff:g id="PERMISSION_TYPE">%1$s</xliff:g> samenvouwen"</string>
+    <string name="permission_sync_confirmation_title" msgid="4409622174437248702">"Apps op de &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME">%1$s</xliff:g>&lt;/strong&gt; dezelfde rechten geven als op de &lt;strong&gt;<xliff:g id="PRIMARY_DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="permission_sync_summary" msgid="765497944331294275">"Dit kan &lt;strong&gt;Microfoon&lt;/strong&gt;, &lt;strong&gt;Camera&lt;/strong&gt; en &lt;strong&gt;Locatietoegang&lt;/strong&gt; en andere gevoelige rechten op de &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_0">%1$s</xliff:g>&lt;/strong&gt; omvatten. &lt;br/&gt;&lt;br/&gt;Je kunt deze rechten altijd wijzigen in je Instellingen op de &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_1">%1$s</xliff:g>&lt;/strong&gt;."</string>
+    <string name="vendor_header_button_description" msgid="7994879208461111473">"Meer informatie"</string>
+    <string name="permission_phone" msgid="2661081078692784919">"Telefoon"</string>
+    <string name="permission_sms" msgid="6337141296535774786">"Sms"</string>
+    <string name="permission_contacts" msgid="3858319347208004438">"Contacten"</string>
+    <string name="permission_calendar" msgid="6805668388691290395">"Agenda"</string>
+    <string name="permission_microphone" msgid="2152206421428732949">"Microfoon"</string>
+    <string name="permission_call_logs" msgid="5546761417694586041">"Gesprekslijsten"</string>
+    <string name="permission_nearby_devices" msgid="7530973297737123481">"Apparaten in de buurt"</string>
+    <string name="permission_media_routing_control" msgid="5498639511586715253">"Media-uitvoer wijzigen"</string>
+    <string name="permission_storage" msgid="6831099350839392343">"Foto\'s en media"</string>
+    <string name="permission_notifications" msgid="4099418516590632909">"Meldingen"</string>
+    <string name="permission_create_virtual_device" msgid="1102905050922460040">"Gegevens streamen naar je <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_add_mirror_display" msgid="3743433250535606288">"Je scherm spiegelen"</string>
+    <string name="permission_add_trusted_display" msgid="9052824856626276723">"Apps streamen"</string>
+    <string name="permission_schedule_exact_alarm" msgid="5680932535987512225">"Wekkers en herinneringen"</string>
+    <string name="permission_bypass_dnd" msgid="1241123166903040347">"Instellingen voor Niet storen omzeilen"</string>
+    <string name="permission_phone_summary" msgid="8246321093970051702">"Bellen en gesprekken beheren"</string>
+    <string name="permission_call_logs_summary" msgid="7545243592757693321">"Telefoongesprekslijst lezen en schrijven"</string>
+    <string name="permission_sms_summary" msgid="8499509535410068616">"Sms-berichten sturen en bekijken"</string>
+    <string name="permission_contacts_summary" msgid="2840800622763086808">"Toegang tot je contacten"</string>
+    <string name="permission_calendar_summary" msgid="8430353935747336165">"Toegang tot je agenda"</string>
+    <string name="permission_microphone_summary" msgid="4862628553869973259">"Audio opnemen"</string>
+    <string name="permission_nearby_devices_summary" msgid="1306752848196464817">"Apparaten in de buurt vinden, er verbinding mee maken en de relatieve positie ervan bepalen"</string>
+    <string name="permission_notification_listener_access_summary" msgid="7856071768185367749">"Alle meldingen lezen, waaronder informatie zoals contacten, berichten en foto\'s"</string>
+    <string name="permission_notifications_summary" msgid="6819393427371255636">"• Alle meldingen lezen, waaronder informatie zoals contacten, berichten en foto\'s&lt;br/&gt;• Je meldingen sturen&lt;br/&gt;&lt;br/&gt;Je kunt de mogelijkheden van deze app om meldingen te lezen en te sturen, beheren wanneer je wilt via Instellingen &gt; Meldingen."</string>
+    <string name="permission_storage_summary" msgid="3918240895519506417"></string>
+    <string name="permission_post_notifications_summary" msgid="1099188848900200165">"Je meldingen verzenden"</string>
+    <string name="permission_create_virtual_device_summary" msgid="3570256456647725172">"Stream microfoon-, camera- en andere sensorgegevens van &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt; naar je <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>."</string>
+    <string name="permission_add_mirror_display_summary" msgid="1385423940454941534">"Je kunt het scherm van je <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g> opnemen, casten of delen met &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g> krijgt toegang tot alles wat zichtbaar is of wordt afgespeeld op je <xliff:g id="DEVICE_TYPE_1">%2$s</xliff:g>, waaronder audio, foto\'s, betalingsgegevens, wachtwoorden en berichten."</string>
+    <string name="permission_add_trusted_display_summary" msgid="7399955172055281447">"Stream de apps van je <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g> naar &lt;strong&gt;<xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g> krijgt toegang tot alles wat zichtbaar is of wordt afgespeeld op <xliff:g id="DEVICE_NAME_2">%3$s</xliff:g>, waaronder audio, foto\'s, betalingsgegevens, wachtwoorden en berichten, zelfs als je <xliff:g id="DEVICE_TYPE_3">%2$s</xliff:g> is vergrendeld."</string>
+    <string name="permission_media_routing_control_summary" msgid="2714631092321412250">"Krijg toegang tot een lijst met beschikbare apparaten en beheer welk apparaat audio of video streamt of cast via andere apps"</string>
+    <string name="permission_schedule_exact_alarm_summary" msgid="5938321911309800377"></string>
+    <string name="permission_bypass_dnd_summary" msgid="6221709271927387626"></string>
+    <string name="device_type" product="default" msgid="8268703872070046263">"telefoon"</string>
+    <string name="device_type" product="tablet" msgid="5038791954983067774">"tablet"</string>
+    <string name="device_type" product="tv" msgid="5355611506659405636">"tv"</string>
+    <string name="device_type" product="device" msgid="1526125965802507189">"apparaat"</string>
+</resources>

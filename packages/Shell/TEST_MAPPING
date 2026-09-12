@@ -1,0 +1,32 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsBugreportTestCases_android_server_os"
+    },
+    {
+      "name": "ShellTests_android_server_os"
+    },
+    {
+      "name": "CtsUiAutomationTestCases",
+      "options": [
+        {
+          "include-filter": "android.app.uiautomation.cts.UiAutomationTest#testAdoptAllShellPermissions"
+        },
+        {
+          "include-filter": "android.app.uiautomation.cts.UiAutomationTest#testAdoptSomeShellPermissions"
+        },
+        {
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
+        }
+      ]
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsBugreportTestCases"
+    },
+    {
+      "name": "ShellTests"
+    }
+  ]
+}

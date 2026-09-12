@@ -1,0 +1,70 @@
+package: "com.android.internal.os"
+container: "system"
+
+flag {
+     namespace: "ravenwood"
+     name: "ravenwood_flag_rw_1"
+     description: "Ravenwood test RW flag 1"
+     bug: "311370221"
+     metadata {
+         purpose: PURPOSE_BUGFIX
+     }
+}
+
+flag {
+     namespace: "ravenwood"
+     name: "ravenwood_flag_rw_2"
+     description: "Ravenwood test RW flag 2"
+     bug: "311370221"
+     metadata {
+         purpose: PURPOSE_BUGFIX
+     }
+}
+
+flag {
+     namespace: "ravenwood"
+     name: "ravenwood_flag_ro_1"
+     description: "Ravenwood test RO flag 1"
+     is_fixed_read_only: true
+     bug: "311370221"
+     metadata {
+         purpose: PURPOSE_BUGFIX
+     }
+}
+
+flag {
+     namespace: "ravenwood"
+     name: "ravenwood_flag_ro_2"
+     description: "Ravenwood test RO flag 2"
+     is_fixed_read_only: true
+     bug: "311370221"
+     metadata {
+         purpose: PURPOSE_BUGFIX
+     }
+}
+
+flag {
+    name: "debug_store_enabled"
+    namespace: "stability"
+    description: "If the debug store is enabled."
+    bug: "314735374"
+    is_fixed_read_only: true
+}
+
+flag {
+    name: "pre_watchdog_throttle_thread_dump"
+    namespace: "stability"
+    description: "Throttles how often a pre-watchdog results in a thread dump"
+    bug: "417424880"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "zygote_early_fifo_boost"
+    namespace: "watch_software_performance"
+    description: "Enables zygote boosting to fifo priority for top-app launches when fifo_ui is enabled"
+    bug: "397918406"
+    is_fixed_read_only: true
+}

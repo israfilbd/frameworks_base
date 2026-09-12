@@ -1,0 +1,114 @@
+// Copyright (C) 2022 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+    default_team: "trendy_team_wm_jetpack",
+}
+
+android_test {
+    name: "WMJetpackUnitTests",
+    // To make the test run via TEST_MAPPING
+    test_suites: ["device-tests"],
+
+    srcs: [
+        "**/*.java",
+        "**/*.kt",
+    ],
+
+    static_libs: [
+        "TestParameterInjector",
+        "androidx.window.extensions",
+        "androidx.window.extensions.core_core",
+        "junit",
+        "androidx.test.runner",
+        "androidx.test.rules",
+        "androidx.test.ext.junit",
+        "flag-junit",
+        "mockito-target-extended-minus-junit4",
+        "mockito-kotlin-nodeps",
+        "truth",
+        "testables",
+        "platform-test-annotations",
+    ],
+
+    libs: [
+        "android.test.mock.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
+    ],
+
+    // These are not normally accessible from apps so they must be explicitly included.
+    jni_libs: [
+        "libdexmakerjvmtiagent",
+        "libstaticjvmtiagent",
+    ],
+
+    optimize: {
+        enabled: false,
+    },
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Begin breakdowns for WMJetpackUnitTests module
+
+test_module_config {
+    name: "WMJetpackUnitTests_Area",
+    base: "WMJetpackUnitTests",
+    team: "trendy_team_rear_display",
+    test_suites: ["device-tests"],
+    include_filters: ["androidx.window.extensions.area"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "WMJetpackUnitTests_ActivityEmbedding",
+    base: "WMJetpackUnitTests",
+    team: "trendy_team_activity_embedding",
+    test_suites: ["device-tests"],
+    include_filters: ["androidx.window.extensions.embedding"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "WMJetpackUnitTests_Layout",
+    base: "WMJetpackUnitTests",
+    test_suites: ["device-tests"],
+    include_filters: ["androidx.window.extensions.layout"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "WMJetpackUnitTests_Other",
+    base: "WMJetpackUnitTests",
+    test_suites: ["device-tests"],
+    exclude_filters: [
+        "androidx.window.extensions.area",
+        "androidx.window.extensions.embedding",
+        "androidx.window.extensions.layout",
+    ],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "WMJetpackUnitTests_Postsubmit",
+    base: "WMJetpackUnitTests",
+    test_suites: ["device-tests"],
+    exclude_annotations: ["android.platform.test.annotations.Presubmit"],
+}

@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksInputMethodSystemServerTests_server_inputmethod"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "FrameworksImeTests_android_inputmethodservice"
+    }
+  ]
+}

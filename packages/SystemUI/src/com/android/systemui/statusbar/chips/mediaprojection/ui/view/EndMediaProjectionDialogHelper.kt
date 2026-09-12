@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.statusbar.chips.mediaprojection.ui.view
+
+import android.app.ActivityManager
+import android.content.Context
+import android.content.DialogInterface
+import android.content.pm.PackageManager
+import android.util.Log
+import com.android.systemui.animation.DialogTransitionAnimator
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.mediaprojection.data.model.MediaProjectionState
+import com.android.systemui.statusbar.phone.SystemUIDialog
+import javax.inject.Inject
+
+/** Helper class for showing dialogs that let users end different types of media projections. */
+@SysUISingleton
+class EndMediaProjectionDialogHelper
+@Inject
+constructor(
+    private val applicationContext: Context,
+    private val dialogFactory: SystemUIDialog.Factory,
+    private val dialogTransitionAnimator: DialogTransitionAnimator,
+    private val packageManager: PackageManager,
+) {
+    /** Creates a new [SystemUIDialog] using the given [Context] and [SystemUIDialog.Delegate]. */
+    fun createDialog(context: Context, delegate: SystemUIDialog.Delegate): SystemUIDialog {
+        return dialogFactory.create(delegate, getDisplaySpecificContext(context))
+    }
+
+    private fun getDisplaySpecificContext(context: Context): Context {
+        if (context == this.applicationContext) {
+            // Default application context can create dialogs without an issue.
+            return context
+        }
+        // Display specific contexts created with context.createWindowContext(<TYPE>) can only
+        // add windows of the same type specified in <TYPE>.
+        // SystemUIDialog adds a window of TYPE_STATUS_BAR_SUB_PANEL.
+        // We need to create a simple display specific context to create a dialog.
+        return context.createDisplayContext(context.display)
+    }
+
+    /**
+     * Returns the click listener that should be invoked if a user clicks "Stop" on the end media
+     * projection dialog.
+     *
+     * The click listener will invoke [stopAction] and also do some UI manipulation.
+     *
+     * @param stopAction an action that, when invoked, should notify system API(s) that the media
+     *   projection should be stopped.
+     */
+    fun wrapStopAction(stopAction: () -> Unit): DialogInterface.OnClickListener {
+        return DialogInterface.OnClickListener { _, _ ->
+            // If the projection is stopped, then the chip will disappear, so we don't want the
+            // dialog to animate back into the chip just for the chip to disappear in a few frames.
+            dialogTransitionAnimator.disableAllCurrentDialogsExitAnimations()
+            stopAction.invoke()
+        }
+    }
+
+    fun getAppName(state: MediaProjectionState.Projecting): CharSequence? {
+        val specificTaskInfo =
+            if (state is MediaProjectionState.Projecting.SingleTask) {
+                state.task
+            } else {
+                null
+            }
+        return getAppName(specificTaskInfo)
+    }
+
+    fun getAppName(specificTaskInfo: ActivityManager.RunningTaskInfo?): CharSequence? {
+        val packageName = specificTaskInfo?.baseIntent?.component?.packageName ?: return null
+        return getAppName(packageName)
+    }
+
+    /**
+     * Returns the human-readable application name for the given package, or null if it couldn't be
+     * found for any reason.
+     */
+    fun getAppName(packageName: String): CharSequence? {
+        return try {
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            appInfo.loadLabel(packageManager)
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.w(
+                TAG,
+                "Failed to find application info for package: $packageName when creating " +
+                    "end media projection dialog",
+                e,
+            )
+            null
+        }
+    }
+
+    companion object {
+        private const val TAG = "EndMediaProjectionDialogHelper"
+    }
+}

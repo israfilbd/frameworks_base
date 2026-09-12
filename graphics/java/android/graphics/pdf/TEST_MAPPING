@@ -1,0 +1,7 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsPdfTestCases_cts_pdfdocumenttest"
+    }
+  ]
+}

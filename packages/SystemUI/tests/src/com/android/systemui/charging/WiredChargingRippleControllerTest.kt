@@ -1,0 +1,250 @@
+/*
+ * Copyright (C) 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.charging
+
+import android.graphics.Rect
+import android.widget.FrameLayout
+import android.view.Surface
+import android.view.View
+import android.view.WindowManager
+import android.view.WindowMetrics
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertThat
+import com.android.internal.logging.UiEventLogger
+import com.android.systemui.res.R
+import com.android.systemui.SysuiTestCase
+import com.android.systemui.flags.FeatureFlags
+import com.android.systemui.flags.Flags
+import com.android.systemui.statusbar.commandline.CommandRegistry
+import com.android.systemui.statusbar.policy.BatteryController
+import com.android.systemui.statusbar.policy.ConfigurationController
+import com.android.systemui.surfaceeffects.ripple.RippleView
+import com.android.systemui.util.mockito.whenever
+import com.android.systemui.util.time.FakeSystemClock
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers
+import org.mockito.Mock
+import org.mockito.Mockito.`when`
+import org.mockito.Mockito.any
+import org.mockito.Mockito.doAnswer
+import org.mockito.Mockito.never
+import org.mockito.Mockito.reset
+import org.mockito.Mockito.spy
+import org.mockito.Mockito.verify
+import org.mockito.MockitoAnnotations
+
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class WiredChargingRippleControllerTest : SysuiTestCase() {
+    private lateinit var controller: WiredChargingRippleController
+    @Mock private lateinit var commandRegistry: CommandRegistry
+    @Mock private lateinit var batteryController: BatteryController
+    @Mock private lateinit var featureFlags: FeatureFlags
+    @Mock private lateinit var configurationController: ConfigurationController
+    @Mock private lateinit var windowManager: WindowManager
+    @Mock private lateinit var uiEventLogger: UiEventLogger
+    @Mock private lateinit var windowMetrics: WindowMetrics
+    private lateinit var rippleView: RippleView
+    private val systemClock = FakeSystemClock()
+
+    @Before
+    fun setUp() {
+        MockitoAnnotations.initMocks(this)
+        `when`(featureFlags.isEnabled(Flags.CHARGING_RIPPLE)).thenReturn(true)
+        controller = WiredChargingRippleController(
+                commandRegistry, batteryController, configurationController,
+                featureFlags, context, windowManager, systemClock, uiEventLogger)
+        rippleView = spy(RippleView(context, null).also { it.setupShader() })
+        doAnswer { }.whenever(rippleView).startRipple(any())
+        controller.rippleView = rippleView // Replace the controller-owned ripple view with a spy.
+        controller.registerCallbacks()
+
+        `when`(windowMetrics.bounds).thenReturn(Rect(0, 0, 100, 100))
+        `when`(windowManager.currentWindowMetrics).thenReturn(windowMetrics)
+    }
+
+    @Test
+    fun testTriggerRipple_UnlockedState() {
+        val batteryCallback = batteryStateChangeCallback()
+
+        // Verify ripple added to window manager.
+        batteryCallback.onBatteryLevelChanged(
+                /* unusedBatteryLevel= */ 0,
+                /* plugged in= */ true,
+                /* charging= */ false)
+        val container = addedRippleContainer()
+        assertThat(container.childCount).isEqualTo(2)
+        assertThat(container.getChildAt(0)).isSameInstanceAs(rippleView)
+
+        // Verify ripple started
+        val runnableCaptor =
+                ArgumentCaptor.forClass(Runnable::class.java)
+        attachStateChangeListener(container).onViewAttachedToWindow(container)
+        verify(rippleView).startRipple(runnableCaptor.capture())
+
+        // Verify ripple removed
+        runnableCaptor.value.run()
+        assertThat(container.indexOfChild(rippleView)).isEqualTo(-1)
+
+        // Verify event logged
+        verify(uiEventLogger).log(
+                WiredChargingRippleController.WiredChargingRippleEvent.CHARGING_RIPPLE_PLAYED)
+    }
+
+    @Test
+    fun testUpdateRippleColor() {
+        val captor = ArgumentCaptor
+                .forClass(ConfigurationController.ConfigurationListener::class.java)
+        verify(configurationController).addCallback(captor.capture())
+
+        reset(rippleView)
+        captor.value.onThemeChanged()
+        verify(rippleView).setColor(ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt())
+
+        reset(rippleView)
+        captor.value.onUiModeChanged()
+        verify(rippleView).setColor(ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt())
+    }
+
+    @Test
+    fun testDebounceRipple() {
+        var time: Long = 0
+        systemClock.setElapsedRealtime(time)
+
+        controller.startRippleWithDebounce()
+        verify(windowManager).addView(any<View>(), any<WindowManager.LayoutParams>())
+
+        reset(windowManager)
+        // Wait a short while and trigger.
+        time += 100
+        systemClock.setElapsedRealtime(time)
+        controller.startRippleWithDebounce()
+
+        // Verify the ripple is debounced.
+        verify(windowManager, never()).addView(any<View>(), any<WindowManager.LayoutParams>())
+
+        // Trigger many times.
+        for (i in 0..100) {
+            time += 100
+            systemClock.setElapsedRealtime(time)
+            controller.startRippleWithDebounce()
+        }
+        // Verify all attempts are debounced.
+        verify(windowManager, never()).addView(any<View>(), any<WindowManager.LayoutParams>())
+
+        // Wait a long while and trigger.
+        systemClock.setElapsedRealtime(time + 500000)
+        controller.startRippleWithDebounce()
+        // Verify that ripple is triggered.
+        verify(windowManager).addView(any<View>(), any<WindowManager.LayoutParams>())
+    }
+
+    @Test
+    fun testRipple_whenDocked_doesNotPlayRipple() {
+        `when`(batteryController.isChargingSourceDock).thenReturn(true)
+        val batteryCallback = batteryStateChangeCallback()
+
+        batteryCallback.onBatteryLevelChanged(
+                /* unusedBatteryLevel= */ 0,
+                /* plugged in= */ true,
+                /* charging= */ false)
+
+        verify(windowManager, never()).addView(any<View>(), any<WindowManager.LayoutParams>())
+    }
+
+    @Test
+    fun testRipple_layoutsCorrectly() {
+        // Sets the correct ripple size.
+        val width = 100
+        val height = 200
+        whenever(windowMetrics.bounds).thenReturn(Rect(0, 0, width, height))
+
+        // Trigger ripple.
+        val batteryCallback = batteryStateChangeCallback()
+
+        batteryCallback.onBatteryLevelChanged(
+                /* unusedBatteryLevel= */ 0,
+                /* plugged in= */ true,
+                /* charging= */ false)
+
+        val container = addedRippleContainer()
+
+        val runnableCaptor =
+                ArgumentCaptor.forClass(Runnable::class.java)
+        attachStateChangeListener(container).onViewAttachedToWindow(container)
+        verify(rippleView).startRipple(runnableCaptor.capture())
+
+        // Verify size and center position.
+        val maxSize = 400f // Double the max value between width and height.
+        verify(rippleView).setMaxSize(maxWidth = maxSize, maxHeight = maxSize)
+
+        val normalizedPortPosX =
+                context.resources.getFloat(R.dimen.physical_charger_port_location_normalized_x)
+        val normalizedPortPosY =
+                context.resources.getFloat(R.dimen.physical_charger_port_location_normalized_y)
+        val expectedCenterX: Float
+        val expectedCenterY: Float
+        when (checkNotNull(context.display).rotation) {
+            Surface.ROTATION_90 -> {
+                expectedCenterX = width * normalizedPortPosY
+                expectedCenterY = height * (1 - normalizedPortPosX)
+            }
+            Surface.ROTATION_180 -> {
+                expectedCenterX = width * (1 - normalizedPortPosX)
+                expectedCenterY = height * (1 - normalizedPortPosY)
+            }
+            Surface.ROTATION_270 -> {
+                expectedCenterX = width * (1 - normalizedPortPosY)
+                expectedCenterY = height * normalizedPortPosX
+            }
+            else -> { // Surface.ROTATION_0
+                expectedCenterX = width * normalizedPortPosX
+                expectedCenterY = height * normalizedPortPosY
+            }
+        }
+
+        verify(rippleView).setCenter(expectedCenterX, expectedCenterY)
+    }
+
+    private fun batteryStateChangeCallback(): BatteryController.BatteryStateChangeCallback {
+        val captor = ArgumentCaptor.forClass(BatteryController.BatteryStateChangeCallback::class.java)
+        verify(batteryController).addCallback(captor.capture())
+        return captor.value
+    }
+
+    private fun addedRippleContainer(): FrameLayout {
+        val viewCaptor = ArgumentCaptor.forClass(View::class.java)
+        verify(windowManager).addView(viewCaptor.capture(), any<WindowManager.LayoutParams>())
+        return viewCaptor.value as FrameLayout
+    }
+
+    private fun attachStateChangeListener(view: View): View.OnAttachStateChangeListener {
+        val getListenerInfo = View::class.java.getDeclaredMethod("getListenerInfo")
+        getListenerInfo.isAccessible = true
+        val listenerInfo = getListenerInfo.invoke(view)
+        val listenersField = listenerInfo.javaClass.getDeclaredField("mOnAttachStateChangeListeners")
+        listenersField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val listeners = listenersField.get(listenerInfo) as MutableList<View.OnAttachStateChangeListener>
+        assertThat(listeners).hasSize(1)
+        return listeners.single()
+    }
+}

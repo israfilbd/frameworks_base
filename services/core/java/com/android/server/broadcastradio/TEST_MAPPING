@@ -1,0 +1,17 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsBroadcastRadioTestCases"
+    }
+  ],
+  "auto-presubmit": [
+    {
+      "name": "CtsBroadcastRadioTestCases"
+    }
+  ],
+  "imports": [
+    {
+      "path": "frameworks/base/core/tests/BroadcastRadioTests"
+    }
+  ]
+}

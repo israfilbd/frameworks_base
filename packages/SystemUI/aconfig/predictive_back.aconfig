@@ -1,0 +1,9 @@
+package: "com.android.systemui"
+container: "system"
+
+flag {
+    name: "predictive_back_animate_shade"
+    namespace: "systemui"
+    description: "Enable Shade Animations"
+    bug: "327732946"
+}

@@ -1,0 +1,1000 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.4.0-alpha01" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha01">
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/biometrics/BiometricService.java"
+            line="1122"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/biometrics/BiometricService.java"
+            line="1127"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="packages/modules/Bluetooth/service/java/com/android/server/bluetooth/BluetoothManagerService.java"
+            line="670"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="packages/modules/Bluetooth/service/java/com/android/server/bluetooth/BluetoothManagerService.java"
+            line="678"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="packages/modules/Bluetooth/service/java/com/android/server/bluetooth/BluetoothManagerService.java"
+            line="679"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="packages/modules/Bluetooth/service/java/com/android/server/bluetooth/BluetoothManagerService.java"
+            line="696"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="packages/modules/Bluetooth/service/java/com/android/server/bluetooth/BluetoothManagerService.java"
+            line="705"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/CertBlacklister.java"
+            line="73"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/clipboard/ClipboardService.java"
+            line="1072"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/DockObserver.java"
+            line="260"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/media/MediaSessionService.java"
+            line="928"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+            line="1902"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getString()` called from system process. Please call `android.provider.Settings.Secure#getStringForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/connectivity/Vpn.java"
+            line="2069"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/connectivity/Vpn.java"
+            line="2076"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/ZenModeHelper.java"
+            line="984"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/ZenModeHelper.java"
+            line="1446"/>
+    </issue>
+
+    <issue
+        id="NonUserGetterCalled"
+        message="`android.provider.Settings.Secure#getInt()` called from system process. Please call `android.provider.Settings.Secure#getIntForUser()` instead. ">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/ZenModeHelper.java"
+            line="1448"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IWindowManager permission check should be converted to @EnforcePermission annotation">
+        <location
+            file="out/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java"
+            line="7158"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method `recordSmartReplied()` is a flagged API and should be inside an `if (Flags.lifetimeExtensionRefactor())` check (or annotate the surrounding method `onNotificationSmartReplySent` with `@FlaggedApi(Flags.FLAG_LIFETIME_EXTENSION_REFACTOR) to transfer requirement to caller`)"
+        errorLine1="                    r.recordSmartReplied();"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="1591"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method `getPackageImportanceWithIdentity()` is a flagged API and should be inside an `if (Flags.lifetimeExtensionRefactor())` check (or annotate the surrounding method `enqueueNotificationInternal` with `@FlaggedApi(Flags.FLAG_LIFETIME_EXTENSION_REFACTOR) to transfer requirement to caller`)"
+        errorLine1="        final int packageImportance = getPackageImportanceWithIdentity(pkg);"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="7546"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="FlaggedApi"
+        message="Method `getPackageImportanceWithIdentity()` is a flagged API and should be inside an `if (Flags.lifetimeExtensionRefactor())` check (or annotate the surrounding method `onShortcutRemoved` with `@FlaggedApi(Flags.FLAG_LIFETIME_EXTENSION_REFACTOR) to transfer requirement to caller`)"
+        errorLine1="                    final int packageImportance = getPackageImportanceWithIdentity(packageName);"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="7916"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="onShellCommand should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="    @Override"
+        errorLine2="    ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/security/advancedprotection/AdvancedProtectionService.java"
+            line="128"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="monitorState should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/security/forensic/ForensicService.java"
+            line="95"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="makeVisible should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/security/forensic/ForensicService.java"
+            line="100"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="makeInvisible should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/security/forensic/ForensicService.java"
+            line="105"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="enable should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/security/forensic/ForensicService.java"
+            line="110"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="disable should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/security/forensic/ForensicService.java"
+            line="115"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="getTimeoutTime should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/verify/pkg/VerifierController.java"
+            line="430"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="extendTimeRemaining should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/verify/pkg/VerifierController.java"
+            line="443"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="setVerificationPolicy should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/verify/pkg/VerifierController.java"
+            line="456"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="reportVerificationIncomplete should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/verify/pkg/VerifierController.java"
+            line="470"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="reportVerificationComplete should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/verify/pkg/VerifierController.java"
+            line="486"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="MissingPermissionAnnotation"
+        message="reportVerificationCompleteWithExtensionResponse should be annotated with either @EnforcePermission, @RequiresNoPermission or @PermissionManuallyEnforced."
+        errorLine1="        @Override"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/verify/pkg/VerifierController.java"
+            line="492"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityClientController permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mService.mAmInternal.enforceCallingPermission("
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityClientController.java"
+            line="592"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityClientController permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mService.mAmInternal.enforceCallingPermission(CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityClientController.java"
+            line="1636"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityClientController permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mService.mAmInternal.enforceCallingPermission(CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityClientController.java"
+            line="1654"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(START_TASKS_FROM_RECENTS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="1820"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(START_TASKS_FROM_RECENTS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="1875"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.SET_SCREEN_COMPATIBILITY,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="1980"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(REMOVE_TASKS, &quot;removeTask()&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="2116"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(REMOVE_TASKS, &quot;removeAllVisibleRecentTasks()&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="2144"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.FORCE_BACK,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="2206"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.REORDER_TASKS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="2228"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.SET_ACTIVITY_WATCHER,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="2371"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(INTERNAL_SYSTEM_WINDOW, &quot;moveRootTaskToDisplay()&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3103"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.GET_TOP_ACTIVITY_INFO,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3157"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(CONTROL_KEYGUARD, &quot;unlock keyguard&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3640"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(MANAGE_ACTIVITY_TASKS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3683"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(MANAGE_ACTIVITY_TASKS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3701"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(CHANGE_CONFIGURATION, &quot;updateConfiguration()&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3904"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(READ_FRAME_BUFFER, &quot;getTaskSnapshot()&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="3978"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(READ_FRAME_BUFFER, &quot;takeTaskSnapshot()&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4000"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission("
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4029"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4057"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4074"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(STOP_APP_SWITCHES, &quot;stopAppSwitches&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4136"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(STOP_APP_SWITCHES, &quot;resumeAppSwitches&quot;);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4147"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.SET_SCREEN_COMPATIBILITY,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4198"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(android.Manifest.permission.SET_SCREEN_COMPATIBILITY,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4215"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(CONTROL_REMOTE_APP_TRANSITION_ANIMATIONS,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="4280"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(DETECT_SCREEN_CAPTURE,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="5836"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IActivityTaskManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission(DETECT_SCREEN_CAPTURE,"
+        errorLine2="        ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+            line="5849"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IColorDisplayManager permission check should be converted to @EnforcePermission annotation"
+        errorLine1="            getContext().enforceCallingOrSelfPermission("
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/display/color/ColorDisplayService.java"
+            line="2152"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IMediaProjectionManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(MANAGE_MEDIA_PROJECTION)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/media/projection/MediaProjectionManagerService.java"
+            line="779"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IMediaProjectionManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(MANAGE_MEDIA_PROJECTION)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/media/projection/MediaProjectionManagerService.java"
+            line="820"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IMediaProjectionManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(MANAGE_MEDIA_PROJECTION)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/media/projection/MediaProjectionManagerService.java"
+            line="906"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="INotificationManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (PERMISSION_GRANTED"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="6691"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="INotificationManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (PERMISSION_GRANTED"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="6712"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IOnDeviceIntelligenceManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="                mContext.enforceCallingPermission("
+        errorLine2="                ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/ondeviceintelligence/OnDeviceIntelligenceManagerService.java"
+            line="237"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IPackageInstaller permission check should be converted to @EnforcePermission annotation"
+        errorLine1="        if (mContext.checkCallingOrSelfPermission(Manifest.permission.VERIFICATION_AGENT)"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/PackageInstallerService.java"
+            line="1881"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IPackageInstaller permission check should be converted to @EnforcePermission annotation"
+        errorLine1="        if (mContext.checkCallingOrSelfPermission(Manifest.permission.VERIFICATION_AGENT)"
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/PackageInstallerService.java"
+            line="1892"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IPackageManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            mContext.enforceCallingPermission(Manifest.permission.SEND_DEVICE_CUSTOMIZATION_READY,"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java"
+            line="5798"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IPackageManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            mContext.enforceCallingPermission("
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java"
+            line="6266"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="ITvInputManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission("
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/tv/TvInputManagerService.java"
+            line="1406"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="ITvInputManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(android.Manifest.permission.NOTIFY_TV_INPUTS)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/tv/TvInputManagerService.java"
+            line="1427"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="ITvInputManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission("
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/tv/TvInputManagerService.java"
+            line="1734"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="ITvInputManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(android.Manifest.permission.DVB_DEVICE)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/tv/TvInputManagerService.java"
+            line="2509"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="ITvInputManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(android.Manifest.permission.DVB_DEVICE)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/tv/TvInputManagerService.java"
+            line="2564"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="ITvInputManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="            if (mContext.checkCallingPermission(android.Manifest.permission.ACCESS_TUNED_INFO)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/tv/TvInputManagerService.java"
+            line="2932"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IUriGrantsManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission("
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/uri/UriGrantsManagerService.java"
+            line="366"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IUriGrantsManager permission check can be converted to @EnforcePermission annotation"
+        errorLine1="        mAmInternal.enforceCallingPermission("
+        errorLine2="        ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/uri/UriGrantsManagerService.java"
+            line="444"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        message="IVcnManagementService permission check should be converted to @EnforcePermission annotation"
+        errorLine1="        mContext.enforceCallingOrSelfPermission(DUMP, TAG);"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/VcnManagementService.java"
+            line="1329"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="SimpleManualPermissionEnforcement"
+        severity="Error"
+        message="IMediaProjectionManager permission check should be converted to @EnforcePermission annotation"
+        category="Security"
+        priority="5"
+        summary="Manual permission check can be @EnforcePermission annotation"
+        explanation="Whenever possible, method implementations of AIDL interfaces should use the @EnforcePermission&#xA;annotation to declare the permissions to be enforced.  The verification code is then&#xA;generated by the AIDL compiler, which also takes care of annotating the generated java&#xA;code.&#xA;&#xA;This reduces the risk of bugs around these permission checks (that often become vulnerabilities).&#xA;It also enables easier auditing and review.&#xA;&#xA;Please migrate to an @EnforcePermission annotation. (See: go/aidl-enforce-howto)"
+        errorLine1="            if (mContext.checkCallingOrSelfPermission(MANAGE_MEDIA_PROJECTION)"
+        errorLine2="            ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/media/projection/MediaProjectionManagerService.java"
+            line="807"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelableArray()` API usage"
+        errorLine1="                    Parcelable[] parcelables = value.getParcelableArray("
+        errorLine2="                                               ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/accounts/AccountManagerService.java"
+            line="4970"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Intent.getParcelableExtra()` API usage"
+        errorLine1="            clientIntent = service.getParcelableExtra(Intent.EXTRA_CLIENT_INTENT);"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/android_common/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
+            line="4115"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelable()` API usage"
+        errorLine1="                final T data = result.bundle.getParcelable("
+        errorLine2="                               ^">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/power/stats/BatteryExternalStatsWorker.java"
+            line="612"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelable()` API usage"
+        errorLine1="        return results.getParcelable(EXTRA_VERIFIED_DISPLAY_HASH);"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/android_common/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/DisplayHashController.java"
+            line="160"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelable()` API usage"
+        errorLine1="                mDisplayHashAlgorithms.put(key, results.getParcelable(key));"
+        errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/android_common/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/DisplayHashController.java"
+            line="256"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelable()` API usage"
+        errorLine1="                &amp;&amp; n.extras.getParcelable(Notification.EXTRA_PICTURE) != null;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="8580"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelable()` API usage"
+        errorLine1="                &amp;&amp; n.extras.getParcelable(Notification.EXTRA_PICTURE_ICON) != null;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java"
+            line="8586"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Parcel.readParcelable()` API usage"
+        errorLine1="                result = parcel.readParcelable(ArchivedPackageParcel.class.getClassLoader());"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommandDataLoader.java"
+            line="274"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Intent.getParcelableExtra()` API usage"
+        errorLine1="                    final PendingIntent pi = intent.getParcelableExtra("
+        errorLine2="                                             ^">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/android_common/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/Session.java"
+            line="427"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Intent.getParcelableExtra()` API usage"
+        errorLine1="                    final UserHandle user = intent.getParcelableExtra(Intent.EXTRA_USER);"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/android_common/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/Session.java"
+            line="429"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Intent.getParcelableExtra()` API usage"
+        errorLine1="                final UserHandle user = intent.getParcelableExtra(Intent.EXTRA_USER);"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="out/soong/.intermediates/frameworks/base/services/core/services.core.protologsrc/android_common/gen/services.core.protolog.srcjar!/frameworks/base/services/core/java/com/android/server/wm/Session.java"
+            line="455"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="UnsafeParcelApi"
+        message="Unsafe `Bundle.getParcelable()` API usage"
+        errorLine1="                final T data = result.bundle.getParcelable(RESULT_RECEIVER_CONTROLLER_KEY);"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="frameworks/base/services/core/java/com/android/server/stats/pull/StatsPullAtomService.java"
+            line="1962"
+            column="32"/>
+    </issue>
+
+</issues>

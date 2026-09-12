@@ -1,0 +1,945 @@
+/*
+ * Copyright (C) 2007 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package android.view.animation;
+
+import static android.view.flags.Flags.FLAG_EXPECTED_PRESENTATION_TIME_READ_ONLY;
+import static android.view.flags.Flags.expectedPresentationTimeReadOnly;
+
+import android.annotation.AnimRes;
+import android.annotation.FlaggedApi;
+import android.annotation.InterpolatorRes;
+import android.annotation.TestApi;
+import android.compat.annotation.UnsupportedAppUsage;
+import android.content.Context;
+import android.content.res.Resources;
+import android.content.res.Resources.NotFoundException;
+import android.content.res.Resources.Theme;
+import android.content.res.XmlResourceParser;
+import android.os.SystemClock;
+import android.os.SystemProperties;
+import android.provider.Settings;
+import android.ravenwood.annotation.RavenwoodIgnore;
+import android.ravenwood.annotation.RavenwoodKeepPartialClass;
+import android.util.AttributeSet;
+import android.util.DisplayMetrics;
+import android.util.PathParser;
+import android.util.TimeUtils;
+import android.util.Xml;
+import android.view.InflateException;
+
+import com.android.internal.R;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
+
+/**
+ * Defines a custom interpolator for slide animations.
+ */
+class OutExpoInterpolator implements Interpolator {
+    @Override
+    public float getInterpolation(float t) {
+        return (t == 1.0f) ? 1.0f : 1 - (float) Math.pow(2, -10 * t);
+    }
+}
+
+/**
+ * Defines common utilities for working with animations.
+ *
+ */
+// This class would probably just work as-is on Ravenwood, but until we port the test, we just keep
+// the minimal surface for Choreographer.
+@RavenwoodKeepPartialClass(comment = "Keeping just enough for Choreographer to work")
+public class AnimationUtils {
+
+    /**
+     * These flags are used when parsing AnimatorSet objects
+     */
+    private static final int TOGETHER = 0;
+    private static final int SEQUENTIALLY = 1;
+
+    private static Animation sActivityOpenEnterAnim;
+    private static Animation sActivityOpenExitAnim;
+    private static Animation sActivityCloseEnterAnim;
+    private static Animation sActivityCloseExitAnim;
+    private static int sLastAnimStyle = -1;
+
+    /** @hide **/
+    public static final boolean sPerfAnimEnabled = SystemProperties.getBoolean(
+            "persist.sys.activity_anim_perf_override", false);
+
+    private static boolean sExpectedPresentationTimeFlagValue;
+    static {
+        sExpectedPresentationTimeFlagValue = expectedPresentationTimeReadOnly();
+    }
+
+    private static class AnimationState {
+        boolean animationClockLocked;
+        long currentVsyncTimeMillis;
+        long lastReportedTimeMillis;
+        long mExpectedPresentationTimeNanos;
+    };
+
+    private static ThreadLocal<AnimationState> sAnimationState
+            = new ThreadLocal<AnimationState>() {
+        @Override
+        protected AnimationState initialValue() {
+            return new AnimationState();
+        }
+    };
+
+    /**
+     * Locks AnimationUtils{@link #currentAnimationTimeMillis()} and
+     * AnimationUtils{@link #expectedPresentationTimeNanos()} to a fixed value for the current
+     * thread. This is used by {@link android.view.Choreographer} to ensure that all accesses
+     * during a vsync update are synchronized to the timestamp of the vsync.
+     *
+     * It is also exposed to tests to allow for rapid, flake-free headless testing.
+     *
+     * Must be followed by a call to {@link #unlockAnimationClock()} to allow time to
+     * progress. Failing to do this will result in stuck animations, scrolls, and flings.
+     *
+     * Note that time is not allowed to "rewind" and must perpetually flow forward. So the
+     * lock may fail if the time is in the past from a previously returned value, however
+     * time will be frozen for the duration of the lock. The clock is a thread-local, so
+     * ensure that {@link #lockAnimationClock(long)}, {@link #unlockAnimationClock()},
+     * {@link #currentAnimationTimeMillis()}, and {@link #expectedPresentationTimeNanos()}
+     * are all called on the same thread.
+     *
+     * This is also not reference counted in any way. Any call to {@link #unlockAnimationClock()}
+     * will unlock the clock for everyone on the same thread. It is therefore recommended
+     * for tests to use their own thread to ensure that there is no collision with any existing
+     * {@link android.view.Choreographer} instance.
+     *
+     * @hide
+     */
+    @TestApi
+    @FlaggedApi(FLAG_EXPECTED_PRESENTATION_TIME_READ_ONLY)
+    @RavenwoodIgnore
+    public static void lockAnimationClock(long vsyncMillis, long expectedPresentationTimeNanos) {
+        AnimationState state = sAnimationState.get();
+        state.animationClockLocked = true;
+        state.currentVsyncTimeMillis = vsyncMillis;
+        state.mExpectedPresentationTimeNanos = expectedPresentationTimeNanos;
+    }
+
+    /**
+     * Locks AnimationUtils{@link #currentAnimationTimeMillis()} to a fixed value for the current
+     * thread. This is used by {@link android.view.Choreographer} to ensure that all accesses
+     * during a vsync update are synchronized to the timestamp of the vsync.
+     *
+     * It is also exposed to tests to allow for rapid, flake-free headless testing.
+     *
+     * Must be followed by a call to {@link #unlockAnimationClock()} to allow time to
+     * progress. Failing to do this will result in stuck animations, scrolls, and flings.
+     *
+     * Note that time is not allowed to "rewind" and must perpetually flow forward. So the
+     * lock may fail if the time is in the past from a previously returned value, however
+     * time will be frozen for the duration of the lock. The clock is a thread-local, so
+     * ensure that {@link #lockAnimationClock(long)}, {@link #unlockAnimationClock()}, and
+     * {@link #currentAnimationTimeMillis()} are all called on the same thread.
+     *
+     * This is also not reference counted in any way. Any call to {@link #unlockAnimationClock()}
+     * will unlock the clock for everyone on the same thread. It is therefore recommended
+     * for tests to use their own thread to ensure that there is no collision with any existing
+     * {@link android.view.Choreographer} instance.
+     *
+     * Have to add the method back because of b/307888459.
+     * Remove this method once the lockAnimationClock(long, long) change
+     * is landed to aosp/android14-tests-dev branch.
+     *
+     * @hide
+     */
+    @TestApi
+    @RavenwoodIgnore
+    public static void lockAnimationClock(long vsyncMillis) {
+        AnimationState state = sAnimationState.get();
+        state.animationClockLocked = true;
+        state.currentVsyncTimeMillis = vsyncMillis;
+    }
+
+    /**
+     * Frees the time lock set in place by {@link #lockAnimationClock(long)}. Must be called
+     * to allow the animation clock to self-update.
+     *
+     * @hide
+     */
+    @TestApi
+    @RavenwoodIgnore
+    public static void unlockAnimationClock() {
+        AnimationState state = sAnimationState.get();
+        state.animationClockLocked = false;
+        state.mExpectedPresentationTimeNanos = 0L;
+    }
+
+    /**
+     * Returns the current animation time in milliseconds. This time should be used when invoking
+     * {@link Animation#setStartTime(long)}. Refer to {@link android.os.SystemClock} for more
+     * information about the different available clocks. The clock used by this method is
+     * <em>not</em> the "wall" clock (it is not {@link System#currentTimeMillis}).
+     *
+     * @return the current animation time in milliseconds
+     *
+     * @see android.os.SystemClock
+     */
+    public static long currentAnimationTimeMillis() {
+        AnimationState state = sAnimationState.get();
+        if (state.animationClockLocked) {
+            // It's important that time never rewinds
+            return Math.max(state.currentVsyncTimeMillis,
+                    state.lastReportedTimeMillis);
+        }
+        state.lastReportedTimeMillis = SystemClock.uptimeMillis();
+        return state.lastReportedTimeMillis;
+    }
+
+    /**
+     * The expected presentation time of a frame in the {@link System#nanoTime()}.
+     * Developers should prefer using this method over {@link #currentAnimationTimeMillis()}
+     * because it offers a more accurate time for the calculating animation progress.
+     *
+     * @return the expected presentation time of a frame in the
+     *         {@link System#nanoTime()} time base.
+     */
+    @FlaggedApi(FLAG_EXPECTED_PRESENTATION_TIME_READ_ONLY)
+    public static long getExpectedPresentationTimeNanos() {
+        if (!sExpectedPresentationTimeFlagValue) {
+            return System.nanoTime();
+        }
+
+        AnimationState state = sAnimationState.get();
+        return (state.mExpectedPresentationTimeNanos != 0L)
+                ? state.mExpectedPresentationTimeNanos
+                : System.nanoTime();
+    }
+
+    /**
+     * The expected presentation time of a frame in the {@link SystemClock#uptimeMillis()}.
+     * Developers should prefer using this method over {@link #currentAnimationTimeMillis()}
+     * because it offers a more accurate time for the calculating animation progress.
+     *
+     * @return the expected presentation time of a frame in the
+     *         {@link SystemClock#uptimeMillis()} time base.
+     */
+    @FlaggedApi(FLAG_EXPECTED_PRESENTATION_TIME_READ_ONLY)
+    public static long getExpectedPresentationTimeMillis() {
+        return getExpectedPresentationTimeNanos() / TimeUtils.NANOS_PER_MS;
+    }
+
+    /**
+     * Loads an {@link Animation} object from a resource
+     *
+     * @param context Application context used to access resources
+     * @param id The resource id of the animation to load
+     * @return The animation object referenced by the specified id
+     * @throws NotFoundException when the animation cannot be loaded
+     */
+    public static Animation loadAnimation(Context context, @AnimRes int id)
+            throws NotFoundException {
+
+        final int animStyle = Settings.System.getInt(
+                context.getContentResolver(), "system_animation_style", 0);
+        if (animStyle != sLastAnimStyle) {
+            clearCachedAnimations();
+            sLastAnimStyle = animStyle;
+        }
+        if (animStyle != 0) {
+            final Animation styledAnimation = getStyledActivityAnimation(id, animStyle);
+            if (styledAnimation != null) {
+                return styledAnimation;
+            }
+        }
+
+        return loadAnimationFromXml(context, id);
+    }
+
+    private static Animation getPerfOverrideAnimation(@AnimRes int id) {
+        switch (id) {
+            case R.anim.activity_open_enter:
+                return ActivityAnimations.getOpenEnter();
+            case R.anim.activity_open_exit:
+                return ActivityAnimations.getOpenExit();
+            case R.anim.activity_close_enter:
+                return ActivityAnimations.getCloseEnter();
+            case R.anim.activity_close_exit:
+                return ActivityAnimations.getCloseExit();
+            case R.anim.app_starting_exit:
+                return ActivityAnimations.getAppStartingExit();
+            default:
+                return null;
+        }
+    }
+
+    private static Animation getStyledActivityAnimation(@AnimRes int id, int animStyle) {
+        switch (id) {
+            case R.anim.activity_open_enter:
+                if (animStyle == 4) return ActivityAnimations.getOpenEnter();
+                return getActivityOpenEnterAnim(animStyle);
+            case R.anim.activity_open_exit:
+                if (animStyle == 4) return ActivityAnimations.getOpenExit();
+                return getActivityOpenExitAnim(animStyle);
+            case R.anim.activity_close_enter:
+                if (animStyle == 4) return ActivityAnimations.getCloseEnter();
+                return getActivityCloseEnterAnim(animStyle);
+            case R.anim.activity_close_exit:
+                if (animStyle == 4) return ActivityAnimations.getCloseExit();
+                return getActivityCloseExitAnim(animStyle);
+            case R.anim.app_starting_exit:
+                if (animStyle == 4) return ActivityAnimations.getAppStartingExit();
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    private static void clearCachedAnimations() {
+        sActivityOpenEnterAnim = null;
+        sActivityOpenExitAnim = null;
+        sActivityCloseEnterAnim = null;
+        sActivityCloseExitAnim = null;
+    }
+
+    private static Animation getActivityOpenEnterAnim(int animStyle) {
+        if (sActivityOpenEnterAnim == null) {
+            sActivityOpenEnterAnim = createActivityOpenEnterAnim(animStyle);
+        }
+        return sActivityOpenEnterAnim;
+    }
+
+    private static Animation getActivityOpenExitAnim(int animStyle) {
+        if (sActivityOpenExitAnim == null) {
+            sActivityOpenExitAnim = createActivityOpenExitAnim(animStyle);
+        }
+        return sActivityOpenExitAnim;
+    }
+
+    private static Animation getActivityCloseEnterAnim(int animStyle) {
+        if (sActivityCloseEnterAnim == null) {
+            sActivityCloseEnterAnim = createActivityCloseEnterAnim(animStyle);
+        }
+        return sActivityCloseEnterAnim;
+    }
+
+    private static Animation getActivityCloseExitAnim(int animStyle) {
+        if (sActivityCloseExitAnim == null) {
+            sActivityCloseExitAnim = createActivityCloseExitAnim(animStyle);
+        }
+        return sActivityCloseExitAnim;
+    }
+
+    private static Animation createActivityOpenEnterAnim(int animStyle) {
+        if (animStyle <= 2) {
+            AnimationSet animationSet = new AnimationSet(false);
+            animationSet.setZAdjustment(Animation.ZORDER_TOP);
+            TranslateAnimation translateAnimation = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 1f,
+                    Animation.RELATIVE_TO_SELF, 0.0f);
+            translateAnimation.setInterpolator(fastOutSlowIn());
+            translateAnimation.setDuration(425L);
+            animationSet.addAnimation(translateAnimation);
+            if (animStyle == 2) {
+                ScaleAnimation scaleAnimation = new ScaleAnimation(
+                        0f, 1f,
+                        0f, 1f,
+                        Animation.RELATIVE_TO_SELF, 0.5f,
+                        Animation.RELATIVE_TO_SELF, 0.5f);
+                scaleAnimation.setDuration(425L);
+                scaleAnimation.setInterpolator(fastOutSlowIn());
+                animationSet.addAnimation(scaleAnimation);
+            }
+            return animationSet;
+        } else if (animStyle == 3) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation slideIn = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 1.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f
+            );
+            slideIn.setDuration(600L);
+            slideIn.setInterpolator(new OutExpoInterpolator());
+            animationSet.addAnimation(slideIn);
+            return animationSet;
+        }
+        return null;
+    }
+
+    private static Animation createActivityOpenExitAnim(int animStyle) {
+        if (animStyle <= 2) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation translateAnimation = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, -0.019999981f);
+            translateAnimation.setDuration(425L);
+            translateAnimation.setInterpolator(fastOutSlowIn());
+            animationSet.addAnimation(translateAnimation);
+            AlphaAnimation alphaAnimation = new AlphaAnimation(1.0f, 0.9f);
+            alphaAnimation.setDuration(117L);
+            alphaAnimation.setInterpolator(new LinearInterpolator());
+            animationSet.addAnimation(alphaAnimation);
+            return animationSet;
+        } else if (animStyle == 3) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation slideLeft = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, -0.30f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f
+            );
+            slideLeft.setDuration(600L);
+            slideLeft.setInterpolator(new OutExpoInterpolator());
+            animationSet.addAnimation(slideLeft);
+            return animationSet;
+        }
+        return null;
+    }
+
+    private static Animation createActivityCloseEnterAnim(int animStyle) {
+        if (animStyle <= 2) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation translateAnimation = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, -0.019999981f,
+                    Animation.RELATIVE_TO_SELF, 0.0f);
+            translateAnimation.setDuration(425L);
+            translateAnimation.setInterpolator(fastOutSlowIn());
+            animationSet.addAnimation(translateAnimation);
+            AlphaAnimation alphaAnimation = new AlphaAnimation(0.9f, 1.0f);
+            alphaAnimation.setDuration(425L);
+            alphaAnimation.setInterpolator(activityCloseDim());
+            animationSet.addAnimation(alphaAnimation);
+            return animationSet;
+        } else if (animStyle == 3) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation slideIn = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, -0.30f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f
+            );
+            slideIn.setDuration(600L);
+            slideIn.setInterpolator(new OutExpoInterpolator());
+            animationSet.addAnimation(slideIn);
+            return animationSet;
+        }
+        return null;
+    }
+
+    private static Animation createActivityCloseExitAnim(int animStyle) {
+        if (animStyle <= 2) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation translateAnimation = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 1f);
+            translateAnimation.setDuration(425L);
+            translateAnimation.setInterpolator(fastOutSlowIn());
+            animationSet.addAnimation(translateAnimation);
+            ClipRectAnimationF clipRectAnimationF = new ClipRectAnimationF(
+                    0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.959f, 1.0f, 1.0f);
+            clipRectAnimationF.setDuration(425L);
+            clipRectAnimationF.setInterpolator(fastOutExtraSlowIn());
+            animationSet.addAnimation(clipRectAnimationF);
+            return animationSet;
+        } else if (animStyle == 3) {
+            AnimationSet animationSet = new AnimationSet(false);
+            TranslateAnimation slideOut = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 1.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f,
+                    Animation.RELATIVE_TO_SELF, 0.0f
+            );
+            slideOut.setDuration(600L);
+            slideOut.setInterpolator(new OutExpoInterpolator());
+            animationSet.addAnimation(slideOut);
+            return animationSet;
+        }
+        return null;
+    }
+
+    private static Interpolator fastOutSlowIn() {
+        return new PathInterpolator(0.4F, 0.0F, 0.2F, 1.0F);
+    }
+
+    private static Interpolator activityCloseDim() {
+        return new PathInterpolator(0.33f, 0.0f, 1.0f, 1.0f);
+    }
+
+    private static Interpolator fastOutExtraSlowIn() {
+        return new PathInterpolator(PathParser.createPathFromPathData(
+                "M 0,0 C 0.05, 0, 0.133333, 0.06, 0.166666, 0.4 "
+                + "C 0.208333, 0.82, 0.25, 1, 1, 1"));
+    }
+
+    private static Animation loadAnimationFromXml(Context context, @AnimRes int id)
+            throws NotFoundException {
+        XmlResourceParser parser = null;
+        try {
+            parser = context.getResources().getAnimation(id);
+            return createAnimationFromXml(context, parser);
+        } catch (XmlPullParserException | IOException ex) {
+            throw new NotFoundException(
+                    "Can't load animation resource ID #0x" + Integer.toHexString(id), ex);
+        } finally {
+            if (parser != null) parser.close();
+        }
+    }
+
+    private static Animation createAnimationFromXml(Context c, XmlPullParser parser)
+            throws XmlPullParserException, IOException {
+
+        return createAnimationFromXml(c, parser, null, Xml.asAttributeSet(parser));
+    }
+
+    @UnsupportedAppUsage
+    private static Animation createAnimationFromXml(
+            Context c, XmlPullParser parser, AnimationSet parent, AttributeSet attrs)
+            throws XmlPullParserException, IOException, InflateException {
+
+        Animation anim = null;
+
+        // Make sure we are on a start tag.
+        int type;
+        int depth = parser.getDepth();
+
+        while (((type = parser.next()) != XmlPullParser.END_TAG || parser.getDepth() > depth)
+                && type != XmlPullParser.END_DOCUMENT) {
+
+            if (type != XmlPullParser.START_TAG) {
+                continue;
+            }
+
+            String  name = parser.getName();
+
+            if (name.equals("set")) {
+                anim = new AnimationSet(c, attrs);
+                createAnimationFromXml(c, parser, (AnimationSet)anim, attrs);
+            } else if (name.equals("alpha")) {
+                anim = new AlphaAnimation(c, attrs);
+            } else if (name.equals("scale")) {
+                anim = new ScaleAnimation(c, attrs);
+            }  else if (name.equals("rotate")) {
+                anim = new RotateAnimation(c, attrs);
+            }  else if (name.equals("translate")) {
+                anim = new TranslateAnimation(c, attrs);
+            } else if (name.equals("cliprect")) {
+                anim = new ClipRectAnimation(c, attrs);
+            } else if (name.equals("extend")) {
+                anim = new ExtendAnimation(c, attrs);
+            } else {
+                throw new InflateException("Unknown animation name: " + parser.getName());
+            }
+
+            if (parent != null) {
+                parent.addAnimation(anim);
+            }
+        }
+
+        return anim;
+
+    }
+
+    /**
+     * Loads a {@link LayoutAnimationController} object from a resource
+     *
+     * @param context Application context used to access resources
+     * @param id The resource id of the animation to load
+     * @return The animation controller object referenced by the specified id
+     * @throws NotFoundException when the layout animation controller cannot be loaded
+     */
+    public static LayoutAnimationController loadLayoutAnimation(Context context, @AnimRes int id)
+            throws NotFoundException {
+
+        XmlResourceParser parser = null;
+        try {
+            parser = context.getResources().getAnimation(id);
+            return createLayoutAnimationFromXml(context, parser);
+        } catch (XmlPullParserException | IOException | InflateException ex) {
+            throw new NotFoundException(
+                    "Can't load animation resource ID #0x" + Integer.toHexString(id), ex);
+        } finally {
+            if (parser != null) parser.close();
+        }
+    }
+
+    private static LayoutAnimationController createLayoutAnimationFromXml(
+            Context c, XmlPullParser parser)
+            throws XmlPullParserException, IOException, InflateException {
+
+        return createLayoutAnimationFromXml(c, parser, Xml.asAttributeSet(parser));
+    }
+
+    private static LayoutAnimationController createLayoutAnimationFromXml(
+            Context c, XmlPullParser parser, AttributeSet attrs)
+            throws XmlPullParserException, IOException, InflateException {
+
+        LayoutAnimationController controller = null;
+
+        int type;
+        int depth = parser.getDepth();
+
+        while (((type = parser.next()) != XmlPullParser.END_TAG || parser.getDepth() > depth)
+                && type != XmlPullParser.END_DOCUMENT) {
+
+            if (type != XmlPullParser.START_TAG) {
+                continue;
+            }
+
+            String name = parser.getName();
+
+            if ("layoutAnimation".equals(name)) {
+                controller = new LayoutAnimationController(c, attrs);
+            } else if ("gridLayoutAnimation".equals(name)) {
+                controller = new GridLayoutAnimationController(c, attrs);
+            } else {
+                throw new InflateException("Unknown layout animation name: " + name);
+            }
+        }
+
+        return controller;
+    }
+
+    /**
+     * Make an animation for objects becoming visible. Uses a slide and fade
+     * effect.
+     *
+     * @param c Context for loading resources
+     * @param fromLeft is the object to be animated coming from the left
+     * @return The new animation
+     */
+    public static Animation makeInAnimation(Context c, boolean fromLeft) {
+        Animation a;
+        if (fromLeft) {
+            a = AnimationUtils.loadAnimation(c, com.android.internal.R.anim.slide_in_left);
+        } else {
+            a = AnimationUtils.loadAnimation(c, com.android.internal.R.anim.slide_in_right);
+        }
+
+        a.setInterpolator(new DecelerateInterpolator());
+        a.setStartTime(currentAnimationTimeMillis());
+        return a;
+    }
+
+    /**
+     * Make an animation for objects becoming invisible. Uses a slide and fade
+     * effect.
+     *
+     * @param c Context for loading resources
+     * @param toRight is the object to be animated exiting to the right
+     * @return The new animation
+     */
+    public static Animation makeOutAnimation(Context c, boolean toRight) {
+        Animation a;
+        if (toRight) {
+            a = AnimationUtils.loadAnimation(c, com.android.internal.R.anim.slide_out_right);
+        } else {
+            a = AnimationUtils.loadAnimation(c, com.android.internal.R.anim.slide_out_left);
+        }
+
+        a.setInterpolator(new AccelerateInterpolator());
+        a.setStartTime(currentAnimationTimeMillis());
+        return a;
+    }
+
+
+    /**
+     * Make an animation for objects becoming visible. Uses a slide up and fade
+     * effect.
+     *
+     * @param c Context for loading resources
+     * @return The new animation
+     */
+    public static Animation makeInChildBottomAnimation(Context c) {
+        Animation a;
+        a = AnimationUtils.loadAnimation(c, com.android.internal.R.anim.slide_in_child_bottom);
+        a.setInterpolator(new AccelerateInterpolator());
+        a.setStartTime(currentAnimationTimeMillis());
+        return a;
+    }
+
+    /**
+     * Loads an {@link Interpolator} object from a resource
+     *
+     * @param context Application context used to access resources
+     * @param id The resource id of the animation to load
+     * @return The interpolator object referenced by the specified id
+     * @throws NotFoundException
+     */
+    public static Interpolator loadInterpolator(Context context, @AnimRes @InterpolatorRes int id)
+            throws NotFoundException {
+        XmlResourceParser parser = null;
+        try {
+            parser = context.getResources().getAnimation(id);
+            return createInterpolatorFromXml(context.getResources(), context.getTheme(), parser);
+        } catch (XmlPullParserException | IOException | InflateException ex) {
+            throw new NotFoundException(
+                    "Can't load animation resource ID #0x" + Integer.toHexString(id), ex);
+        } finally {
+            if (parser != null) parser.close();
+        }
+
+    }
+
+    /**
+     * Loads an {@link Interpolator} object from a resource
+     *
+     * @param res The resources
+     * @param id The resource id of the animation to load
+     * @return The interpolator object referenced by the specified id
+     * @throws NotFoundException
+     * @hide
+     */
+    public static Interpolator loadInterpolator(Resources res, Theme theme, int id)
+            throws NotFoundException {
+        XmlResourceParser parser = null;
+        try {
+            parser = res.getAnimation(id);
+            return createInterpolatorFromXml(res, theme, parser);
+        } catch (XmlPullParserException | IOException | InflateException ex) {
+            throw new NotFoundException(
+                    "Can't load animation resource ID #0x" + Integer.toHexString(id), ex);
+        } finally {
+            if (parser != null) {
+                parser.close();
+            }
+        }
+
+    }
+
+    private static Interpolator createInterpolatorFromXml(
+            Resources res, Theme theme, XmlPullParser parser)
+            throws XmlPullParserException, IOException, InflateException {
+
+        BaseInterpolator interpolator = null;
+
+        // Make sure we are on a start tag.
+        int type;
+        int depth = parser.getDepth();
+
+        while (((type = parser.next()) != XmlPullParser.END_TAG || parser.getDepth() > depth)
+                && type != XmlPullParser.END_DOCUMENT) {
+
+            if (type != XmlPullParser.START_TAG) {
+                continue;
+            }
+
+            AttributeSet attrs = Xml.asAttributeSet(parser);
+
+            String name = parser.getName();
+
+            if (name.equals("linearInterpolator")) {
+                interpolator = new LinearInterpolator();
+            } else if (name.equals("accelerateInterpolator")) {
+                interpolator = new AccelerateInterpolator(res, theme, attrs);
+            } else if (name.equals("decelerateInterpolator")) {
+                interpolator = new DecelerateInterpolator(res, theme, attrs);
+            } else if (name.equals("accelerateDecelerateInterpolator")) {
+                interpolator = new AccelerateDecelerateInterpolator();
+            } else if (name.equals("cycleInterpolator")) {
+                interpolator = new CycleInterpolator(res, theme, attrs);
+            } else if (name.equals("anticipateInterpolator")) {
+                interpolator = new AnticipateInterpolator(res, theme, attrs);
+            } else if (name.equals("overshootInterpolator")) {
+                interpolator = new OvershootInterpolator(res, theme, attrs);
+            } else if (name.equals("anticipateOvershootInterpolator")) {
+                interpolator = new AnticipateOvershootInterpolator(res, theme, attrs);
+            } else if (name.equals("bounceInterpolator")) {
+                interpolator = new BounceInterpolator();
+            } else if (name.equals("pathInterpolator")) {
+                interpolator = new PathInterpolator(res, theme, attrs);
+            } else {
+                throw new InflateException("Unknown interpolator name: " + parser.getName());
+            }
+        }
+        return interpolator;
+    }
+
+    /** @hide */
+    public final class ActivityAnimations {
+
+        private static Animation sOpenEnter;
+        private static Animation sOpenExit;
+        private static Animation sCloseEnter;
+        private static Animation sCloseExit;
+        private static Animation sAppStartingExit;
+
+        private static SpringInterpolator sSpatialSpec;
+        private static SpringInterpolator sEffectsSpec;
+
+        private static final float DISTANCE = 0.333f;
+        private static final long APP_STARTING_EXIT_DURATION_MS = 150L;
+
+        private ActivityAnimations() {}
+
+        /** @hide */
+        public static void preload() {
+            sSpatialSpec = new SpringInterpolator(0.8f, 380f);
+            sEffectsSpec = new SpringInterpolator(1.0f, 3800f);
+            sOpenEnter = new ActivityAnimFactory()
+                    .fromX(1.0f)
+                    .toX(0.0f)
+                    .build();
+            sOpenExit = new ActivityAnimFactory()
+                    .fromX(0.0f)
+                    .toX(-DISTANCE)
+                    .build();
+            sCloseEnter = new ActivityAnimFactory()
+                        .fromX(-DISTANCE)
+                        .toX(0.0f)
+                        .build();
+            sCloseExit = new ActivityAnimFactory()
+                        .fromX(0.0f)
+                        .toX(1.0f)
+                        .build();
+            sAppStartingExit = buildAppStartingExit();
+        }
+
+        private static Animation buildAppStartingExit() {
+            Animation animation = new AlphaAnimation(1.0f, 0.0f);
+            animation.setDuration(APP_STARTING_EXIT_DURATION_MS);
+            animation.setInterpolator(new LinearInterpolator());
+            return animation;
+        }
+
+        private static class ActivityAnimFactory {
+            private float fromX = 0f, toX = 0f;
+
+            public ActivityAnimFactory fromX(float ratio) {
+                this.fromX = ratio;
+                return this;
+            }
+
+            public ActivityAnimFactory toX(float ratio) {
+                this.toX = ratio;
+                return this;
+            }
+
+            public Animation build() {
+                AnimationSet animationSet = new AnimationSet(false);
+                TranslateAnimation slide = new TranslateAnimation(
+                        Animation.RELATIVE_TO_SELF, fromX,
+                        Animation.RELATIVE_TO_SELF, toX,
+                        Animation.RELATIVE_TO_SELF, 0f,
+                        Animation.RELATIVE_TO_SELF, 0f
+                );
+                slide.setDuration(sSpatialSpec.getDurationMs());
+                slide.setInterpolator(sSpatialSpec);
+                animationSet.addAnimation(slide);
+                return animationSet;
+            }
+        }
+
+        /** @hide */
+        public static Animation getOpenEnter() {
+            maybeInit();
+            return sOpenEnter;
+        }
+
+        /** @hide */
+        public static Animation getOpenExit() {
+            maybeInit();
+            return sOpenExit;
+        }
+
+        /** @hide */
+        public static Animation getCloseEnter() {
+            maybeInit();
+            return sCloseEnter;
+        }
+
+        /** @hide */
+        public static Animation getCloseExit() {
+            maybeInit();
+            return sCloseExit;
+        }
+
+        /** @hide */
+        public static Animation getAppStartingExit() {
+            maybeInit();
+            return sAppStartingExit;
+        }
+
+        private static void maybeInit() {
+            if (sOpenEnter == null || sOpenExit == null || sCloseEnter == null
+                    || sCloseExit == null || sAppStartingExit == null
+                    || sSpatialSpec == null || sEffectsSpec == null) {
+                preload();
+            }
+        }
+    }
+
+    /** @hide */
+    public static final class SpringInterpolator implements Interpolator {
+        private final float mDampingRatio;
+        private final float mOmega0;
+        private final long mDurationMs;
+        private final float mDurationSec;
+        private final float mEndOutput;
+        private final float mEndGap;
+
+        public SpringInterpolator(float dampingRatio, float stiffness) {
+            mDampingRatio = dampingRatio;
+            mOmega0 = (float) Math.sqrt(stiffness);
+            final float settleSec;
+            if (dampingRatio >= 1.0f) {
+                settleSec = 9.23f / mOmega0;
+            } else {
+                settleSec = 6.91f / (dampingRatio * mOmega0);
+            }
+            mDurationMs = Math.max(50L, (long) (settleSec * 1000f));
+            mDurationSec = mDurationMs / 1000f;
+            mEndOutput = rawSpring(mDurationSec);
+            mEndGap = 1.0f - mEndOutput;
+        }
+
+        public long getDurationMs() {
+            return mDurationMs;
+        }
+
+        private float rawSpring(float t) {
+            final float zeta = mDampingRatio;
+            final float w0 = mOmega0;
+            if (zeta < 1.0f) {
+                final float wd = w0 * (float) Math.sqrt(1.0f - zeta * zeta);
+                final float env = (float) Math.exp(-zeta * w0 * t);
+                return 1.0f - env * ((float) Math.cos(wd * t)
+                        + (zeta * w0 / wd) * (float) Math.sin(wd * t));
+            } else if (zeta > 1.0f) {
+                final float d = (float) Math.sqrt(zeta * zeta - 1.0f);
+                final float r1 = -w0 * (zeta - d);
+                final float r2 = -w0 * (zeta + d);
+                return 1.0f - (r2 * (float) Math.exp(r1 * t)
+                        - r1 * (float) Math.exp(r2 * t)) / (r2 - r1);
+            } else {
+                final float env = (float) Math.exp(-w0 * t);
+                return 1.0f - env * (1.0f + w0 * t);
+            }
+        }
+
+        @Override
+        public float getInterpolation(float input) {
+            return rawSpring(input * mDurationSec) + mEndGap * input;
+        }
+    }
+}

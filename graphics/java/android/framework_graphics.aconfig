@@ -1,0 +1,62 @@
+package: "com.android.graphics.flags"
+container: "system"
+
+flag {
+     name: "exact_compute_bounds"
+     is_exported: true
+     namespace: "core_graphics"
+     description: "Add a function without unused exact param for computeBounds."
+     bug: "304478551"
+}
+
+flag {
+     name: "yuv_image_compress_to_ultra_hdr"
+     is_exported: true
+     namespace: "core_graphics"
+     description: "Feature flag for YUV image compress to Ultra HDR."
+     bug: "308978825"
+}
+
+flag {
+    name: "icon_load_drawable_return_null_when_uri_decode_fails"
+    is_exported: true
+    namespace: "core_graphics"
+    description: "Return null when decode from URI fails in Icon.loadDrawable()"
+    bug: "335878768"
+}
+
+flag {
+  name: "ok_lab_colorspace"
+  is_exported: true
+  is_fixed_read_only: true
+  namespace: "core_graphics"
+  description: "Add OkLab ColorSpace support"
+  bug: "344038816"
+}
+
+flag {
+  name: "display_bt2020_colorspace"
+  is_exported: true
+  is_fixed_read_only: true
+  namespace: "core_graphics"
+  description: "Add DISPLAY_BT2020 ColorSpace support"
+  bug: "344038816"
+}
+
+flag {
+    name: "use_resources_from_context_to_create_drawable_icons"
+    namespace: "lse_desktop_experience"
+    description: "Uses resources from the context to create icon drawables instead of system resources (that are not display aware)"
+    bug: "404242315"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+  name: "gradient_drawable_shape_arc_for_rounded_cap"
+  is_fixed_read_only: true
+  namespace: "wear_frameworks"
+  description: "Make GradientDrawable support arc shape for drawing ring with rounded stroke cap."
+  bug: "380000245"
+}

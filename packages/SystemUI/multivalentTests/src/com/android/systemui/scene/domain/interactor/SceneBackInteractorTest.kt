@@ -1,0 +1,230 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.scene.domain.interactor
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.android.compose.animation.scene.SceneKey
+import com.android.systemui.SysuiTestCase
+import com.android.systemui.authentication.data.repository.FakeAuthenticationRepository
+import com.android.systemui.authentication.domain.interactor.AuthenticationResult
+import com.android.systemui.authentication.domain.interactor.authenticationInteractor
+import com.android.systemui.flags.EnableSceneContainer
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.collectLastValue
+import com.android.systemui.kosmos.runTest
+import com.android.systemui.kosmos.useUnconfinedTestDispatcher
+import com.android.systemui.scene.data.model.asIterable
+import com.android.systemui.scene.data.model.sceneStackOf
+import com.android.systemui.scene.domain.startable.sceneContainerStartable
+import com.android.systemui.scene.shared.model.Scenes
+import com.android.systemui.shade.domain.interactor.enableSingleShade
+import com.android.systemui.testKosmos
+import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+@EnableSceneContainer
+class SceneBackInteractorTest : SysuiTestCase() {
+
+    private val kosmos = testKosmos().useUnconfinedTestDispatcher()
+
+    private val underTest by lazy { kosmos.sceneBackInteractor }
+
+    @Test
+    fun navigateToQs_thenBack_whileLocked() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+
+            assertRoute(
+                RouteNode(Scenes.Lockscreen, null),
+                RouteNode(Scenes.Shade, Scenes.Lockscreen),
+                RouteNode(Scenes.QuickSettings, Scenes.Shade),
+                RouteNode(Scenes.Shade, Scenes.Lockscreen),
+                RouteNode(Scenes.Lockscreen, null),
+            )
+        }
+
+    @Test
+    fun navigateToQs_thenUnlock() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+
+            assertRoute(
+                RouteNode(Scenes.Lockscreen, null),
+                RouteNode(Scenes.Shade, Scenes.Lockscreen),
+                RouteNode(Scenes.QuickSettings, Scenes.Shade, unlockDevice = true),
+                RouteNode(Scenes.Gone, null),
+            )
+        }
+
+    @Test
+    fun navigateToQs_skippingShade_thenBack_whileLocked() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+
+            assertRoute(
+                RouteNode(Scenes.Lockscreen, null),
+                RouteNode(Scenes.QuickSettings, Scenes.Lockscreen),
+                RouteNode(Scenes.Lockscreen, null),
+            )
+        }
+
+    @Test
+    fun navigateToQs_skippingShade_thenBack_thenShade_whileLocked() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+
+            assertRoute(
+                RouteNode(Scenes.Lockscreen, null),
+                RouteNode(Scenes.QuickSettings, Scenes.Lockscreen),
+                RouteNode(Scenes.Lockscreen, null),
+                RouteNode(Scenes.Shade, Scenes.Lockscreen),
+            )
+        }
+
+    @Test
+    fun navigateToQs_thenBack_whileUnlocked() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+            unlockDevice()
+
+            assertRoute(
+                RouteNode(Scenes.Gone, null),
+                RouteNode(Scenes.Shade, Scenes.Gone),
+                RouteNode(Scenes.QuickSettings, Scenes.Shade),
+                RouteNode(Scenes.Shade, Scenes.Gone),
+                RouteNode(Scenes.Gone, null),
+            )
+        }
+
+    @Test
+    fun navigateToQs_skippingShade_thenBack_whileUnlocked() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+            unlockDevice()
+
+            assertRoute(
+                RouteNode(Scenes.Gone, null),
+                RouteNode(Scenes.QuickSettings, Scenes.Gone),
+                RouteNode(Scenes.Gone, null),
+            )
+        }
+
+    @Test
+    fun navigateToQs_skippingShade_thenBack_thenShade_whileUnlocked() =
+        kosmos.runTest {
+            enableSingleShade()
+            sceneContainerStartable.start()
+            unlockDevice()
+
+            assertRoute(
+                RouteNode(Scenes.Gone, null),
+                RouteNode(Scenes.QuickSettings, Scenes.Gone),
+                RouteNode(Scenes.Gone, null),
+                RouteNode(Scenes.Shade, Scenes.Gone),
+            )
+        }
+
+    @Test
+    fun updateBackStack() =
+        kosmos.runTest {
+            enableSingleShade()
+            underTest.onSceneChange(from = Scenes.Lockscreen, to = Scenes.Shade)
+            underTest.onSceneChange(from = Scenes.Shade, to = Scenes.QuickSettings)
+            assertThat(underTest.backStack.value.asIterable().toList())
+                .isEqualTo(listOf(Scenes.Shade, Scenes.Lockscreen))
+
+            underTest.updateBackStack { stack ->
+                // Reverse the stack, just to see if it can be done:
+                sceneStackOf(*stack.asIterable().reversed().toTypedArray())
+            }
+
+            assertThat(underTest.backStack.value.asIterable().toList())
+                .isEqualTo(listOf(Scenes.Lockscreen, Scenes.Shade))
+        }
+
+    @Test
+    fun replaceLockscreenSceneOnBackStack_replacesLockscreenWithGone() =
+        kosmos.runTest {
+            enableSingleShade()
+            underTest.onSceneChange(from = Scenes.Lockscreen, to = Scenes.Shade)
+            underTest.onSceneChange(from = Scenes.Shade, to = Scenes.QuickSettings)
+            assertThat(underTest.backStack.value.asIterable().toList())
+                .isEqualTo(listOf(Scenes.Shade, Scenes.Lockscreen))
+
+            underTest.replaceLockscreenSceneOnBackStack()
+
+            assertThat(underTest.backStack.value.asIterable().toList())
+                .isEqualTo(listOf(Scenes.Shade, Scenes.Gone))
+        }
+
+    @Test
+    fun replaceLockscreenSceneOnBackStack_nothingToDo() =
+        kosmos.runTest {
+            enableSingleShade()
+            underTest.onSceneChange(from = Scenes.Gone, to = Scenes.Shade)
+            underTest.onSceneChange(from = Scenes.Shade, to = Scenes.QuickSettings)
+            assertThat(underTest.backStack.value.asIterable().toList())
+                .isEqualTo(listOf(Scenes.Shade, Scenes.Gone))
+
+            underTest.replaceLockscreenSceneOnBackStack()
+
+            assertThat(underTest.backStack.value.asIterable().toList())
+                .isEqualTo(listOf(Scenes.Shade, Scenes.Gone))
+        }
+
+    private suspend fun Kosmos.assertRoute(vararg route: RouteNode) {
+        val currentScene by collectLastValue(sceneInteractor.currentScene)
+        val backScene by collectLastValue(underTest.backScene)
+
+        route.forEachIndexed { index, node ->
+            sceneInteractor.changeScene(node.changeSceneTo, "")
+            assertWithMessage("node at index $index currentScene mismatch")
+                .that(currentScene)
+                .isEqualTo(node.changeSceneTo)
+            assertWithMessage("node at index $index backScene mismatch")
+                .that(backScene)
+                .isEqualTo(node.expectedBackScene)
+            if (node.unlockDevice) {
+                unlockDevice()
+            }
+        }
+    }
+
+    private suspend fun Kosmos.unlockDevice() {
+        val currentScene by collectLastValue(sceneInteractor.currentScene)
+        assertThat(authenticationInteractor.authenticate(FakeAuthenticationRepository.DEFAULT_PIN))
+            .isEqualTo(AuthenticationResult.SUCCEEDED)
+        assertThat(currentScene).isEqualTo(Scenes.Gone)
+    }
+
+    private data class RouteNode(
+        val changeSceneTo: SceneKey,
+        val expectedBackScene: SceneKey? = null,
+        val unlockDevice: Boolean = false,
+    )
+}

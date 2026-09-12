@@ -1,0 +1,335 @@
+package com.android.systemui.qs
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.UserInfo
+import android.os.UserHandle
+import android.permission.PermissionGroupUsage
+import android.permission.PermissionManager
+import android.safetycenter.SafetyCenterManager
+import android.view.View
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.android.internal.logging.UiEventLogger
+import com.android.systemui.SysuiTestCase
+import com.android.systemui.appops.AppOpsController
+import com.android.systemui.broadcast.BroadcastDispatcher
+import com.android.systemui.flags.FeatureFlags
+import com.android.systemui.flags.Flags
+import com.android.systemui.plugins.ActivityStarter
+import com.android.systemui.privacy.OngoingPrivacyChip
+import com.android.systemui.privacy.PrivacyDialogController
+import com.android.systemui.privacy.PrivacyDialogControllerV2
+import com.android.systemui.privacy.PrivacyItemController
+import com.android.systemui.privacy.logging.PrivacyLogger
+import com.android.systemui.settings.UserTracker
+import com.android.systemui.shade.data.repository.shadeDialogContextInteractor
+import com.android.systemui.statusbar.phone.StatusIconContainer
+import com.android.systemui.statusbar.policy.DeviceProvisionedController
+import com.android.systemui.testKosmos
+import com.android.systemui.util.concurrency.FakeExecutor
+import com.android.systemui.util.time.FakeSystemClock
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.kotlin.never
+import org.mockito.kotlin.capture
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.MockitoAnnotations
+import org.mockito.Mockito.`when` as whenever
+
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class HeaderPrivacyIconsControllerTest : SysuiTestCase() {
+
+    private val kosmos = testKosmos()
+    @Mock
+    private lateinit var privacyItemController: PrivacyItemController
+    @Mock
+    private lateinit var uiEventLogger: UiEventLogger
+    @Mock
+    private lateinit var privacyChip: OngoingPrivacyChip
+    @Mock
+    private lateinit var privacyDialogController: PrivacyDialogController
+    @Mock
+    private lateinit var privacyDialogControllerV2: PrivacyDialogControllerV2
+    @Mock
+    private lateinit var privacyLogger: PrivacyLogger
+    @Mock
+    private lateinit var iconContainer: StatusIconContainer
+    @Mock
+    private lateinit var permissionManager: PermissionManager
+    @Mock
+    private lateinit var activityStarter: ActivityStarter
+    @Mock
+    private lateinit var appOpsController: AppOpsController
+    @Mock
+    private lateinit var broadcastDispatcher: BroadcastDispatcher
+    @Mock
+    private lateinit var safetyCenterManager: SafetyCenterManager
+    @Mock
+    private lateinit var deviceProvisionedController: DeviceProvisionedController
+    @Mock
+    private lateinit var featureFlags: FeatureFlags
+
+    @Mock
+    private lateinit var userTracker: UserTracker
+
+    private val uiExecutor = FakeExecutor(FakeSystemClock())
+    private val backgroundExecutor = FakeExecutor(FakeSystemClock())
+    private lateinit var cameraSlotName: String
+    private lateinit var microphoneSlotName: String
+    private lateinit var locationSlotName: String
+    private lateinit var controller: HeaderPrivacyIconsController
+
+    @Before
+    fun setUp() {
+        MockitoAnnotations.initMocks(this)
+        whenever(privacyChip.context).thenReturn(context)
+        whenever(privacyChip.resources).thenReturn(context.resources)
+        whenever(privacyChip.isAttachedToWindow).thenReturn(true)
+        whenever(deviceProvisionedController.isDeviceProvisioned).thenReturn(true)
+
+        cameraSlotName = context.getString(com.android.internal.R.string.status_bar_camera)
+        microphoneSlotName = context.getString(com.android.internal.R.string.status_bar_microphone)
+        locationSlotName = context.getString(com.android.internal.R.string.status_bar_location)
+
+        controller = HeaderPrivacyIconsController(
+                privacyItemController,
+                uiEventLogger,
+                privacyChip,
+                privacyDialogController,
+                privacyDialogControllerV2,
+                privacyLogger,
+                iconContainer,
+                permissionManager,
+                backgroundExecutor,
+                uiExecutor,
+                activityStarter,
+                appOpsController,
+                broadcastDispatcher,
+                safetyCenterManager,
+                deviceProvisionedController,
+                featureFlags,
+                kosmos.shadeDialogContextInteractor,
+                userTracker,
+        )
+
+        backgroundExecutor.runAllReady()
+    }
+
+    @Test
+    fun testIgnoredSlotsOnParentVisible_noIndicators() {
+        setPrivacyController(micCamera = false, location = false)
+
+        controller.onParentVisible()
+
+        verify(iconContainer).removeIgnoredSlot(cameraSlotName)
+        verify(iconContainer).removeIgnoredSlot(microphoneSlotName)
+        verify(iconContainer).removeIgnoredSlot(locationSlotName)
+    }
+
+    @Test
+    fun testIgnoredSlotsOnParentVisible_onlyMicCamera() {
+        setPrivacyController(micCamera = true, location = false)
+
+        controller.onParentVisible()
+
+        verify(iconContainer).addIgnoredSlot(cameraSlotName)
+        verify(iconContainer).addIgnoredSlot(microphoneSlotName)
+        verify(iconContainer).removeIgnoredSlot(locationSlotName)
+    }
+
+    @Test
+    fun testIgnoredSlotsOnParentVisible_onlyLocation() {
+        setPrivacyController(micCamera = false, location = true)
+
+        controller.onParentVisible()
+
+        verify(iconContainer).removeIgnoredSlot(cameraSlotName)
+        verify(iconContainer).removeIgnoredSlot(microphoneSlotName)
+        verify(iconContainer).addIgnoredSlot(locationSlotName)
+    }
+
+    @Test
+    fun testIgnoredSlotsOnParentVisible_locationMicCamera() {
+        setPrivacyController(micCamera = true, location = true)
+
+        controller.onParentVisible()
+
+        verify(iconContainer).addIgnoredSlot(cameraSlotName)
+        verify(iconContainer).addIgnoredSlot(microphoneSlotName)
+        verify(iconContainer).addIgnoredSlot(locationSlotName)
+    }
+
+    @Test
+    fun testPrivacyChipClickedWhenNewDialogDisabledAndSafetyCenterDisabled() {
+        whenever(featureFlags.isEnabled(Flags.ENABLE_NEW_PRIVACY_DIALOG)).thenReturn(false)
+        whenever(safetyCenterManager.isSafetyCenterEnabled).thenReturn(false)
+        controller.onParentVisible()
+        val captor = argumentCaptor<View.OnClickListener>()
+        verify(privacyChip).setOnClickListener(captor.capture())
+        captor.firstValue.onClick(privacyChip)
+        verify(privacyDialogController).showDialog(any<Context>())
+        verify(privacyDialogControllerV2, never())
+            .showDialog(any<Context>(), any<OngoingPrivacyChip>())
+    }
+
+    @Test
+    fun testPrivacyChipClickedWhenNewDialogEnabledAndSafetyCenterDisabled() {
+        whenever(featureFlags.isEnabled(Flags.ENABLE_NEW_PRIVACY_DIALOG)).thenReturn(true)
+        whenever(safetyCenterManager.isSafetyCenterEnabled).thenReturn(false)
+        controller.onParentVisible()
+        val captor = argumentCaptor<View.OnClickListener>()
+        verify(privacyChip).setOnClickListener(captor.capture())
+        captor.firstValue.onClick(privacyChip)
+        verify(privacyDialogController).showDialog(any<Context>())
+        verify(privacyDialogControllerV2, never())
+                .showDialog(any<Context>(), any<OngoingPrivacyChip>())
+    }
+
+    @Test
+    fun testPrivacyChipClickedWhenNewDialogDisabledAndSafetyCenterEnabled() {
+        whenever(featureFlags.isEnabled(Flags.ENABLE_NEW_PRIVACY_DIALOG)).thenReturn(false)
+        val receiverCaptor = argumentCaptor<BroadcastReceiver>()
+        whenever(safetyCenterManager.isSafetyCenterEnabled).thenReturn(true)
+        verify(broadcastDispatcher).registerReceiver(receiverCaptor.capture(),
+                any(), any(), anyOrNull(), any<Int>(), anyOrNull())
+        receiverCaptor.firstValue.onReceive(
+                context,
+                Intent(SafetyCenterManager.ACTION_SAFETY_CENTER_ENABLED_CHANGED)
+        )
+        backgroundExecutor.runAllReady()
+        controller.onParentVisible()
+        val captor = argumentCaptor<View.OnClickListener>()
+        verify(privacyChip).setOnClickListener(captor.capture())
+        captor.firstValue.onClick(privacyChip)
+        verify(privacyDialogController, never()).showDialog(any<Context>())
+        verify(privacyDialogControllerV2, never())
+            .showDialog(any<Context>(), any<OngoingPrivacyChip>())
+    }
+
+    @Test
+    fun testPrivacyChipClickedWhenNewDialogEnabledAndSafetyCenterEnabled() {
+        whenever(featureFlags.isEnabled(Flags.ENABLE_NEW_PRIVACY_DIALOG)).thenReturn(true)
+        val receiverCaptor = argumentCaptor<BroadcastReceiver>()
+        whenever(safetyCenterManager.isSafetyCenterEnabled).thenReturn(true)
+        verify(broadcastDispatcher).registerReceiver(receiverCaptor.capture(),
+                any(), any(), anyOrNull(), any<Int>(), anyOrNull())
+        receiverCaptor.firstValue.onReceive(
+                context,
+                Intent(SafetyCenterManager.ACTION_SAFETY_CENTER_ENABLED_CHANGED)
+        )
+        backgroundExecutor.runAllReady()
+        controller.onParentVisible()
+        val captor = argumentCaptor<View.OnClickListener>()
+        verify(privacyChip).setOnClickListener(captor.capture())
+        captor.firstValue.onClick(privacyChip)
+        verify(privacyDialogControllerV2).showDialog(any<Context>(), eq(privacyChip))
+        verify(privacyDialogController, never()).showDialog(any<Context>())
+    }
+
+    @Test
+    fun testBroadcastReceiverUnregisteredWhenChipDetached() {
+        whenever(safetyCenterManager.isSafetyCenterEnabled).thenReturn(false)
+        controller.attachStateChangeListener.onViewDetachedFromWindow(privacyChip)
+        backgroundExecutor.runAllReady()
+        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
+        verify(broadcastDispatcher).unregisterReceiver(broadcastReceiverCaptor.capture())
+    }
+
+    @Test
+    fun testBroadcastReceiverRegisteredWhenChipAttached() {
+        whenever(safetyCenterManager.isSafetyCenterEnabled).thenReturn(false)
+        controller.attachStateChangeListener.onViewAttachedToWindow(privacyChip)
+        backgroundExecutor.runAllReady()
+        val broadcastReceiverCaptor = argumentCaptor<BroadcastReceiver>()
+        val intentFilterCaptor = argumentCaptor<IntentFilter>()
+        // Broadcast receiver is registered on init and when privacy chip is attached
+        verify(broadcastDispatcher, times(2)).registerReceiver(
+            broadcastReceiverCaptor.capture(),
+            intentFilterCaptor.capture(), any(), anyOrNull(), any<Int>(), anyOrNull()
+        )
+    }
+
+    @Test
+    fun testNoDialogWhenDeviceNotProvisioned() {
+        whenever(deviceProvisionedController.isDeviceProvisioned).thenReturn(false)
+        controller.onParentVisible()
+
+        val captor = argumentCaptor<View.OnClickListener>()
+        verify(privacyChip).setOnClickListener(captor.capture())
+
+        captor.firstValue.onClick(privacyChip)
+        verify(privacyDialogController, never()).showDialog(any<Context>())
+    }
+
+    @Test
+    fun testPermGroupUsage_filtersOutInactiveUsers() {
+        whenever(userTracker.userProfiles).thenReturn(listOf(createUserInfo(USER_ID)))
+        whenever(permissionManager.getIndicatorAppOpUsageData(false))
+            .thenReturn(listOf(createPermUsage(USER_ID), createPermUsage(OTHER_USER_ID)))
+        val usages = controller.permGroupUsage()
+        assertEquals(1, usages.size)
+        assertEquals(USER_ID, UserHandle.getUserId(usages[0].uid))
+    }
+
+    @Test
+    fun testPermGroupUsage_alwaysReturnPhoneCallUsage() {
+        whenever(userTracker.userProfiles).thenReturn(listOf(createUserInfo(USER_ID)))
+        whenever(permissionManager.getIndicatorAppOpUsageData(false))
+            .thenReturn(listOf(createPermUsage(OTHER_USER_ID, isPhone = true)))
+        val usages = controller.permGroupUsage()
+        assertEquals(OTHER_USER_ID, UserHandle.getUserId(usages[0].uid))
+    }
+
+    @Test
+    fun testPermGroupUsage_returnsProfileUsages() {
+        whenever(userTracker.userProfiles)
+            .thenReturn(listOf(createUserInfo(USER_ID), createUserInfo(PROFILE_USER_ID)))
+        whenever(permissionManager.getIndicatorAppOpUsageData(false))
+            .thenReturn(listOf(createPermUsage(USER_ID), createPermUsage(PROFILE_USER_ID)))
+        val usages = controller.permGroupUsage()
+        assertEquals(2, usages.size)
+        assertNotNull(usages.firstOrNull { UserHandle.getUserId(it.uid) == USER_ID })
+        assertNotNull(usages.firstOrNull { UserHandle.getUserId(it.uid) == PROFILE_USER_ID })
+    }
+
+    private fun createPermUsage(user: Int, isPhone: Boolean = false): PermissionGroupUsage =
+        PermissionGroupUsage(
+            "",
+            UserHandle.getUid(user, 0),
+            0,
+            "",
+            true,
+            isPhone,
+            null,
+            null,
+            null,
+            "",
+        )
+
+    private fun createUserInfo(userId: Int) = UserInfo(userId, "", 0)
+
+    private fun setPrivacyController(micCamera: Boolean, location: Boolean) {
+        whenever(privacyItemController.micCameraAvailable).thenReturn(micCamera)
+        whenever(privacyItemController.locationAvailable).thenReturn(location)
+    }
+
+    companion object {
+        const val USER_ID = 0
+        const val PROFILE_USER_ID = 1
+        const val OTHER_USER_ID = 2
+    }
+}

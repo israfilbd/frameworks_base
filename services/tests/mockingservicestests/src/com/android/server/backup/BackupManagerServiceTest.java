@@ -1,0 +1,984 @@
+/*
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.backup;
+
+import static com.android.dx.mockito.inline.extended.ExtendedMockito.doReturn;
+
+import static com.google.common.truth.Truth.assertThat;
+
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
+
+import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import android.Manifest;
+import android.app.backup.BackupManager;
+import android.app.backup.BackupManagerInternal;
+import android.app.backup.ISelectBackupTransportCallback;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.pm.UserInfo;
+import android.os.ConditionVariable;
+import android.os.FileUtils;
+import android.os.Process;
+import android.os.RemoteException;
+import android.os.UserHandle;
+import android.os.UserManager;
+import android.platform.test.annotations.DisableFlags;
+import android.platform.test.annotations.EnableFlags;
+import android.platform.test.annotations.Presubmit;
+import android.platform.test.flag.junit.SetFlagsRule;
+
+import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+
+import com.android.dx.mockito.inline.extended.ExtendedMockito;
+import com.android.internal.util.DumpUtils;
+import com.android.server.LocalServices;
+import com.android.server.SystemService;
+import com.android.server.backup.utils.RandomAccessFileUtils;
+import com.android.server.pm.UserManagerInternal;
+
+import com.google.common.truth.Expect;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.MockitoSession;
+import org.mockito.quality.Strictness;
+
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+@SmallTest
+@Presubmit
+@RunWith(AndroidJUnit4.class)
+public class BackupManagerServiceTest {
+    private static final ComponentName TRANSPORT_COMPONENT_NAME = new ComponentName("package",
+            "class");
+    private static final int NON_SYSTEM_USER = UserHandle.USER_SYSTEM + 1;
+    private static final int NON_SYSTEM_NON_DEFAULT_USER = NON_SYSTEM_USER + 1;
+
+    @Rule
+    public final Expect expect = Expect.create();
+
+    @Rule
+    public final SetFlagsRule flags =
+            new SetFlagsRule(SetFlagsRule.DefaultInitValueType.DEVICE_DEFAULT);
+
+    @Mock
+    private UserBackupManagerService mSystemUserBackupManagerService;
+    @Mock
+    private UserBackupManagerService mNonSystemUserBackupManagerService;
+    @Mock
+    private Context mContextMock;
+    @Mock
+    private UserManagerInternal mUserManagerInternalMock;
+    @Mock
+    private UserInfo mUserInfoMock;
+
+    private FileDescriptor mFileDescriptorStub = new FileDescriptor();
+
+    private BackupManagerServiceTestable mService;
+    private BackupManagerService.Lifecycle mServiceLifecycle;
+    private FakePrintWriter mFakePrintWriter;
+    private static File sTestDir;
+    private MockitoSession mSession;
+
+    @Before
+    public void setUp() throws Exception {
+        mSession =
+                ExtendedMockito.mockitoSession().initMocks(
+                                this)
+                        .strictness(Strictness.LENIENT)
+                        .spyStatic(UserBackupManagerService.class)
+                        .spyStatic(UserManager.class)
+                        .spyStatic(DumpUtils.class)
+                        .startMocking();
+        doReturn(mSystemUserBackupManagerService).when(
+                () -> UserBackupManagerService.createAndInitializeService(
+                        eq(UserHandle.USER_SYSTEM), any(), any(), any()));
+        doReturn(mNonSystemUserBackupManagerService).when(
+                () -> UserBackupManagerService.createAndInitializeService(eq(NON_SYSTEM_USER),
+                        any(), any(), any()));
+
+        // Assume non-headless mode by default.
+        mockHeadlessSystemUserMode(false);
+
+        LocalServices.removeServiceForTest(UserManagerInternal.class);
+        LocalServices.addService(UserManagerInternal.class, mUserManagerInternalMock);
+
+        when(mNonSystemUserBackupManagerService.getUserId()).thenReturn(NON_SYSTEM_USER);
+        when(mUserManagerInternalMock.getUserInfo(UserHandle.USER_SYSTEM))
+                .thenReturn(mUserInfoMock);
+        when(mUserManagerInternalMock.getUserInfo(NON_SYSTEM_USER)).thenReturn(mUserInfoMock);
+        when(mUserManagerInternalMock.getUserInfo(NON_SYSTEM_NON_DEFAULT_USER))
+                .thenReturn(mUserInfoMock);
+        when(mUserInfoMock.isFull()).thenReturn(true);
+        // Null main user means there is no main user on the device.
+        when(mUserManagerInternalMock.getMainUserId()).thenReturn(UserHandle.USER_NULL);
+
+        BackupManagerServiceTestable.sCallingUserId = UserHandle.USER_SYSTEM;
+        BackupManagerServiceTestable.sCallingUid = Process.SYSTEM_UID;
+        BackupManagerServiceTestable.sBackupDisabled = false;
+
+        sTestDir = InstrumentationRegistry.getContext().getFilesDir();
+        sTestDir.mkdirs();
+
+        when(mContextMock.getSystemService(Context.JOB_SCHEDULER_SERVICE))
+                .thenReturn(mock(JobScheduler.class));
+
+        mFakePrintWriter = new FakePrintWriter();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        FileUtils.deleteContentsAndDir(sTestDir);
+        mSession.finishMocking();
+    }
+
+    @Test
+    public void onUnlockUser_startsUserService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        ConditionVariable unlocked = new ConditionVariable(false);
+
+        simulateUserUnlocked(NON_SYSTEM_USER);
+
+        assertNotNull(mService.getUserService(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void startServiceForUser_backupDisabledGlobally_doesNotStartUserService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sBackupDisabled = true;
+        BackupManagerServiceTestable service = new BackupManagerServiceTestable(mContextMock);
+
+        service.startServiceForUser(UserHandle.USER_SYSTEM);
+
+        assertNull(service.getUserService(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void startServiceForUser_backupNotActiveForUser_doesNotStartUserService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+
+        mService.startServiceForUser(UserHandle.USER_SYSTEM);
+
+        assertNull(mService.getUserService(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void startServiceForUser_backupEnabledGloballyAndActiveForUser_startsUserService() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+
+        mService.startServiceForUser(NON_SYSTEM_USER);
+
+        assertNotNull(mService.getUserService(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void isBackupServiceActive_backupDisabledGlobally_returnFalse() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sBackupDisabled = true;
+        BackupManagerService service = new BackupManagerServiceTestable(mContextMock);
+        service.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+
+        assertFalse(service.isBackupServiceActive(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void isBackupServiceActive_systemUser_isDefault_deactivated_returnsFalse() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        // If there's no 'main' user on the device, the default user is the system user.
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+
+        assertFalse(mService.isBackupServiceActive(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void isBackupServiceActive_systemUser_isNotDefault_returnsFalse() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+
+        assertFalse(mService.isBackupServiceActive(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void isBackupServiceActive_systemUser_isDefault_returnsTrue() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        // If there's no 'main' user on the device, the default user is the system user.
+        assertTrue(mService.isBackupServiceActive(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void isBackupServiceActive_nonSystemUser_isDefault_systemUserDeactivated_returnsFalse() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+
+        assertFalse(mService.isBackupServiceActive(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void isBackupServiceActive_nonSystemUser_isDefault_deactivated_returnsFalse() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        assertFalse(mService.isBackupServiceActive(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void isBackupServiceActive_nonSystemUser_isDefault_returnsTrue() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+
+        assertTrue(mService.isBackupServiceActive(NON_SYSTEM_USER));
+    }
+
+    @Test
+    @DisableFlags(android.multiuser.Flags.FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS)
+    public void isBackupServiceActive_nonSystemUser_isNotDefault_flagDisabled_returnsFalse() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        when(mUserInfoMock.isFull()).thenReturn(true);
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+
+        // In HSUM, activation for non-default users is determined by the flag above (disabled).
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isTrue();
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_NON_DEFAULT_USER)).isFalse();
+    }
+
+    @Test
+    @EnableFlags(android.multiuser.Flags.FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS)
+    public void isBackupServiceActive_nonSystemUser_fullUser_flagEnabled_returnsTrue() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        when(mUserInfoMock.isFull()).thenReturn(true);
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+
+        // In HSUM, activation for non-default users is determined by the flag above (enabled).
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isTrue();
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_NON_DEFAULT_USER)).isTrue();
+    }
+
+    @Test
+    @EnableFlags(android.multiuser.Flags.FLAG_BACKUP_ACTIVATED_FOR_ALL_USERS)
+    public void isBackupServiceActive_nonSystemUser_nonFullUser_flagEnabled_returnsFalse() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        when(mUserInfoMock.isFull()).thenReturn(false);
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+
+        // The flag is enabled but the users are not full users.
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isFalse();
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_NON_DEFAULT_USER)).isFalse();
+    }
+
+    @Test
+    public void isBackupServiceActive_nonSystemUser_isNotDefault_notActivated_returnsFalse() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        // By default non-system non-default users are not activated.
+        assertFalse(mService.isBackupServiceActive(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void isBackupServiceActive_nonSystemUser_isNotDefault_activated_returnsTrue() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(mService.isBackupServiceActive(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_forPrivateProfile_throws() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        when(mUserInfoMock.isPrivateProfile()).thenReturn(true);
+        BackupManagerServiceTestable.sCallingUid = Process.SYSTEM_UID;
+
+        assertThat(
+                assertThrows(
+                        SecurityException.class,
+                        () -> mService.setBackupServiceActive(NON_SYSTEM_USER,
+                                true))).hasMessageThat().isEqualTo(
+                "Changing private profile backup activation not allowed");
+    }
+
+    @Test
+    public void setBackupServiceActive_forSystemUserAndCallerSystemUid_createsService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sCallingUid = Process.SYSTEM_UID;
+
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+
+        assertTrue(mService.isUserReadyForBackup(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void setBackupServiceActive_forSystemUserAndCallerRootUid_createsService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sCallingUid = Process.ROOT_UID;
+
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+
+        assertTrue(mService.isUserReadyForBackup(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void setBackupServiceActive_forSystemUserAndCallerNonRootNonSystem_throws() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sCallingUid = Process.FIRST_APPLICATION_UID;
+
+
+        assertThat(
+                assertThrows(
+                        SecurityException.class,
+                        () -> mService.setBackupServiceActive(UserHandle.USER_SYSTEM,
+                                true))).hasMessageThat().isEqualTo(
+                "No permission to configure backup activity");
+    }
+
+    @Test
+    public void setBackupServiceActive_forManagedProfileAndCallerSystemUid_createsService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        when(mUserInfoMock.isManagedProfile()).thenReturn(true);
+        BackupManagerServiceTestable.sCallingUid = Process.SYSTEM_UID;
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_forManagedProfileAndCallerRootUid_createsService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        when(mUserInfoMock.isManagedProfile()).thenReturn(true);
+        BackupManagerServiceTestable.sCallingUid = Process.ROOT_UID;
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_forManagedProfileAndCallerNonRootNonSystem_throws() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        when(mUserInfoMock.isManagedProfile()).thenReturn(true);
+        BackupManagerServiceTestable.sCallingUid = Process.FIRST_APPLICATION_UID;
+
+        assertThat(
+                assertThrows(
+                        SecurityException.class,
+                        () -> mService.setBackupServiceActive(NON_SYSTEM_USER,
+                                true))).hasMessageThat().isEqualTo(
+                "No permission to configure backup activity");
+    }
+
+    @Test
+    public void setBackupServiceActive_forNonSystemUserAndCallerWithoutBackupPermission_throws() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        doThrow(new SecurityException())
+                .when(mContextMock)
+                .enforceCallingOrSelfPermission(eq(Manifest.permission.BACKUP), anyString());
+
+        assertThrows(
+                SecurityException.class,
+                () -> mService.setBackupServiceActive(NON_SYSTEM_USER,
+                        true));
+    }
+
+    @Test
+    public void setBackupServiceActive_forNonSystemUserAndCallerWithoutUserPermission_throws() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        doThrow(new SecurityException())
+                .when(mContextMock)
+                .enforceCallingOrSelfPermission(
+                        eq(Manifest.permission.INTERACT_ACROSS_USERS_FULL), anyString());
+
+        assertThrows(
+                SecurityException.class,
+                () -> mService.setBackupServiceActive(NON_SYSTEM_USER,
+                        true));
+    }
+
+    @Test
+    public void setBackupServiceActive_backupDisabledGlobally_ignored() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sBackupDisabled = true;
+        BackupManagerServiceTestable service = new BackupManagerServiceTestable(mContextMock);
+
+        service.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+
+        assertFalse(service.isBackupServiceActive(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void setBackupServiceActive_alreadyActive_ignored() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+        expect.that(mService.isBackupServiceActive(UserHandle.USER_SYSTEM)).isTrue();
+
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+        expect.that(mService.isBackupServiceActive(UserHandle.USER_SYSTEM)).isTrue();
+    }
+
+    @Test
+    public void setBackupServiceActive_systemUser_makeActive_deletesSuppressFile() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+
+        assertFalse(getFakeSuppressFileForUser(UserHandle.USER_SYSTEM).exists());
+    }
+
+    @Test
+    public void setBackupServiceActive_systemUser_makeNonActive_createsSuppressFile() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+
+        assertTrue(getFakeSuppressFileForUser(UserHandle.USER_SYSTEM).exists());
+    }
+
+    @Test
+    public void setBackupServiceActive_systemUser_makeNonActive_stopsUserService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        expect.that(mService.isUserReadyForBackup(UserHandle.USER_SYSTEM)).isTrue();
+
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+
+        expect.that(mService.isUserReadyForBackup(UserHandle.USER_SYSTEM)).isFalse();
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isDefault_makeActive_createsService() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isDefault_makeActive_deletesSuppressFile() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertFalse(getFakeSuppressFileForUser(NON_SYSTEM_USER).exists());
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isDefault_makeNonActive_createsSuppressFile() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        assertTrue(getFakeSuppressFileForUser(NON_SYSTEM_USER).exists());
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isDefault_makeNonActive_stopsUserService() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        expect.that(mService.isUserReadyForBackup(NON_SYSTEM_USER)).isTrue();
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        expect.that(mService.isUserReadyForBackup(NON_SYSTEM_USER)).isFalse();
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isNotDefault_makeActive_createsService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        simulateUserUnlocked(NON_SYSTEM_USER);
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isNotDefault_makeActive_createActivatedFile() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(getFakeActivatedFileForUser(NON_SYSTEM_USER).exists());
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isNotDefault_makeNonActive_stopsUserService() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        assertFalse(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_nonSystemUser_isNotDefault_makeActive_deleteActivatedFile() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        assertFalse(getFakeActivatedFileForUser(NON_SYSTEM_USER).exists());
+    }
+
+    @Test
+    public void setBackupServiceActive_globallyToggled_restartsUserService() {
+        // Start with a non-system user's backup service running.
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        assertTrue(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+
+        // Mock the running users for the global toggle.
+        UserInfo systemUserInfo = new UserInfo(UserHandle.USER_SYSTEM, "system", 0);
+        UserInfo nonSystemUserInfo = new UserInfo(NON_SYSTEM_USER, "non-system", 0);
+        when(mUserManagerInternalMock.getUsers(true))
+                .thenReturn(Arrays.asList(systemUserInfo, nonSystemUserInfo));
+        when(mUserManagerInternalMock.isUserRunning(UserHandle.USER_SYSTEM)).thenReturn(true);
+        when(mUserManagerInternalMock.isUserRunning(NON_SYSTEM_USER)).thenReturn(true);
+
+        // Disable backup globally. This should stop the user's service.
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, false);
+        assertFalse(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+
+        // Re-enable backup globally. This should restart the user's service.
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+        assertTrue(mService.isUserReadyForBackup(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void setBackupServiceActive_forOneNonSystemUser_doesNotActivateForAllNonSystemUsers() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        int otherUser = NON_SYSTEM_USER + 1;
+        mService.setBackupServiceActive(UserHandle.USER_SYSTEM, true);
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertFalse(mService.isBackupServiceActive(otherUser));
+    }
+
+    @Test
+    public void setBackupServiceActive_forNonSystemUser_remembersActivated() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+
+        assertTrue(RandomAccessFileUtils.readBoolean(
+                getFakeRememberActivatedFileForUser(NON_SYSTEM_USER), false));
+    }
+
+    @Test
+    public void setBackupServiceActiveFalse_forNonSystemUser_remembersActivated() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        assertFalse(RandomAccessFileUtils.readBoolean(
+                getFakeRememberActivatedFileForUser(NON_SYSTEM_USER), true));
+    }
+
+    @Test
+    public void setBackupServiceActiveTwice_forNonSystemUser_remembersLastActivated() {
+        createBackupManagerServiceAndUnlockSystemUser();
+
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        mService.setBackupServiceActive(NON_SYSTEM_USER, false);
+
+        assertFalse(RandomAccessFileUtils.readBoolean(
+                getFakeRememberActivatedFileForUser(NON_SYSTEM_USER), true));
+    }
+
+    @Test
+    public void selectBackupTransportAsyncForUser_beforeUserUnlocked_notifiesBackupNotAllowed()
+            throws Exception {
+        mService = new BackupManagerServiceTestable(mContextMock);
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        ISelectBackupTransportCallback listener =
+                new ISelectBackupTransportCallback.Stub() {
+                    @Override
+                    public void onSuccess(String transportName) {
+                        future.completeExceptionally(new AssertionError());
+                    }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        future.complete(reason);
+                    }
+                };
+
+        mService.selectBackupTransportAsyncForUser(
+                UserHandle.USER_SYSTEM, TRANSPORT_COMPONENT_NAME, listener);
+
+        assertEquals(BackupManager.ERROR_BACKUP_NOT_ALLOWED, (int) future.get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void selectBackupTransportAsyncForUser_beforeUserUnlockedWithNullListener_doesNotThrow()
+            throws Exception {
+        mService = new BackupManagerServiceTestable(mContextMock);
+
+        mService.selectBackupTransportAsyncForUser(
+                UserHandle.USER_SYSTEM, TRANSPORT_COMPONENT_NAME, null);
+
+        // No crash.
+    }
+
+    @Test
+    public void selectBackupTransportAsyncForUser_beforeUserUnlockedListenerThrowing_doesNotThrow()
+            throws Exception {
+        mService = new BackupManagerServiceTestable(mContextMock);
+        ISelectBackupTransportCallback.Stub listener =
+                new ISelectBackupTransportCallback.Stub() {
+                    @Override
+                    public void onSuccess(String transportName) {
+                    }
+
+                    @Override
+                    public void onFailure(int reason) throws RemoteException {
+                        throw new RemoteException();
+                    }
+                };
+
+        mService.selectBackupTransportAsyncForUser(
+                UserHandle.USER_SYSTEM, TRANSPORT_COMPONENT_NAME, listener);
+
+        // No crash.
+    }
+
+    @Test
+    public void dump_callerDoesNotHaveDumpOrUsageStatsPermission_ignored() {
+        mockDumpPermissionsGranted(false);
+        createBackupManagerServiceAndUnlockSystemUser();
+        when(mContextMock.checkCallingOrSelfPermission(Manifest.permission.DUMP))
+                .thenReturn(PackageManager.PERMISSION_DENIED);
+
+        mService.dump(mFileDescriptorStub, mFakePrintWriter, new String[0]);
+
+        verify(mSystemUserBackupManagerService, never()).dump(any(), any(), any());
+        verify(mNonSystemUserBackupManagerService, never()).dump(any(), any(), any());
+    }
+
+    @Test
+    public void dump_forOneUser_callerDoesNotHaveInteractAcrossUsersFullPermission_ignored() {
+        mockDumpPermissionsGranted(true);
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        doThrow(new SecurityException())
+                .when(mContextMock)
+                .enforceCallingOrSelfPermission(
+                        eq(Manifest.permission.INTERACT_ACROSS_USERS_FULL), anyString());
+
+        String[] args = new String[]{"--user", Integer.toString(NON_SYSTEM_USER)};
+        Assert.assertThrows(
+                SecurityException.class,
+                () -> mService.dump(mFileDescriptorStub, mFakePrintWriter, args));
+
+        verify(mNonSystemUserBackupManagerService, never()).dump(any(), any(), any());
+    }
+
+    @Test
+    public void dump_forOneUser_callerHasInteractAcrossUsersFullPermission_dumpsSpecifiedUser() {
+        mockDumpPermissionsGranted(true);
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+
+        String[] args = new String[]{"--user", Integer.toString(UserHandle.USER_SYSTEM)};
+        mService.dump(mFileDescriptorStub, mFakePrintWriter, args);
+
+        verify(mSystemUserBackupManagerService).dump(any(), any(), any());
+    }
+
+    @Test
+    public void dump_users_callerHasInteractAcrossUsersFullPermission_dumpsUsers() {
+        mockDumpPermissionsGranted(true);
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+
+        String[] args = new String[]{"users"};
+        mService.dump(mFileDescriptorStub, mFakePrintWriter, args);
+
+        // Check that dump() invocations are not called on user's Backup service,
+        // as 'dumpsys backup users' only list users for whom Backup service is running.
+        verify(mSystemUserBackupManagerService, never()).dump(any(), any(), any());
+        verify(mNonSystemUserBackupManagerService, never()).dump(any(), any(), any());
+        assertThat(mFakePrintWriter.mPrintedSoFar)
+                .isEqualTo("Backup Manager is running for users: 0 1");
+    }
+
+    @Test
+    public void dump_allUsers_dumpsSystemUserFirst() {
+        mockDumpPermissionsGranted(true);
+        createBackupManagerServiceAndUnlockSystemUser();
+        mService.setBackupServiceActive(NON_SYSTEM_USER, true);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+
+        String[] args = new String[0];
+        mService.dump(mFileDescriptorStub, mFakePrintWriter, args);
+
+        InOrder inOrder =
+                inOrder(mSystemUserBackupManagerService, mNonSystemUserBackupManagerService);
+        inOrder.verify(mSystemUserBackupManagerService)
+                .dump(mFileDescriptorStub, mFakePrintWriter, args);
+        inOrder.verify(mNonSystemUserBackupManagerService)
+                .dump(mFileDescriptorStub, mFakePrintWriter, args);
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void testGetUserForAncestralSerialNumber_forSystemUser() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        when(mUserManagerInternalMock.getProfileIds(UserHandle.getCallingUserId(), false))
+                .thenReturn(new int[]{UserHandle.USER_SYSTEM, NON_SYSTEM_USER});
+        when(mSystemUserBackupManagerService.getAncestralSerialNumber()).thenReturn(11L);
+
+        UserHandle user = mService.getUserForAncestralSerialNumber(11L);
+
+        assertThat(user).isEqualTo(UserHandle.of(UserHandle.USER_SYSTEM));
+    }
+
+    @Test
+    public void testGetUserForAncestralSerialNumber_forNonSystemUser() {
+        setMockMainUserAndCreateBackupManagerService(NON_SYSTEM_USER);
+        simulateUserUnlocked(NON_SYSTEM_USER);
+        when(mUserManagerInternalMock.getProfileIds(UserHandle.getCallingUserId(), false))
+                .thenReturn(new int[]{UserHandle.USER_SYSTEM, NON_SYSTEM_USER});
+        when(mNonSystemUserBackupManagerService.getAncestralSerialNumber()).thenReturn(11L);
+
+        UserHandle user = mService.getUserForAncestralSerialNumber(11L);
+
+        assertThat(user).isEqualTo(UserHandle.of(NON_SYSTEM_USER));
+    }
+
+    @Test
+    public void testGetUserForAncestralSerialNumber_whenDisabled() {
+        createBackupManagerServiceAndUnlockSystemUser();
+        BackupManagerServiceTestable.sBackupDisabled = true;
+        BackupManagerService backupManagerService = new BackupManagerServiceTestable(mContextMock);
+        when(mSystemUserBackupManagerService.getAncestralSerialNumber()).thenReturn(11L);
+
+        UserHandle user = backupManagerService.getUserForAncestralSerialNumber(11L);
+
+        assertThat(user).isNull();
+    }
+
+    @Test
+    public void onUserUnlocking_mainUserChanged_firstUnlockAfterReboot_updatesDefaultUser() {
+        // Create BMS *before* setting a main user to simulate the main user being created after
+        // BMS, which can happen for the first ever boot of a new device.
+        mService = new BackupManagerServiceTestable(mContextMock);
+        createBackupServiceLifecycle(mContextMock, mService);
+        when(mUserManagerInternalMock.getMainUserId()).thenReturn(NON_SYSTEM_USER);
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isFalse();
+
+        mockHeadlessSystemUserMode(true);
+        simulateUserUnlocked(UserHandle.USER_SYSTEM);
+
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isTrue();
+    }
+
+    @Test
+    public void onUserUnlocking_mainUserChanged_firstUnlockAfterReboot_doesNotStartForSystemUser() {
+        // Create BMS *before* setting a main user to simulate the main user being created after
+        // BMS, which can happen for the first ever boot of a new device.
+        mService = new BackupManagerServiceTestable(mContextMock);
+        createBackupServiceLifecycle(mContextMock, mService);
+        when(mUserManagerInternalMock.getMainUserId()).thenReturn(NON_SYSTEM_USER);
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isFalse();
+
+        mockHeadlessSystemUserMode(true);
+        simulateUserUnlocked(UserHandle.USER_SYSTEM);
+
+        expect.that(mService.isUserReadyForBackup(UserHandle.USER_SYSTEM)).isFalse();
+    }
+
+    @Test
+    public void onUserUnlocking_mainUserChanged_secondUnlockAfterReboot_doesNotUpdateDefaultUser() {
+        // Create BMS *before* setting a main user to simulate the main user being created after
+        // BMS, which can happen for the first ever boot of a new device.
+        createBackupManagerServiceAndUnlockSystemUser();
+        when(mUserManagerInternalMock.getMainUserId()).thenReturn(NON_SYSTEM_USER);
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isFalse();
+
+        simulateUserUnlocked(NON_SYSTEM_USER);
+
+        expect.that(mService.isBackupServiceActive(NON_SYSTEM_USER)).isFalse();
+    }
+
+    private void createBackupManagerServiceAndUnlockSystemUser() {
+        // Assume non-headless mode for standard system user tests.
+        mockHeadlessSystemUserMode(false);
+
+        mService = new BackupManagerServiceTestable(mContextMock);
+        createBackupServiceLifecycle(mContextMock, mService);
+        simulateUserUnlocked(UserHandle.USER_SYSTEM);
+    }
+
+    /**
+     * The 'default' user is set in the constructor of {@link BackupManagerService} so we need to
+     * start a new service after mocking the 'main' user.
+     */
+    private void setMockMainUserAndCreateBackupManagerService(int userId) {
+        // Assume headless mode for tests involving a non-system main user explicitly.
+        mockHeadlessSystemUserMode(true);
+
+        when(mUserManagerInternalMock.getMainUserId()).thenReturn(userId);
+        mService = new BackupManagerServiceTestable(mContextMock);
+        createBackupServiceLifecycle(mContextMock, mService);
+    }
+
+    private void createBackupServiceLifecycle(Context context, BackupManagerService service) {
+        // Anytime we manually create the Lifecycle, we need to remove the internal BMS because
+        // it would've been added already at boot time and LocalServices does not allow
+        // overriding an existing service.
+        LocalServices.removeServiceForTest(BackupManagerInternal.class);
+        mServiceLifecycle = new BackupManagerService.Lifecycle(context, service);
+    }
+
+    private void simulateUserUnlocked(int userId) {
+        ConditionVariable unlocked = new ConditionVariable(false);
+        mServiceLifecycle.onUserUnlocking(
+                new SystemService.TargetUser(
+                        new UserInfo(userId, /* name= */ "test", /* flags= */ 0)));
+        mService.getBackupHandler().post(unlocked::open);
+        unlocked.block();
+        when(mUserManagerInternalMock.isUserUnlocked(userId)).thenReturn(true);
+    }
+
+    private static File getFakeSuppressFileForUser(int userId) {
+        return new File(sTestDir, "suppress-" + userId);
+    }
+
+    private static File getFakeActivatedFileForUser(int userId) {
+        return new File(sTestDir, "activated-" + userId);
+    }
+
+    private static File getFakeRememberActivatedFileForUser(int userId) {
+        return new File(sTestDir, "rememberActivated-" + userId);
+    }
+
+    private static void mockHeadlessSystemUserMode(boolean isHeadless) {
+        doReturn(isHeadless).when(UserManager::isHeadlessSystemUserMode);
+    }
+
+    private static void mockDumpPermissionsGranted(boolean granted) {
+        doReturn(granted)
+                .when(() -> DumpUtils.checkDumpAndUsageStatsPermission(any(), any(), any()));
+    }
+
+    private static class BackupManagerServiceTestable extends BackupManagerService {
+        static boolean sBackupDisabled = false;
+        static int sCallingUserId = -1;
+        static int sCallingUid = -1;
+
+        BackupManagerServiceTestable(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected boolean isBackupDisabled() {
+            return sBackupDisabled;
+        }
+
+        @Override
+        protected File getSuppressFileForUser(int userId) {
+            return getFakeSuppressFileForUser(userId);
+        }
+
+        @Override
+        protected File getRememberActivatedFileForNonSystemUser(int userId) {
+            return getFakeRememberActivatedFileForUser(userId);
+        }
+
+        @Override
+        protected File getActivatedFileForUser(int userId) {
+            return getFakeActivatedFileForUser(userId);
+        }
+
+        @Override
+        protected int binderGetCallingUserId() {
+            return sCallingUserId;
+        }
+
+        @Override
+        protected int binderGetCallingUid() {
+            return sCallingUid;
+        }
+
+        @Override
+        protected void postToHandler(Runnable runnable) {
+            runnable.run();
+        }
+    }
+
+    private static class FakePrintWriter extends PrintWriter {
+        String mPrintedSoFar = "";
+
+        FakePrintWriter() {
+            super(Writer.nullWriter());
+        }
+
+        @Override
+        public void print(String s) {
+            mPrintedSoFar = mPrintedSoFar + s;
+        }
+    }
+}

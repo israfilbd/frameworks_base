@@ -1,0 +1,28 @@
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+android_ravenwood_test {
+    name: "RavenwoodResApkTest",
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "android.content.res.flags-aconfig-java",
+        "configinfra_framework_flags_java_lib",
+    ],
+    srcs: [
+        "test/**/*.java",
+    ],
+    flags_packages: [
+        "com.android.internal.os.flags-aconfig",
+    ],
+    sdk_version: "test_current",
+    auto_gen_config: true,
+    build_resources: true,
+}

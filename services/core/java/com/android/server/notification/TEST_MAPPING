@@ -1,0 +1,23 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsNotificationTestCases_notification"
+    },
+    {
+      "name": "FrameworksUiServicesNotificationTests"
+    },
+    {
+      "name": "FrameworksUiServicesZenTests"
+    }
+  ],
+  "hsum-presubmit": [
+    {
+      "name": "FrameworksUiServicesNotificationTests"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsNotificationTestCases"
+    }
+  ]
+}

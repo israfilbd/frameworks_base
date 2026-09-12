@@ -1,0 +1,216 @@
+//
+// Copyright (C) 2020 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+package {
+    default_team: "trendy_team_multitasking_windowing",
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+filegroup {
+    name: "WMShellFlickerTestsSplitScreenBase-src",
+    srcs: [
+        "src/**/benchmark/*.kt",
+    ],
+}
+
+android_library {
+    name: "WMShellFlickerTestsSplitScreenBase",
+    srcs: [
+        ":WMShellFlickerTestsSplitScreenBase-src",
+    ],
+    static_libs: [
+        "WMShellFlickerTestsBase",
+        "wm-shell-flicker-utils",
+        "androidx.test.ext.junit",
+        "flickertestapplib",
+        "flickerlib",
+        "flickerlib-helpers",
+        "flickerlib-trace_processor_shell",
+        "platform-test-annotations",
+        "wm-flicker-common-app-helpers",
+        "wm-flicker-common-assertions",
+        "launcher-helper-lib",
+        "launcher-aosp-tapl",
+        "com_android_wm_shell_flags_lib",
+    ],
+}
+
+android_test {
+    name: "WMShellFlickerTestsSplitScreen",
+    defaults: ["WMShellFlickerTestsDefault"],
+    manifest: "AndroidManifest.xml",
+    package_name: "com.android.wm.shell.flicker.splitscreen",
+    instrumentation_target_package: "com.android.wm.shell.flicker.splitscreen",
+    test_config_template: "AndroidTestTemplate.xml",
+    srcs: ["src/**/*.kt"],
+    exclude_srcs: ["src/**/benchmark/*.kt"],
+    static_libs: [
+        "WMShellFlickerTestsBase",
+        "WMShellFlickerTestsSplitScreenBase",
+    ],
+    data: ["trace_config/*"],
+}
+
+// Auto generated section, don't update it manually
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-CatchAll",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    exclude_filters: [
+        "com.android.wm.shell.flicker.splitscreen.CopyContentInSplitTest",
+        "com.android.wm.shell.flicker.splitscreen.DismissSplitScreenByDividerTest",
+        "com.android.wm.shell.flicker.splitscreen.DismissSplitScreenByGoHomeTest",
+        "com.android.wm.shell.flicker.splitscreen.DragDividerToResizeTest",
+        "com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromAllAppsTest",
+        "com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromNotificationTest",
+        "com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromShortcutTest",
+        "com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromTaskbarTest",
+        "com.android.wm.shell.flicker.splitscreen.EnterSplitScreenFromOverviewTest",
+        "com.android.wm.shell.flicker.splitscreen.MultipleShowImeRequestsInSplitScreenTest",
+        "com.android.wm.shell.flicker.splitscreen.SwitchAppByDoubleTapDividerTest",
+        "com.android.wm.shell.flicker.splitscreen.SwitchBackToSplitFromAnotherAppTest",
+        "com.android.wm.shell.flicker.splitscreen.SwitchBackToSplitFromHomeTest",
+        "com.android.wm.shell.flicker.splitscreen.SwitchBackToSplitFromRecentTest",
+        "com.android.wm.shell.flicker.splitscreen.SwitchBetweenSplitPairsNoPipTest",
+        "com.android.wm.shell.flicker.splitscreen.SwitchBetweenSplitPairsTest",
+        "com.android.wm.shell.flicker.splitscreen.UnlockKeyguardToSplitScreenTest",
+    ],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-CopyContentInSplitTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.CopyContentInSplitTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-DismissSplitScreenByDividerTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.DismissSplitScreenByDividerTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-DismissSplitScreenByGoHomeTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.DismissSplitScreenByGoHomeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-DragDividerToResizeTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.DragDividerToResizeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-EnterSplitScreenByDragFromAllAppsTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromAllAppsTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-EnterSplitScreenByDragFromNotificationTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromNotificationTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-EnterSplitScreenByDragFromShortcutTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromShortcutTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-EnterSplitScreenByDragFromTaskbarTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.EnterSplitScreenByDragFromTaskbarTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-EnterSplitScreenFromOverviewTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.EnterSplitScreenFromOverviewTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-MultipleShowImeRequestsInSplitScreenTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.MultipleShowImeRequestsInSplitScreenTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-SwitchAppByDoubleTapDividerTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.SwitchAppByDoubleTapDividerTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-SwitchBackToSplitFromAnotherAppTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.SwitchBackToSplitFromAnotherAppTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-SwitchBackToSplitFromHomeTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.SwitchBackToSplitFromHomeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-SwitchBackToSplitFromRecentTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.SwitchBackToSplitFromRecentTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-SwitchBetweenSplitPairsNoPipTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.SwitchBetweenSplitPairsNoPipTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-SwitchBetweenSplitPairsTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.SwitchBetweenSplitPairsTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsSplitScreen-UnlockKeyguardToSplitScreenTest",
+    base: "WMShellFlickerTestsSplitScreen",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.splitscreen.UnlockKeyguardToSplitScreenTest"],
+}

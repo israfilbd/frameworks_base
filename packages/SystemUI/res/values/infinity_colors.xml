@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+-->
+<resources>
+
+    <!-- Statusbar clock chip colors -->
+    <color name="rippleDark">#14000000</color>
+    <color name="neumorph_outline_start">#FFBDBDBD</color>
+    <color name="neumorph_outline_end">#FFF0F0F0</color>
+
+    <!-- Notification counter -->
+    <color name="notification_number_text_color">#ff000000</color>
+
+    <!-- Smartspace -->
+    <color name="ambient_text_shadow_color">#40000000</color>
+    <color name="key_text_shadow_color">#89000000</color>
+    <color name="smartspace_button_background">@android:color/system_accent2_200</color>
+    <color name="smartspace_button_text">@android:color/system_accent2_700</color>
+
+    <color name="island_title_color">@android:color/system_neutral1_800</color>
+</resources>

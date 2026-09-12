@@ -1,0 +1,496 @@
+/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.devicepolicy;
+
+import static android.content.pm.PackageManager.MATCH_DIRECT_BOOT_AWARE;
+import static android.content.pm.PackageManager.MATCH_DIRECT_BOOT_UNAWARE;
+
+import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.annotation.UserIdInt;
+import android.app.AppGlobals;
+import android.app.AppOpsManager;
+import android.app.admin.DevicePolicyCache;
+import android.app.admin.DevicePolicyManager;
+import android.app.admin.DevicePolicyManagerInternal;
+import android.app.admin.IntentFilterPolicyKey;
+import android.app.admin.LockTaskPolicy;
+import android.app.admin.PackagePermissionPolicyKey;
+import android.app.admin.PackagePolicyKey;
+import android.app.admin.PolicyKey;
+import android.app.admin.UserRestrictionPolicyKey;
+import android.app.admin.flags.Flags;
+import android.app.usage.UsageStatsManagerInternal;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.IPackageManager;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManagerInternal;
+import android.os.Binder;
+import android.os.Bundle;
+import android.os.Process;
+import android.os.RemoteException;
+import android.os.ServiceManager;
+import android.os.SystemProperties;
+import android.os.UserHandle;
+import android.permission.AdminPermissionControlParams;
+import android.permission.PermissionControllerManager;
+import android.provider.Settings;
+import android.util.ArraySet;
+import android.util.Slog;
+import android.view.IWindowManager;
+
+import com.android.internal.infra.AndroidFuture;
+import com.android.internal.os.BackgroundThread;
+import com.android.internal.util.ArrayUtils;
+import com.android.server.LocalServices;
+import com.android.server.pm.UserManagerInternal;
+import com.android.server.utils.Slogf;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+final class PolicyEnforcerCallbacks {
+
+    private static final String LOG_TAG = "PolicyEnforcerCallbacks";
+
+    static <T> CompletableFuture<Boolean> noOp(T value, Context context, Integer userId,
+            PolicyKey policyKey) {
+        return AndroidFuture.completedFuture(true);
+    }
+
+    static CompletableFuture<Boolean> setAutoTimeZonePolicy(
+            @Nullable Integer policy, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        if (!Flags.setAutoTimeZoneEnabledCoexistence()) {
+            Slogf.w(LOG_TAG, "Trying to enforce setAutoTimeZonePolicy while flag is off.");
+            return AndroidFuture.completedFuture(true);
+        }
+        return Binder.withCleanCallingIdentity(() -> {
+            Objects.requireNonNull(context);
+            if (policy != null &&
+                    policy == DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY) {
+                return AndroidFuture.completedFuture(false);
+            }
+            int enabled = policy != null &&
+                    policy == DevicePolicyManager.AUTO_TIME_ZONE_ENABLED ? 1 : 0;
+            return AndroidFuture.completedFuture(Settings.Global.putInt(
+                    context.getContentResolver(), Settings.Global.AUTO_TIME_ZONE,
+                    enabled));
+        });
+    }
+
+    static CompletableFuture<Boolean> setPermissionGrantState(
+            @Nullable Integer grantState, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        if (!Flags.setPermissionGrantStateCoexistence()) {
+            Slogf.w(LOG_TAG, "Trying to enforce setPermissionGrantState while flag is off.");
+            return AndroidFuture.completedFuture(true);
+        }
+        return Binder.withCleanCallingIdentity(() -> {
+            if (!(policyKey instanceof PackagePermissionPolicyKey)) {
+                throw new IllegalArgumentException("policyKey is not of type "
+                        + "PermissionGrantStatePolicyKey, passed in policyKey is: " + policyKey);
+            }
+            PackagePermissionPolicyKey parsedKey = (PackagePermissionPolicyKey) policyKey;
+            Objects.requireNonNull(parsedKey.getPermissionName());
+            Objects.requireNonNull(parsedKey.getPackageName());
+            Objects.requireNonNull(context);
+
+            int value = grantState == null
+                    ? DevicePolicyManager.PERMISSION_GRANT_STATE_DEFAULT
+                    : grantState;
+
+            // TODO: remove canAdminGrantSensorPermissions once we expose a new method in
+            //  permissionController that doesn't need it.
+            AdminPermissionControlParams permissionParams = new AdminPermissionControlParams(
+                    parsedKey.getPackageName(), parsedKey.getPermissionName(), value,
+                    /* canAdminGrantSensorPermissions= */ true);
+
+            CompletableFuture<Boolean> enforcementFuture = new AndroidFuture<>();
+
+            getPermissionControllerManager(context, UserHandle.of(userId))
+                    // TODO: remove callingPackage param and stop passing context.getPackageName()
+                    .setRuntimePermissionGrantStateByDeviceAdmin(context.getPackageName(),
+                            permissionParams, context.getMainExecutor(),
+                            enforcementFuture::complete);
+
+            return enforcementFuture;
+        });
+    }
+
+    @NonNull
+    private static PermissionControllerManager getPermissionControllerManager(
+            Context context, UserHandle user) {
+        if (user.equals(context.getUser())) {
+            return context.getSystemService(PermissionControllerManager.class);
+        } else {
+            try {
+                return context.createPackageContextAsUser(context.getPackageName(), /* flags= */ 0,
+                        user).getSystemService(PermissionControllerManager.class);
+            } catch (PackageManager.NameNotFoundException notPossible) {
+                // not possible
+                throw new IllegalStateException(notPossible);
+            }
+        }
+    }
+
+    static CompletableFuture<Boolean> enforceSecurityLogging(
+            @Nullable Boolean value, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        final var dpmi = LocalServices.getService(DevicePolicyManagerInternal.class);
+        dpmi.enforceSecurityLoggingPolicy(Boolean.TRUE.equals(value));
+        return AndroidFuture.completedFuture(true);
+    }
+
+    static CompletableFuture<Boolean> enforceAuditLogging(
+            @Nullable Boolean value, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        final var dpmi = LocalServices.getService(DevicePolicyManagerInternal.class);
+        dpmi.enforceAuditLoggingPolicy(Boolean.TRUE.equals(value));
+        return AndroidFuture.completedFuture(true);
+    }
+
+    static CompletableFuture<Boolean> setLockTask(
+            @Nullable LockTaskPolicy policy, @NonNull Context context, int userId) {
+        List<String> packages = Collections.emptyList();
+        int flags = LockTaskPolicy.DEFAULT_LOCK_TASK_FLAG;
+        if (policy != null) {
+            packages = List.copyOf(policy.getPackages());
+            flags = policy.getFlags();
+        }
+        DevicePolicyManagerService.updateLockTaskPackagesLocked(context, packages, userId);
+        DevicePolicyManagerService.updateLockTaskFeaturesLocked(flags, userId);
+        return AndroidFuture.completedFuture(true);
+    }
+
+
+    /**
+     * Application restrictions are stored and retrieved from DPMS, so no enforcing (aka pushing
+     * it to UMS) is required. Only need to send broadcast to the target user here as we rely on
+     * the inheritable policy propagation logic in PolicyEngine to apply this policy to multiple
+     * profiles. The broadcast should only be sent when an application restriction is set, so we
+     * rely on the POLICY_FLAG_SKIP_ENFORCEMENT_IF_UNCHANGED flag so DPE only invokes this callback
+     * when the policy is set, and not during system boot or other situations.
+     */
+    static CompletableFuture<Boolean> setApplicationRestrictions(Bundle bundle, Context context,
+            Integer userId, PolicyKey policyKey) {
+        Binder.withCleanCallingIdentity(() -> {
+            PackagePolicyKey key = (PackagePolicyKey) policyKey;
+            String packageName = key.getPackageName();
+            Objects.requireNonNull(packageName);
+            Intent changeIntent = new Intent(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED);
+            changeIntent.setPackage(packageName);
+            changeIntent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
+            context.sendBroadcastAsUser(changeIntent, UserHandle.of(userId));
+        });
+        return AndroidFuture.completedFuture(true);
+    }
+
+    public static CompletableFuture<Boolean> setAutoTimePolicy(
+            Integer policy, Context context, Integer userId, PolicyKey policyKey) {
+        if (!Flags.setAutoTimeEnabledCoexistence()) {
+            Slogf.w(LOG_TAG, "Trying to enforce setAutoTimePolicy while flag is off.");
+            return AndroidFuture.completedFuture(true);
+        }
+        return Binder.withCleanCallingIdentity(() -> {
+            Objects.requireNonNull(context);
+            if (policy != null
+                    && policy == DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY) {
+                return AndroidFuture.completedFuture(false);
+            }
+            int enabled = policy != null && policy == DevicePolicyManager.AUTO_TIME_ENABLED ? 1 : 0;
+            return AndroidFuture.completedFuture(
+                    Settings.Global.putInt(
+                            context.getContentResolver(), Settings.Global.AUTO_TIME,  enabled));
+        });
+    }
+
+    public static CompletableFuture<Boolean> setCrossProfileWidgetProviderPolicy(
+            Set<String> policy, Context context, Integer userId, PolicyKey policyKey) {
+        if (!Flags.crossProfileWidgetProviderBulkApis()) {
+            Slogf.w(
+                    LOG_TAG,
+                    "Call setCrossProfileWidgetProviderPolicy while flag is off");
+            return AndroidFuture.completedFuture(true);
+        }
+        final var devicePolicyManagerInternal =
+                LocalServices.getService(DevicePolicyManagerInternal.class);
+        if (policy == null) {
+            policy = Collections.emptySet();
+        }
+        devicePolicyManagerInternal.notifyCrossProfileProvidersChanged(userId, List.copyOf(policy));
+        return AndroidFuture.completedFuture(true);
+    }
+
+    // TODO: when a local policy exists for a user, this callback will be invoked for this user
+    // individually as well as for USER_ALL. This can be optimized by separating local and global
+    // enforcement in the policy engine.
+    static CompletableFuture<Boolean> setUserControlDisabledPackages(
+            @Nullable Set<String> packages, Context context, int userId, PolicyKey policyKey) {
+        Binder.withCleanCallingIdentity(() -> {
+            PackageManagerInternal pmi =
+                    LocalServices.getService(PackageManagerInternal.class);
+            AppOpsManager appOpsManager = context.getSystemService(AppOpsManager.class);
+
+            pmi.setOwnerProtectedPackages(userId,
+                    packages == null ? null : packages.stream().toList());
+            LocalServices.getService(UsageStatsManagerInternal.class)
+                    .setAdminProtectedPackages(
+                            packages == null ? null : new ArraySet<>(packages), userId);
+
+            if (packages == null || packages.isEmpty()) {
+                return;
+            }
+
+            for (int user : resolveUsers(userId)) {
+                setBgUsageAppOp(packages, pmi, user, appOpsManager);
+                if (Flags.disallowUserControlStoppedStateFix()) {
+                    for (String packageName : packages) {
+                        pmi.setPackageStoppedState(packageName, false, user);
+                    }
+                }
+            }
+        });
+        return AndroidFuture.completedFuture(true);
+    }
+
+    /** Handles USER_ALL expanding it into the list of all intact users. */
+    private static List<Integer> resolveUsers(int userId) {
+        if (userId == UserHandle.USER_ALL) {
+            UserManagerInternal userManager = LocalServices.getService(UserManagerInternal.class);
+            return userManager.getUsers(/* excludeDying= */ true)
+                    .stream().map(ui -> ui.id).toList();
+        } else {
+            return List.of(userId);
+        }
+    }
+
+    private static void setBgUsageAppOp(Set<String> packages, PackageManagerInternal pmi,
+            int userId, AppOpsManager appOpsManager) {
+        for (var pkg : packages) {
+            int packageFlags = MATCH_DIRECT_BOOT_AWARE | MATCH_DIRECT_BOOT_UNAWARE;
+            final var appInfo = pmi.getApplicationInfo(pkg, packageFlags, Process.myUid(), userId);
+            if (appInfo != null) {
+                DevicePolicyManagerService.setBgUsageAppOp(appOpsManager, appInfo);
+            }
+        }
+    }
+
+    static CompletableFuture<Boolean> addPersistentPreferredActivity(
+            @Nullable ComponentName preferredActivity, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        Binder.withCleanCallingIdentity(() -> {
+            try {
+                if (!(policyKey instanceof IntentFilterPolicyKey)) {
+                    throw new IllegalArgumentException("policyKey is not of type "
+                            + "IntentFilterPolicyKey, passed in policyKey is: " + policyKey);
+                }
+                IntentFilterPolicyKey parsedKey =
+                        (IntentFilterPolicyKey) policyKey;
+                IntentFilter filter = Objects.requireNonNull(parsedKey.getIntentFilter());
+
+                IPackageManager packageManager = AppGlobals.getPackageManager();
+                if (preferredActivity != null) {
+                    packageManager.addPersistentPreferredActivity(
+                            filter, preferredActivity, userId);
+                } else {
+                    packageManager.clearPersistentPreferredActivity(filter, userId);
+                }
+                packageManager.flushPackageRestrictionsAsUser(userId);
+            } catch (RemoteException re) {
+                // Shouldn't happen
+                Slog.wtf(LOG_TAG, "Error adding/removing persistent preferred activity", re);
+            }
+        });
+        return AndroidFuture.completedFuture(true);
+    }
+
+    static CompletableFuture<Boolean> setUninstallBlocked(
+            @Nullable Boolean uninstallBlocked, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        return Binder.withCleanCallingIdentity(() -> {
+            if (!(policyKey instanceof PackagePolicyKey)) {
+                throw new IllegalArgumentException("policyKey is not of type "
+                        + "PackagePolicyKey, passed in policyKey is: " + policyKey);
+            }
+            PackagePolicyKey parsedKey = (PackagePolicyKey) policyKey;
+            String packageName = Objects.requireNonNull(parsedKey.getPackageName());
+            DevicePolicyManagerService.setUninstallBlockedUnchecked(
+                    packageName,
+                    uninstallBlocked != null && uninstallBlocked,
+                    userId);
+            return AndroidFuture.completedFuture(true);
+        });
+    }
+
+    static CompletableFuture<Boolean> setUserRestriction(
+            @Nullable Boolean enabled, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        return Binder.withCleanCallingIdentity(() -> {
+            if (!(policyKey instanceof UserRestrictionPolicyKey)) {
+                throw new IllegalArgumentException("policyKey is not of type "
+                        + "UserRestrictionPolicyKey, passed in policyKey is: " + policyKey);
+            }
+            UserRestrictionPolicyKey parsedKey =
+                    (UserRestrictionPolicyKey) policyKey;
+            UserManagerInternal userManager = LocalServices.getService(UserManagerInternal.class);
+            userManager.setUserRestriction(
+                    userId, parsedKey.getRestriction(), enabled != null && enabled);
+            return AndroidFuture.completedFuture(true);
+        });
+    }
+
+    static CompletableFuture<Boolean> setApplicationHidden(
+            @Nullable Boolean hide, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        return Binder.withCleanCallingIdentity(() -> {
+            if (!(policyKey instanceof PackagePolicyKey)) {
+                throw new IllegalArgumentException("policyKey is not of type "
+                        + "PackagePolicyKey, passed in policyKey is: " + policyKey);
+            }
+            PackagePolicyKey parsedKey = (PackagePolicyKey) policyKey;
+            String packageName = Objects.requireNonNull(parsedKey.getPackageName());
+            IPackageManager packageManager = AppGlobals.getPackageManager();
+            return AndroidFuture.completedFuture(
+                    packageManager.setApplicationHiddenSettingAsUser(
+                            packageName, hide != null && hide, userId));
+        });
+    }
+
+    static CompletableFuture<Boolean> setScreenCaptureDisabled(
+            @Nullable Boolean disabled, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        Binder.withCleanCallingIdentity(() -> {
+            DevicePolicyCache cache = DevicePolicyCache.getInstance();
+            if (cache instanceof DevicePolicyCacheImpl) {
+                DevicePolicyCacheImpl parsedCache = (DevicePolicyCacheImpl) cache;
+                parsedCache.setScreenCaptureDisallowedUser(
+                        userId, disabled != null && disabled);
+                updateScreenCaptureDisabled();
+            }
+        });
+        return AndroidFuture.completedFuture(true);
+    }
+
+    static CompletableFuture<Boolean> setContentProtectionPolicy(
+            @Nullable Integer value,
+            @NonNull Context context,
+            @UserIdInt Integer userId,
+            @NonNull PolicyKey policyKey) {
+        Binder.withCleanCallingIdentity(
+                () -> {
+                    DevicePolicyCache cache = DevicePolicyCache.getInstance();
+                    if (cache instanceof DevicePolicyCacheImpl cacheImpl) {
+                        cacheImpl.setContentProtectionPolicy(userId, value);
+                    }
+                });
+        return AndroidFuture.completedFuture(true);
+    }
+
+    private static void updateScreenCaptureDisabled() {
+        BackgroundThread.getHandler().post(() -> {
+            try {
+                IWindowManager.Stub
+                        .asInterface(ServiceManager.getService(Context.WINDOW_SERVICE))
+                        .refreshScreenCaptureDisabled();
+            } catch (RemoteException e) {
+                Slogf.w(LOG_TAG, "Unable to notify WindowManager.", e);
+            }
+        });
+    }
+
+    static CompletableFuture<Boolean> setPersonalAppsSuspended(
+            @Nullable Boolean suspended, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        Binder.withCleanCallingIdentity(() -> {
+            if (suspended != null && suspended) {
+                suspendPersonalAppsInPackageManager(context, userId);
+            } else {
+                LocalServices.getService(PackageManagerInternal.class)
+                        .unsuspendAdminSuspendedPackages(userId);
+            }
+        });
+        return AndroidFuture.completedFuture(true);
+    }
+
+    private static void suspendPersonalAppsInPackageManager(Context context, int userId) {
+        final String[] appsToSuspend = PersonalAppsSuspensionHelper.forUser(context, userId)
+                .getPersonalAppsForSuspension();
+        Slogf.i(LOG_TAG, "Suspending personal apps: %s", String.join(",", appsToSuspend));
+        final String[] failedApps = LocalServices.getService(PackageManagerInternal.class)
+                .setPackagesSuspendedByAdmin(userId, appsToSuspend, true);
+        if (!ArrayUtils.isEmpty(failedApps)) {
+            Slogf.wtf(LOG_TAG, "Failed to suspend apps: " + String.join(",", failedApps));
+        }
+    }
+
+    static CompletableFuture<Boolean> setUsbDataSignalingEnabled(@Nullable Boolean value,
+            @NonNull Context context) {
+        return Binder.withCleanCallingIdentity(() -> {
+            Objects.requireNonNull(context);
+
+            boolean enabled = value == null || value;
+            DevicePolicyManagerService.updateUsbDataSignal(context, enabled);
+            return AndroidFuture.completedFuture(true);
+        });
+    }
+
+    static CompletableFuture<Boolean> setMtePolicy(
+            @Nullable Integer mtePolicy, @NonNull Context context, int userId,
+            @NonNull PolicyKey policyKey) {
+        if (mtePolicy == null) {
+            mtePolicy = DevicePolicyManager.MTE_NOT_CONTROLLED_BY_POLICY;
+        }
+        final Set<Integer> allowedModes =
+                Set.of(
+                        DevicePolicyManager.MTE_NOT_CONTROLLED_BY_POLICY,
+                        DevicePolicyManager.MTE_DISABLED,
+                        DevicePolicyManager.MTE_ENABLED);
+        if (!allowedModes.contains(mtePolicy)) {
+            Slog.wtf(LOG_TAG, "MTE policy is not a known one: " + mtePolicy);
+            return AndroidFuture.completedFuture(false);
+        }
+
+        final String mteDpmSystemProperty =
+                "ro.arm64.memtag.bootctl_device_policy_manager";
+        final String mteSettingsSystemProperty =
+                "ro.arm64.memtag.bootctl_settings_toggle";
+        final String mteControlProperty = "arm64.memtag.bootctl";
+
+        final boolean isAvailable = SystemProperties.getBoolean(mteDpmSystemProperty,
+                SystemProperties.getBoolean(mteSettingsSystemProperty, false));
+        if (!isAvailable) {
+            return AndroidFuture.completedFuture(false);
+        }
+
+        if (mtePolicy == DevicePolicyManager.MTE_ENABLED) {
+            SystemProperties.set(mteControlProperty, "memtag");
+        } else if (mtePolicy == DevicePolicyManager.MTE_DISABLED) {
+            SystemProperties.set(mteControlProperty, "memtag-off");
+        } else if (mtePolicy == DevicePolicyManager.MTE_NOT_CONTROLLED_BY_POLICY) {
+            SystemProperties.set(mteControlProperty, "default");
+        }
+
+        return AndroidFuture.completedFuture(true);
+    }
+}

@@ -1,0 +1,7 @@
+{
+  "presubmit": [
+    {
+      "name": "RollbackPackageHealthObserverTests_server_rollback"
+    }
+  ]
+}

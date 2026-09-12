@@ -1,0 +1,236 @@
+/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.qs.footer
+
+import android.app.admin.DevicePolicyManager
+import android.app.role.RoleManager
+import android.app.supervision.SupervisionManager
+import android.content.Context
+import android.os.Handler
+import android.os.UserManager
+import android.provider.Settings
+import android.testing.TestableLooper
+import com.android.internal.logging.MetricsLogger
+import com.android.internal.logging.UiEventLogger
+import com.android.internal.logging.testing.FakeMetricsLogger
+import com.android.internal.logging.testing.UiEventLoggerFake
+import com.android.systemui.broadcast.BroadcastDispatcher
+import com.android.systemui.classifier.FalsingManagerFake
+import com.android.systemui.dagger.qualifiers.Application
+import com.android.systemui.globalactions.GlobalActionsDialogLite
+import com.android.systemui.plugins.ActivityStarter
+import com.android.systemui.plugins.FalsingManager
+import com.android.systemui.qs.FakeFgsManagerController
+import com.android.systemui.qs.FgsManagerController
+import com.android.systemui.qs.QSSecurityFooterUtils
+import com.android.systemui.qs.footer.data.repository.ForegroundServicesRepository
+import com.android.systemui.qs.footer.data.repository.ForegroundServicesRepositoryImpl
+import com.android.systemui.qs.footer.domain.interactor.FooterActionsInteractor
+import com.android.systemui.qs.footer.domain.interactor.FooterActionsInteractorImpl
+import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsViewModel
+import com.android.systemui.qs.footer.ui.viewmodel.createFooterActionsViewModel
+import com.android.systemui.qs.panels.data.repository.ToggleTextFeedbackRepository
+import com.android.systemui.qs.panels.domain.interactor.TextFeedbackInteractor
+import com.android.systemui.qs.pipeline.data.repository.FakeInstalledTilesComponentRepository
+import com.android.systemui.qs.pipeline.data.repository.InstalledTilesComponentRepository
+import com.android.systemui.qs.tiles.base.shared.model.FakeQSTileConfigProvider
+import com.android.systemui.qs.tiles.base.shared.model.QSTileConfigProvider
+import com.android.systemui.security.data.repository.SecurityRepository
+import com.android.systemui.security.data.repository.SecurityRepositoryImpl
+import com.android.systemui.settings.FakeUserTracker
+import com.android.systemui.settings.UserTracker
+import com.android.systemui.statusbar.policy.DeviceProvisionedController
+import com.android.systemui.statusbar.policy.FakeSecurityController
+import com.android.systemui.statusbar.policy.FakeUserInfoController
+import com.android.systemui.statusbar.policy.KeyguardStateController
+import com.android.systemui.statusbar.policy.SecurityController
+import com.android.systemui.statusbar.policy.UserInfoController
+import com.android.systemui.statusbar.policy.UserSwitcherController
+import com.android.systemui.supervision.data.repository.SupervisionRepository
+import com.android.systemui.supervision.data.repository.SupervisionRepositoryImpl
+import com.android.systemui.user.data.repository.FakeUserRepository
+import com.android.systemui.user.data.repository.UserRepository
+import com.android.systemui.user.data.repository.UserSwitcherRepository
+import com.android.systemui.user.data.repository.UserSwitcherRepositoryImpl
+import com.android.systemui.user.domain.interactor.HeadlessSystemUserMode
+import com.android.systemui.user.domain.interactor.SelectedUserInteractor
+import com.android.systemui.user.domain.interactor.UserSwitcherInteractor
+import com.android.systemui.util.settings.FakeGlobalSettings
+import com.android.systemui.util.settings.GlobalSettings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import org.mockito.kotlin.mock
+
+/**
+ * Util class to create real implementations of the FooterActions repositories, viewModel and
+ * interactor to be used in tests.
+ */
+class FooterActionsTestUtils(
+    private val context: Context,
+    private val testableLooper: TestableLooper,
+    private val scheduler: TestCoroutineScheduler,
+) {
+    private val mockActivityStarter: ActivityStarter = mock()
+
+    /** Enable or disable the user switcher in the settings. */
+    fun setUserSwitcherEnabled(settings: GlobalSettings, enabled: Boolean) {
+        settings.putBool(Settings.Global.USER_SWITCHER_ENABLED, enabled)
+
+        // The settings listener is processing messages on the bgHandler (usually backed by a
+        // testableLooper in tests), so let's make sure we process the callback before continuing.
+        testableLooper.processAllMessages()
+    }
+
+    /** Create a [FooterActionsViewModel] to be used in tests. */
+    fun footerActionsViewModel(
+        @Application context: Context = this.context.applicationContext,
+        footerActionsInteractor: FooterActionsInteractor = footerActionsInteractor(),
+        textFeedbackInteractor: TextFeedbackInteractor = textFeedbackInteractor(),
+        falsingManager: FalsingManager = FalsingManagerFake(),
+        globalActionsDialogLite: GlobalActionsDialogLite = mock(),
+        showPowerButton: Boolean = true,
+        selectedUserInteractor: SelectedUserInteractor = mock(),
+        hsum: HeadlessSystemUserMode = mock(),
+    ): FooterActionsViewModel {
+        return createFooterActionsViewModel(
+            context,
+            footerActionsInteractor,
+            textFeedbackInteractor,
+            falsingManager,
+            globalActionsDialogLite,
+            mockActivityStarter,
+            showPowerButton,
+            selectedUserInteractor,
+            hsum,
+        )
+    }
+
+    /** Create a [FooterActionsInteractor] to be used in tests. */
+    fun footerActionsInteractor(
+        activityStarter: ActivityStarter = mockActivityStarter,
+        metricsLogger: MetricsLogger = FakeMetricsLogger(),
+        uiEventLogger: UiEventLogger = UiEventLoggerFake(),
+        deviceProvisionedController: DeviceProvisionedController = mock(),
+        keyguardStateController: KeyguardStateController = mock(),
+        qsSecurityFooterUtils: QSSecurityFooterUtils = mock(),
+        fgsManagerController: FgsManagerController = mock(),
+        userSwitcherInteractor: UserSwitcherInteractor = mock(),
+        securityRepository: SecurityRepository = securityRepository(),
+        foregroundServicesRepository: ForegroundServicesRepository = foregroundServicesRepository(),
+        userSwitcherRepository: UserSwitcherRepository = userSwitcherRepository(),
+        broadcastDispatcher: BroadcastDispatcher = mock(),
+        bgDispatcher: CoroutineDispatcher = StandardTestDispatcher(scheduler),
+        context: Context = mock(),
+        supervisionRepository: SupervisionRepository = supervisionRepository(),
+    ): FooterActionsInteractor {
+        return FooterActionsInteractorImpl(
+            activityStarter,
+            metricsLogger,
+            uiEventLogger,
+            deviceProvisionedController,
+            keyguardStateController,
+            qsSecurityFooterUtils,
+            fgsManagerController,
+            userSwitcherInteractor,
+            securityRepository,
+            supervisionRepository,
+            foregroundServicesRepository,
+            userSwitcherRepository,
+            broadcastDispatcher,
+            bgDispatcher,
+            context,
+        )
+    }
+
+    /** Create a [SecurityRepository] to be used in tests. */
+    fun securityRepository(
+        securityController: SecurityController = FakeSecurityController(),
+        bgDispatcher: CoroutineDispatcher = StandardTestDispatcher(scheduler),
+    ): SecurityRepository {
+        return SecurityRepositoryImpl(securityController, bgDispatcher)
+    }
+
+    /** Create a [SecurityRepository] to be used in tests. */
+    fun foregroundServicesRepository(
+        fgsManagerController: FakeFgsManagerController = FakeFgsManagerController()
+    ): ForegroundServicesRepository {
+        return ForegroundServicesRepositoryImpl(fgsManagerController)
+    }
+
+    /** Create a [UserSwitcherRepository] to be used in tests. */
+    fun userSwitcherRepository(
+        @Application context: Context = this.context.applicationContext,
+        bgHandler: Handler = Handler(testableLooper.looper),
+        bgDispatcher: CoroutineDispatcher = StandardTestDispatcher(scheduler),
+        userManager: UserManager = mock(),
+        userRepository: UserRepository = FakeUserRepository(),
+        userSwitcherController: UserSwitcherController = mock(),
+        userInfoController: UserInfoController = FakeUserInfoController(),
+        settings: GlobalSettings = FakeGlobalSettings(),
+    ): UserSwitcherRepository {
+        return UserSwitcherRepositoryImpl(
+            context,
+            bgHandler,
+            bgDispatcher,
+            userManager,
+            userSwitcherController,
+            userInfoController,
+            settings,
+            userRepository,
+        )
+    }
+
+    /** Create a [SupervisionRepository] to be used in tests. */
+    private fun supervisionRepository(
+        roleManager: RoleManager = mock(),
+        supervisionManager: SupervisionManager = mock(),
+        devicePolicyManager: DevicePolicyManager = mock(),
+        userRepository: UserRepository = FakeUserRepository(),
+        @Application context: Context = this.context.applicationContext,
+        bgDispatcher: CoroutineDispatcher = StandardTestDispatcher(scheduler),
+    ): SupervisionRepository =
+        SupervisionRepositoryImpl(
+            { supervisionManager },
+            userRepository,
+            roleManager,
+            devicePolicyManager,
+            context,
+            bgDispatcher,
+        )
+
+    private fun toggleTextFeedbackRepository(): ToggleTextFeedbackRepository {
+        return ToggleTextFeedbackRepository()
+    }
+
+    fun textFeedbackInteractor(
+        toggleTextFeedbackRepository: ToggleTextFeedbackRepository = toggleTextFeedbackRepository(),
+        qsTileConfigProvider: QSTileConfigProvider = FakeQSTileConfigProvider(),
+        installedTilesComponentRepository: InstalledTilesComponentRepository =
+            FakeInstalledTilesComponentRepository(),
+        userTracker: UserTracker = FakeUserTracker(),
+        bgDispatcher: CoroutineDispatcher = StandardTestDispatcher(scheduler),
+    ): TextFeedbackInteractor {
+        return TextFeedbackInteractor(
+            toggleTextFeedbackRepository,
+            qsTileConfigProvider,
+            installedTilesComponentRepository,
+            userTracker,
+            bgDispatcher,
+        )
+    }
+}

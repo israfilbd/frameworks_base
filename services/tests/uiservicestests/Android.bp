@@ -1,0 +1,163 @@
+//########################################################################
+// Build FrameworksUiServicesTests package
+//########################################################################
+
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+java_defaults {
+    name: "FrameworksUiServicesTests-defaults",
+
+    static_libs: [
+        "compatibility-device-util-axt-minus-dexmaker",
+        "frameworks-base-testutils",
+        "services.accessibility",
+        "services.core",
+        "services.devicepolicy",
+        "services.net",
+        "services.usage",
+        "service-permission.stubs.system_server",
+        "guava",
+        "androidx.test.rules",
+        "hamcrest-library",
+        "mockito-target-inline-minus-junit4",
+        "mockito-target-extended",
+        "platform-compat-test-rules",
+        "platform-test-annotations",
+        "platformprotosnano",
+        "statsdprotolite",
+        "StatsdTestUtils",
+        "hamcrest-library",
+        "servicestests-utils",
+        "testables",
+        "truth",
+        "TestParameterInjector",
+        // TODO: remove once Android migrates to JUnit 4.12,
+        // which provides assertThrows
+        "testng",
+        "flag-junit",
+        "notification_flags_lib",
+        "platform-test-rules",
+        "SettingsLib",
+        "libprotobuf-java-lite",
+        "platformprotoslite",
+        "platform-parametric-runner-lib",
+    ],
+
+    libs: [
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
+    ],
+
+    dxflags: ["--multi-dex"],
+
+    platform_apis: true,
+
+    test_suites: [
+        "device-tests",
+        "automotive-tests",
+    ],
+
+    certificate: "platform",
+
+    compile_multilib: "both",
+
+    // These are not normally accessible from apps so they must be explicitly included.
+    jni_libs: [
+        "libdexmakerjvmtiagent",
+        "libmultiplejvmtiagentsinterferenceagent",
+        "libbase",
+        "libbinder",
+        "libc++",
+        "libcutils",
+        "liblog",
+        "liblzma",
+        "libnativehelper",
+        "libui",
+        "libunwindstack",
+        "libutils",
+        "netd_aidl_interface-V5-cpp",
+    ],
+
+    // Required for TestParameterInjector
+    javacflags: ["-parameters"],
+}
+
+// Utility files used by multiple tests
+filegroup {
+    name: "shared-srcs",
+    srcs: [
+        "src/android/app/ExampleActivity.java",
+        "src/android/app/ExampleConditionProviderService.java",
+        "src/android/app/NotificationSystemUtil.java",
+        "src/com/android/frameworks/tests/uiservices/DummyProvider.java",
+        "src/com/android/internal/logging/InstanceIdSequenceFake.java",
+        "src/com/android/server/UiServiceTestCase.java",
+        "src/com/android/server/notification/ZenChangeOrigin.java",
+        "src/com/android/server/notification/ZenModeEventLoggerFake.java",
+    ],
+    visibility: ["//visibility:private"],
+}
+
+filegroup {
+    name: "notification-srcs",
+    srcs: [
+        "src/**/Notification*.java",
+        "src/com/android/server/notification/*.java",
+    ],
+    visibility: ["//visibility:private"],
+}
+
+filegroup {
+    name: "notification-zen-srcs",
+    srcs: [
+        "src/android/app/NotificationManagerZenTest.java",
+        "src/com/android/server/notification/Zen*Test.java",
+    ],
+    visibility: ["//visibility:private"],
+}
+
+android_test {
+    name: "FrameworksUiServicesTests",
+
+    // Include test java files but not the notification & zen ones which are separated
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+
+    exclude_srcs: [
+        ":notification-srcs",
+        ":notification-zen-srcs",
+    ],
+
+    defaults: ["FrameworksUiServicesTests-defaults"],
+}
+
+android_test {
+    name: "FrameworksUiServicesNotificationTests",
+    srcs: [
+        ":notification-srcs",
+        ":shared-srcs",
+    ],
+    exclude_srcs: [":notification-zen-srcs"],
+    defaults: ["FrameworksUiServicesTests-defaults"],
+    test_config: "notification-tests.xml",
+}
+
+android_test {
+    name: "FrameworksUiServicesZenTests",
+    srcs: [
+        ":notification-zen-srcs",
+        ":shared-srcs",
+    ],
+    defaults: ["FrameworksUiServicesTests-defaults"],
+    test_config: "notification-zen-tests.xml",
+}

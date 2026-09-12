@@ -1,0 +1,393 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsPackageInstallerCUJDeviceAdminTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaSessionTestCases",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJMultiUsersTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUninstallationTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateOwnerShipTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateSelfTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeviceAdminTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaIntentForResultTestCasesV2",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaSessionTestCasesV2",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJMultiUsersTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUninstallationTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateOwnerShipTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateSelfTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeveloperVerificationTestCases"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsPackageInstallTestCases",
+      "options": [
+        {
+          "exclude-annotation": "android.platform.test.annotations.AppModeInstant"
+        }
+      ]
+    },
+    {
+      "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
+      "name": "CtsNoPermissionTestCases"
+    },
+    {
+      "name": "CtsNoPermissionTestCases25"
+    },
+    {
+      "name": "CtsPackageInstallerTapjackingTestCases"
+    },
+    {
+      "name": "CtsPackageUninstallTestCases"
+    },
+    {
+      "name": "PackageInstallerTests"
+    },
+    {
+      "name": "CtsIntentSignatureTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeviceAdminTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaSessionTestCases",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJMultiUsersTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUninstallationTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateOwnerShipTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateSelfTestCases",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeviceAdminTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaIntentForResultTestCasesV2",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaSessionTestCasesV2",
+      "options":[
+          {
+            "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+            "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJMultiUsersTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUninstallationTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateOwnerShipTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateSelfTestCasesV2",
+      "options":[
+        {
+          "exclude-annotation":"androidx.test.filters.FlakyTest"
+        },
+        {
+          "exclude-annotation":"org.junit.Ignore"
+        }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJDeveloperVerificationTestCases"
+    }
+  ]
+}

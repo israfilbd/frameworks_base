@@ -1,0 +1,69 @@
+package: "android.app.contextualsearch.flags"
+container: "system"
+
+flag {
+    name: "enable_service"
+    namespace: "machine_learning"
+    description: "Flag to enable the service"
+    bug: "309689654"
+    is_exported: true
+}
+
+flag {
+    name: "enable_token_refresh"
+    namespace: "machine_learning"
+    description: "Flag to refresh the token to the callback"
+    bug: "309689654"
+}
+
+flag {
+    name: "multi_window_screen_context"
+    namespace: "sysui_integrations"
+    description: "Report screen context and positions for all windows."
+    bug: "371065456"
+}
+
+flag {
+    name: "contextual_search_prevent_self_capture"
+    namespace: "sysui_integrations"
+    description: "Identify live contextual search UI to exclude from contextual search screenshot."
+    bug: "390176823"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "contextual_search_media_projection"
+    namespace: "sysui_integrations"
+    description: "Attach MediaProjection session to contextual search invocation intent."
+    bug: "395054309"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "include_audio_playing_status"
+    namespace: "sysui_integrations"
+    description: "Add audio playing status to the contextual search invocation intent."
+    bug: "372935419"
+}
+
+flag {
+    name: "config_parameters"
+    namespace: "sysui_integrations"
+    description: "Allow invocation parameters to be passed to Contextual Search, including from apps."
+    bug: "371552433"
+    is_exported: true
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_vis_assist_structure_ui_hint"
+    namespace: "sysui_integrations"
+    description: "This flags a feature for enabling or disabling AssistStructure fetching through setUiHints"
+    bug: "420404310"
+}

@@ -1,0 +1,421 @@
+/*
+ * Copyright (C) 2023 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+
+package com.android.systemui.shade.domain.interactor
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.android.systemui.SysuiTestCase
+import com.android.systemui.common.ui.data.repository.fakeConfigurationRepository
+import com.android.systemui.coroutines.collectLastValue
+import com.android.systemui.flags.DisableSceneContainer
+import com.android.systemui.keyguard.data.repository.fakeKeyguardRepository
+import com.android.systemui.keyguard.data.repository.fakeKeyguardTransitionRepository
+import com.android.systemui.keyguard.shared.model.StatusBarState
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.collectLastValue
+import com.android.systemui.kosmos.runCurrent
+import com.android.systemui.kosmos.runTest
+import com.android.systemui.kosmos.testScope
+import com.android.systemui.scene.domain.interactor.sceneInteractor
+import com.android.systemui.shade.data.repository.fakeShadeRepository
+import com.android.systemui.shade.shadeTestUtil
+import com.android.systemui.testKosmos
+import com.android.systemui.user.data.repository.fakeUserRepository
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+@DisableSceneContainer
+class ShadeInteractorLegacyImplTest : SysuiTestCase() {
+
+    private val kosmos = testKosmos()
+    private val shadeRepository = kosmos.fakeShadeRepository
+    private val Kosmos.underTest by Kosmos.Fixture { kosmos.shadeInteractorLegacyImpl }
+
+    @Test
+    fun fullShadeExpansionWhenShadeLocked() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.SHADE_LOCKED)
+            shadeRepository.setLockscreenShadeExpansion(0.5f)
+
+            assertThat(actual).isEqualTo(1f)
+        }
+
+    @Test
+    fun fullShadeExpansionWhenStatusBarStateIsNotShadeLocked() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.KEYGUARD)
+
+            shadeRepository.setLockscreenShadeExpansion(0.5f)
+            assertThat(actual).isEqualTo(0.5f)
+
+            shadeRepository.setLockscreenShadeExpansion(0.8f)
+            assertThat(actual).isEqualTo(0.8f)
+        }
+
+    @Test
+    fun shadeExpansionWhenInSplitShadeAndQsExpanded() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            // WHEN split shade is enabled and QS is expanded
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.SHADE)
+            enableSplitShade()
+            shadeRepository.setQsExpansion(.5f)
+            shadeRepository.setLegacyShadeExpansion(.7f)
+            runCurrent()
+
+            // THEN legacy shade expansion is passed through
+            assertThat(actual).isEqualTo(.7f)
+        }
+
+    @Test
+    fun shadeExpansionWhenNotInSplitShadeAndQsPartiallyExpanded() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            // WHEN split shade is not enabled and QS is expanded
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.SHADE)
+            enableSingleShade()
+            shadeRepository.setQsExpansion(.5f)
+            shadeRepository.setLegacyShadeExpansion(1f)
+            runCurrent()
+
+            // THEN shade expansion is zero
+            assertThat(actual).isEqualTo(.5f)
+        }
+
+    @Test
+    fun shadeExpansionWhenNotInSplitShadeAndQsFullyExpanded() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            // WHEN split shade is not enabled and QS is expanded
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.SHADE)
+            enableSingleShade()
+            shadeRepository.setQsExpansion(1f)
+            shadeRepository.setLegacyShadeExpansion(1f)
+            runCurrent()
+
+            // THEN shade expansion is zero
+            assertThat(actual).isEqualTo(0f)
+        }
+
+    @Test
+    fun shadeExpansionWhenNotInSplitShadeAndQsPartlyExpanded() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            // WHEN split shade is not enabled and QS partly expanded
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.SHADE)
+            enableSingleShade()
+            shadeRepository.setQsExpansion(.4f)
+            shadeRepository.setLegacyShadeExpansion(1f)
+            runCurrent()
+
+            // THEN shade expansion is the difference
+            assertThat(actual).isEqualTo(.6f)
+        }
+
+    @Test
+    fun shadeExpansionWhenNotInSplitShadeAndQsCollapsed() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.shadeExpansion)
+
+            // WHEN split shade is not enabled and QS collapsed
+            fakeKeyguardRepository.setStatusBarState(StatusBarState.SHADE)
+            enableSingleShade()
+            shadeRepository.setQsExpansion(0f)
+            shadeRepository.setLegacyShadeExpansion(.6f)
+            runCurrent()
+
+            // THEN shade expansion is the legacy one
+            assertThat(actual).isEqualTo(.6f)
+        }
+
+    @Test
+    fun userInteractingWithShade_shadeDraggedUpAndDown() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.isUserInteractingWithShade)
+            // GIVEN shade collapsed and not tracking input
+            shadeRepository.setLegacyShadeExpansion(0f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+
+            // WHEN shade tracking starts
+            shadeRepository.setLegacyShadeTracking(true)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade dragged down halfway
+            shadeRepository.setLegacyShadeExpansion(.5f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade fully expanded but tracking is not stopped
+            shadeRepository.setLegacyShadeExpansion(1f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade fully collapsed but tracking is not stopped
+            shadeRepository.setLegacyShadeExpansion(0f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade dragged halfway and tracking is stopped
+            shadeRepository.setLegacyShadeExpansion(.6f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade completes expansion stopped
+            shadeRepository.setLegacyShadeExpansion(1f)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+        }
+
+    @Test
+    fun userInteractingWithShade_shadeExpanded() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.isUserInteractingWithShade)
+            // GIVEN shade collapsed and not tracking input
+            shadeRepository.setLegacyShadeExpansion(0f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+
+            // WHEN shade tracking starts
+            shadeRepository.setLegacyShadeTracking(true)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade dragged down halfway
+            shadeRepository.setLegacyShadeExpansion(.5f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade fully expanded and tracking is stopped
+            shadeRepository.setLegacyShadeExpansion(1f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+        }
+
+    @Test
+    fun userInteractingWithShade_shadePartiallyExpanded() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.isUserInteractingWithShade)
+            // GIVEN shade collapsed and not tracking input
+            shadeRepository.setLegacyShadeExpansion(0f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+
+            // WHEN shade tracking starts
+            shadeRepository.setLegacyShadeTracking(true)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade partially expanded
+            shadeRepository.setLegacyShadeExpansion(.4f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN tracking is stopped
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade goes back to collapsed
+            shadeRepository.setLegacyShadeExpansion(0f)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+        }
+
+    @Test
+    fun userInteractingWithShade_shadeCollapsed() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.isUserInteractingWithShade)
+            // GIVEN shade expanded and not tracking input
+            shadeRepository.setLegacyShadeExpansion(1f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+
+            // WHEN shade tracking starts
+            shadeRepository.setLegacyShadeTracking(true)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade dragged up halfway
+            shadeRepository.setLegacyShadeExpansion(.5f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN shade fully collapsed and tracking is stopped
+            shadeRepository.setLegacyShadeExpansion(0f)
+            shadeRepository.setLegacyShadeTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+        }
+
+    @Test
+    fun userInteractingWithQs_qsDraggedUpAndDown() =
+        kosmos.runTest {
+            val actual by collectLastValue(underTest.isUserInteractingWithQs)
+            // GIVEN qs collapsed and not tracking input
+            shadeRepository.setQsExpansion(0f)
+            shadeRepository.setLegacyQsTracking(false)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+
+            // WHEN qs tracking starts
+            shadeRepository.setLegacyQsTracking(true)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN qs dragged down halfway
+            shadeRepository.setQsExpansion(.5f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN qs fully expanded but tracking is not stopped
+            shadeRepository.setQsExpansion(1f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN qs fully collapsed but tracking is not stopped
+            shadeRepository.setQsExpansion(0f)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN qs dragged halfway and tracking is stopped
+            shadeRepository.setQsExpansion(.6f)
+            shadeRepository.setLegacyQsTracking(false)
+            runCurrent()
+
+            // THEN user is interacting
+            assertThat(actual).isTrue()
+
+            // WHEN qs completes expansion stopped
+            shadeRepository.setQsExpansion(1f)
+            runCurrent()
+
+            // THEN user is not interacting
+            assertThat(actual).isFalse()
+        }
+
+    @Test
+    fun expandNotificationsShade_unsupported() =
+        kosmos.runTest {
+            assertThrows(UnsupportedOperationException::class.java) {
+                underTest.expandNotificationsShade("reason")
+            }
+        }
+
+    @Test
+    fun expandQuickSettingsShade_unsupported() =
+        kosmos.runTest {
+            assertThrows(UnsupportedOperationException::class.java) {
+                underTest.expandQuickSettingsShade("reason")
+            }
+        }
+
+    @Test
+    fun collapseNotificationsShade_unsupported() =
+        kosmos.runTest {
+            assertThrows(UnsupportedOperationException::class.java) {
+                underTest.collapseNotificationsShade("reason")
+            }
+        }
+
+    @Test
+    fun collapseQuickSettingsShade_unsupported() =
+        kosmos.runTest {
+            assertThrows(UnsupportedOperationException::class.java) {
+                underTest.collapseQuickSettingsShade("reason")
+            }
+        }
+
+    @Test
+    fun collapseEitherShade_unsupported() =
+        kosmos.runTest {
+            assertThrows(UnsupportedOperationException::class.java) {
+                underTest.collapseEitherShade("reason")
+            }
+        }
+}

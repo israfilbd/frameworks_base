@@ -1,0 +1,12 @@
+{
+    "presubmit-large": [
+        {
+            "name": "CtsDevicePolicyManagerTestCases_LockSettingsTest"
+        }
+    ],
+    "postsubmit": [
+        {
+            "name": "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes"
+        }
+    ]
+}

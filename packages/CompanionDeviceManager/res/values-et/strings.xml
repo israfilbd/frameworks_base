@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2017 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="4470785958457506021">"Kaasseadme haldur"</string>
+    <string name="confirmation_title" msgid="2244241995958340998">"Kas anda rakendusele &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; juurdepääs seadmele &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="message_discovery_soft_timeout" msgid="473346859407859161">"Veenduge, et seadmes <xliff:g id="DEVICE_TYPE">%1$s</xliff:g> oleks <xliff:g id="DISCOVERY_METHOD">%2$s</xliff:g> sisse lülitatud, ja hoidke oma <xliff:g id="PROFILE_NAME">%3$s</xliff:g> läheduses."</string>
+    <string name="message_discovery_hard_timeout" msgid="677514663495711424">"Seadmeid ei leitud. Proovige hiljem uuesti."</string>
+    <string name="discovery_bluetooth" msgid="5693557668470016164">"Bluetooth"</string>
+    <string name="discovery_wifi" msgid="1551782459721758773">"WiFi"</string>
+    <string name="discovery_mixed" msgid="7071466134150760127">"Bluetooth ja WiFi"</string>
+    <string name="profile_name_watch" msgid="576290739483672360">"käekell"</string>
+    <string name="chooser_title_non_profile" msgid="6035023914517087400">"Valige seade, mida rakendus &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; hakkab haldama"</string>
+    <string name="chooser_title" msgid="2235819929238267637">"Valige seadistatav <xliff:g id="PROFILE_NAME">%1$s</xliff:g>"</string>
+    <string name="single_device_title" msgid="4199861437545438606">"Otsimine: <xliff:g id="PROFILE_NAME">%1$s</xliff:g>"</string>
+    <string name="summary_watch" msgid="8134580124808507407">"Sellel rakendusel lubatakse sünkroonida teavet (nt helistaja nime) ja antakse juurdepääs nendele teie seadme <xliff:g id="DEVICE_TYPE">%1$s</xliff:g> lubadele."</string>
+    <string name="profile_name_fitness_tracker" msgid="3107192493390199691">"treeningu aktiivsusmonitor"</string>
+    <string name="confirmation_title_glasses" msgid="8288346850537727333">"Lubage rakendusel &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; hallata seadet &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="profile_name_glasses" msgid="3506504967216601277">"seade"</string>
+    <string name="summary_glasses" msgid="5469208629679579157">"Sellel rakendusel lubatakse juurde pääseda järgmistele lubadele, mille asukoht on teie <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>."</string>
+    <string name="profile_name_medical" msgid="5617160509499466400">"meditsiiniseade"</string>
+    <string name="title_app_streaming" msgid="237666000400427614">"Kas lubada rakendusel &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; teie seadmete <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> ja &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt; vahel rakendusi ja süsteemifunktsioone voogedastada?"</string>
+    <string name="summary_app_streaming" msgid="8346968726357732862">"Rakendusele <xliff:g id="APP_NAME">%1$s</xliff:g> antakse järgmised load."</string>
+    <string name="summary_app_streaming_legacy" msgid="8994180646987541606">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> saab juurdepääsu kõigele, mida teie seadmes <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> saab kuvada või esitada, sh helile, fotodele, makseteabele, paroolidele ja sõnumitele.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_1">%1$s</xliff:g> saab rakendusi seadmesse <xliff:g id="DEVICE_NAME">%3$s</xliff:g> voogesitada seni, kuni juurdepääsu sellele loale eemaldate."</string>
+    <string name="helper_summary_app_streaming" msgid="160149899100957545">"<xliff:g id="APP_NAME">%1$s</xliff:g> taotleb seadme <xliff:g id="DEVICE_NAME">%2$s</xliff:g> nimel luba teie seadmete vahel rakenduste ja süsteemifunktsioonide edastamiseks"</string>
+    <string name="title_automotive_projection" msgid="3296005598978412847"></string>
+    <string name="summary_automotive_projection" msgid="8683801274662496164"></string>
+    <string name="title_computer" msgid="5040395223341777259">"Lubage rakendusel &lt;strong&gt;<xliff:g id="DISPLAY_NAME">%3$s</xliff:g>&lt;/strong&gt; pääseda juurde sellele teabele, mille asukoht on teie <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>"</string>
+    <string name="helper_summary_computer" msgid="2298803016482139668">"Rakendus <xliff:g id="APP_NAME">%1$s</xliff:g> taotleb teie seadme <xliff:g id="DEVICE_NAME">%2$s</xliff:g> nimel luba pääseda juurde fotodele, meediale ja märguannetele, mille asukoht on teie <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_nearby_device_streaming" msgid="5342768208699657581">"Kas lubada rakendusel &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; teie seadmete <xliff:g id="DEVICE_TYPE">%2$s</xliff:g> ja &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt; vahel rakendusi ja süsteemifunktsioone voogedastada?"</string>
+    <string name="summary_nearby_device_streaming" msgid="7940640272770197219">"Rakendusele <xliff:g id="APP_NAME">%1$s</xliff:g> antakse järgmised load."</string>
+    <string name="summary_nearby_device_streaming_legacy" msgid="4306665203887990326">"<xliff:g id="APP_NAME_0">%1$s</xliff:g> saab juurdepääsu kõigele, mida teie seadmes <xliff:g id="DEVICE_NAME_1">%3$s</xliff:g> saab kuvada või esitada, sh helile, fotodele, makseteabele, paroolidele ja sõnumitele.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME_2">%1$s</xliff:g> saab rakendusi seadmesse <xliff:g id="DEVICE_NAME_3">%3$s</xliff:g> voogesitada seni, kuni juurdepääsu sellele loale eemaldate."</string>
+    <string name="helper_summary_nearby_device_streaming" msgid="4712712177819370967">"Rakendus <xliff:g id="APP_NAME">%1$s</xliff:g> taotleb teie seadme <xliff:g id="DEVICE_NAME">%2$s</xliff:g> nimel luba rakenduste voogesitamiseks teie seadmest <xliff:g id="DEVICE_TYPE">%3$s</xliff:g>"</string>
+    <string name="title_virtual_device" msgid="6556338763070329395">"Kas lubada rakendusel &lt;strong&gt;<xliff:g id="APP_NAME">%1$s</xliff:g>&lt;/strong&gt; teie seadmete <xliff:g id="DEVICE_TYPE">%3$s</xliff:g> ja &lt;strong&gt;<xliff:g id="DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt; vahel heli ja süsteemifunktsioone voogedastada?"</string>
+    <string name="summary_virtual_device" msgid="1062189396947962635">"Rakendusele <xliff:g id="APP_NAME">%2$s</xliff:g> antakse järgmised load."</string>
+    <string name="profile_name_generic" msgid="6851028682723034988">"seade"</string>
+    <string name="summary_generic" msgid="1761976003668044801">"See rakendus saab sünkroonida teavet (näiteks helistaja nime) teie telefoni ja valitud seadme vahel."</string>
+    <string name="consent_yes" msgid="8344487259618762872">"Luba"</string>
+    <string name="consent_no" msgid="2640796915611404382">"Ära luba"</string>
+    <string name="consent_cancel" msgid="5655005528379285841">"Tühista"</string>
+    <string name="consent_back" msgid="2560683030046918882">"Tagasi"</string>
+    <string name="downward_arrow_action" msgid="2327165938832076333">"Kerige loendis alla"</string>
+    <string name="downward_arrow" msgid="2292427714411156088">"Allapoole suunatud nool"</string>
+    <string name="permission_expand" msgid="893185038020887411">"Laienda: <xliff:g id="PERMISSION_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_collapse" msgid="3320833884220844084">"Ahenda: <xliff:g id="PERMISSION_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_sync_confirmation_title" msgid="4409622174437248702">"Kas anda rakendustele seadmes &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME">%1$s</xliff:g>&lt;/strong&gt; samad load, mis seadmes &lt;strong&gt;<xliff:g id="PRIMARY_DEVICE_NAME">%2$s</xliff:g>&lt;/strong&gt;?"</string>
+    <string name="permission_sync_summary" msgid="765497944331294275">"See võib hõlmata &lt;strong&gt;mikrofoni&lt;/strong&gt;, &lt;strong&gt;kaamerat&lt;/strong&gt; ja &lt;strong&gt;juurdepääsu asukohale&lt;/strong&gt; ning muid tundlikke lube seadmes &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_0">%1$s</xliff:g>&lt;/strong&gt;. &lt;br/&gt;&lt;br/&gt;Võite neid lube seadme &lt;strong&gt;<xliff:g id="COMPANION_DEVICE_NAME_1">%1$s</xliff:g>&lt;/strong&gt; seadetes igal ajal muuta."</string>
+    <string name="vendor_header_button_description" msgid="7994879208461111473">"Lisateave"</string>
+    <string name="permission_phone" msgid="2661081078692784919">"Telefon"</string>
+    <string name="permission_sms" msgid="6337141296535774786">"SMS"</string>
+    <string name="permission_contacts" msgid="3858319347208004438">"Kontaktid"</string>
+    <string name="permission_calendar" msgid="6805668388691290395">"Kalender"</string>
+    <string name="permission_microphone" msgid="2152206421428732949">"Mikrofon"</string>
+    <string name="permission_call_logs" msgid="5546761417694586041">"Kõnelogid"</string>
+    <string name="permission_nearby_devices" msgid="7530973297737123481">"Läheduses olevad seadmed"</string>
+    <string name="permission_media_routing_control" msgid="5498639511586715253">"Meediaväljundi muutmine"</string>
+    <string name="permission_storage" msgid="6831099350839392343">"Fotod ja meedia"</string>
+    <string name="permission_notifications" msgid="4099418516590632909">"Märguanded"</string>
+    <string name="permission_create_virtual_device" msgid="1102905050922460040">"Andmete voogesitamine seadmesse <xliff:g id="DEVICE_TYPE">%1$s</xliff:g>"</string>
+    <string name="permission_add_mirror_display" msgid="3743433250535606288">"Ekraanikuva peegeldamine"</string>
+    <string name="permission_add_trusted_display" msgid="9052824856626276723">"Voogesitusrakendused"</string>
+    <string name="permission_schedule_exact_alarm" msgid="5680932535987512225">"Äratuste ja meeldetuletuste määramine"</string>
+    <string name="permission_bypass_dnd" msgid="1241123166903040347">"„Mitte segada“ seadete eiramine"</string>
+    <string name="permission_phone_summary" msgid="8246321093970051702">"Helistamine ja telefonikõnede haldamine"</string>
+    <string name="permission_call_logs_summary" msgid="7545243592757693321">"Telefoni kõnelogi lugemine ja kirjutamine"</string>
+    <string name="permission_sms_summary" msgid="8499509535410068616">"SMS-sõnumite saatmine ja vaatamine"</string>
+    <string name="permission_contacts_summary" msgid="2840800622763086808">"Juurdepääs kontaktidele"</string>
+    <string name="permission_calendar_summary" msgid="8430353935747336165">"Juurdepääs kalendrile"</string>
+    <string name="permission_microphone_summary" msgid="4862628553869973259">"Heli salvestamine"</string>
+    <string name="permission_nearby_devices_summary" msgid="1306752848196464817">"Läheduses olevate seadmete leidmine, nendega ühenduse loomine ja nende suhtelise asendi määramine"</string>
+    <string name="permission_notification_listener_access_summary" msgid="7856071768185367749">"Kõikide märguannete, sh sellise teabe nagu kontaktid, sõnumid ja fotod lugemine"</string>
+    <string name="permission_notifications_summary" msgid="6819393427371255636">"• Kõikide märguannete, sh sellise teabe nagu kontaktid, sõnumid ja fotod lugemine&lt;br/&gt;• Märguannete saatmine&lt;br/&gt;&lt;br/&gt;Saate selle rakenduse võimalusi märguannete lugemiseks ja saatmiseks igal ajal hallata jaotises Seaded &gt; Märguanded."</string>
+    <string name="permission_storage_summary" msgid="3918240895519506417"></string>
+    <string name="permission_post_notifications_summary" msgid="1099188848900200165">"Märguannete saatmine"</string>
+    <string name="permission_create_virtual_device_summary" msgid="3570256456647725172">"Mikrofoni, kaamera ja muude anduri andmete voogesitamine seadmest &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt; seadmesse <xliff:g id="DEVICE_TYPE">%2$s</xliff:g>."</string>
+    <string name="permission_add_mirror_display_summary" msgid="1385423940454941534">"Seadme <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g> ekraanikuva salvestamine, ülekandmine või jagamine seadmega &lt;strong&gt;<xliff:g id="DEVICE_NAME">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt; Rakendus saab <xliff:g id="APP_NAME">%1$s</xliff:g> juurdepääsu kõigele, mis on seadmes <xliff:g id="DEVICE_TYPE_1">%2$s</xliff:g> nähtav või mida seal esitatakse, sh heli, fotod, makseteave, paroolid ja sõnumid."</string>
+    <string name="permission_add_trusted_display_summary" msgid="7399955172055281447">"Seadme <xliff:g id="DEVICE_TYPE_0">%2$s</xliff:g> rakenduste voogesitamine seadmesse &lt;strong&gt;<xliff:g id="DEVICE_NAME_1">%3$s</xliff:g>&lt;/strong&gt;.&lt;br/&gt;&lt;br/&gt;<xliff:g id="APP_NAME">%1$s</xliff:g> saab juurdepääsu kõigele, mida teie seadmes <xliff:g id="DEVICE_NAME_2">%3$s</xliff:g> saab kuvada või esitada, sh helile, fotodele, makseteabele, paroolidele ja sõnumitele, isegi kui seade <xliff:g id="DEVICE_TYPE_3">%2$s</xliff:g> on lukus."</string>
+    <string name="permission_media_routing_control_summary" msgid="2714631092321412250">"Juurdepääs saadaolevate seadmete loendile ja juhtida, milline neist voogesitab või edastab heli või videot teistest rakendustest"</string>
+    <string name="permission_schedule_exact_alarm_summary" msgid="5938321911309800377"></string>
+    <string name="permission_bypass_dnd_summary" msgid="6221709271927387626"></string>
+    <string name="device_type" product="default" msgid="8268703872070046263">"telefon"</string>
+    <string name="device_type" product="tablet" msgid="5038791954983067774">"tahvelarvuti"</string>
+    <string name="device_type" product="tv" msgid="5355611506659405636">"teler"</string>
+    <string name="device_type" product="device" msgid="1526125965802507189">"seade"</string>
+</resources>

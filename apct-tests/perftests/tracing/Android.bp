@@ -1,0 +1,52 @@
+// Copyright (C) 2024 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+filegroup {
+    name: "ui-tracing-metric-specs",
+    srcs: [
+        "metric_specs/*",
+    ],
+}
+
+android_test {
+    name: "UiTracingPerfTests",
+    team: "trendy_team_windowing_tools",
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+    static_libs: [
+        "WindowManager-Shell",
+        "androidx.annotation_annotation",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "apct-perftests-utils",
+        "collector-device-lib",
+        "collector-device-lib-platform",
+        "flickerlib-parsers",
+        "perfetto_trace_java_protos",
+        "platform-test-annotations",
+        "services.core",
+    ],
+    test_suites: [
+        "device-tests",
+        "performance-tests",
+    ],
+    data: [
+        ":perfetto_artifacts",
+        ":ui-tracing-metric-specs",
+    ],
+    platform_apis: true,
+    certificate: "platform",
+}

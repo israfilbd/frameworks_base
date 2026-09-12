@@ -1,0 +1,556 @@
+/*
+ * Copyright (C) 2020 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.media.controls.domain.pipeline
+
+import android.content.Context
+import android.graphics.drawable.Drawable
+import android.media.MediaRouter2Manager
+import android.media.RoutingChangeInfo
+import android.media.RoutingChangeInfo.ENTRY_POINT_SYSTEM_MEDIA_CONTROLS
+import android.media.RoutingSessionInfo
+import android.media.session.MediaController
+import android.media.session.MediaController.PlaybackInfo
+import android.util.Log
+import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
+import androidx.annotation.WorkerThread
+import com.android.media.flags.Flags.enableOutputSwitcherPersonalAudioSharing
+import com.android.settingslib.bluetooth.LocalBluetoothManager
+import com.android.settingslib.flags.Flags.enableLeAudioSharing
+import com.android.settingslib.media.LocalMediaManager
+import com.android.settingslib.media.MediaDevice
+import com.android.settingslib.media.PhoneMediaDevice
+import com.android.settingslib.media.SuggestedDeviceManager
+import com.android.settingslib.media.SuggestedDeviceState
+import com.android.settingslib.media.flags.Flags
+import com.android.systemui.Flags.enableSuggestedDeviceUi
+import com.android.systemui.dagger.qualifiers.Background
+import com.android.systemui.dagger.qualifiers.Main
+import com.android.systemui.media.controls.shared.MediaControlDrawables
+import com.android.systemui.media.controls.shared.model.MediaData
+import com.android.systemui.media.controls.shared.model.MediaDeviceData
+import com.android.systemui.media.controls.shared.model.SuggestedMediaDeviceData
+import com.android.systemui.media.controls.shared.model.SuggestionData
+import com.android.systemui.media.controls.util.LocalMediaManagerFactory
+import com.android.systemui.media.controls.util.MediaControllerFactory
+import com.android.systemui.media.controls.util.SuggestedDeviceManagerFactory
+import com.android.systemui.media.muteawait.MediaMuteAwaitConnectionManager
+import com.android.systemui.media.muteawait.MediaMuteAwaitConnectionManagerFactory
+import com.android.systemui.res.R
+import com.android.systemui.statusbar.policy.ConfigurationController
+import dagger.Lazy
+import java.io.PrintWriter
+import java.util.concurrent.Executor
+import javax.inject.Inject
+
+private const val PLAYBACK_TYPE_UNKNOWN = 0
+private const val TAG = "MediaDeviceManager"
+private const val DEBUG = false
+
+/** Provides information about the route (ie. device) where playback is occurring. */
+class MediaDeviceManager
+@Inject
+constructor(
+    private val context: Context,
+    private val controllerFactory: MediaControllerFactory,
+    private val localMediaManagerFactory: LocalMediaManagerFactory,
+    private val suggestedDeviceManagerFactory: SuggestedDeviceManagerFactory,
+    private val mr2manager: Lazy<MediaRouter2Manager>,
+    private val muteAwaitConnectionManagerFactory: MediaMuteAwaitConnectionManagerFactory,
+    private val configurationController: ConfigurationController,
+    private val localBluetoothManager: Lazy<LocalBluetoothManager?>,
+    @Main private val fgExecutor: Executor,
+    @Background private val bgExecutor: Executor,
+    private val logger: MediaDeviceLogger,
+) : MediaDataManager.Listener {
+
+    private val listeners: MutableSet<Listener> = mutableSetOf()
+    private val entries: MutableMap<String, Entry> = mutableMapOf()
+
+    companion object {
+        private val EMPTY_AND_DISABLED_MEDIA_DEVICE_DATA =
+            MediaDeviceData(enabled = false, icon = null, name = null)
+    }
+
+    /** Add a listener for changes to the media route (ie. device). */
+    fun addListener(listener: Listener) = listeners.add(listener)
+
+    /** Remove a listener that has been registered with addListener. */
+    fun removeListener(listener: Listener) = listeners.remove(listener)
+
+    override fun onMediaDataLoaded(
+        key: String,
+        oldKey: String?,
+        data: MediaData,
+        immediately: Boolean,
+    ) {
+        bgExecutor.execute { onMediaLoaded(key, oldKey, data) }
+    }
+
+    override fun onMediaDataRemoved(key: String, userInitiated: Boolean) {
+        bgExecutor.execute { onMediaRemoved(key, userInitiated) }
+    }
+
+    fun dump(pw: PrintWriter) {
+        with(pw) {
+            println("MediaDeviceManager state:")
+            entries.forEach { (key, entry) ->
+                println("  key=$key")
+                entry.dump(pw)
+            }
+        }
+    }
+
+    @MainThread
+    private fun processDevice(key: String, oldKey: String?, device: MediaDeviceData?) {
+        listeners.forEach { it.onMediaDeviceChanged(key, oldKey, device) }
+    }
+
+    private fun onMediaLoaded(key: String, oldKey: String?, data: MediaData) {
+        if (oldKey != null && oldKey != key) {
+            val oldEntry = entries.remove(oldKey)
+            oldEntry?.stop()
+        }
+        var entry = entries[key]
+        if (entry == null || entry.token != data.token) {
+            entry?.stop()
+            if (data.device != null) {
+                // If we were already provided device info (e.g. from RCN), keep that and
+                // don't listen for updates, but process once to push updates to listeners
+                fgExecutor.execute { processDevice(key, oldKey, data.device) }
+                return
+            }
+            val controller = data.token?.let { controllerFactory.create(it) }
+            val localMediaManager =
+                localMediaManagerFactory.create(data.packageName, controller?.sessionToken)
+            val muteAwaitConnectionManager =
+                muteAwaitConnectionManagerFactory.create(localMediaManager)
+            val suggestedDeviceManager = suggestedDeviceManagerFactory.create(localMediaManager)
+            entry =
+                Entry(
+                    key,
+                    oldKey,
+                    controller,
+                    localMediaManager,
+                    muteAwaitConnectionManager,
+                    suggestedDeviceManager,
+                    data.resumption,
+                )
+            entries[key] = entry
+            entry.start()
+        }
+    }
+
+    private fun onMediaRemoved(key: String, userInitiated: Boolean) {
+        val token = entries.remove(key)
+        token?.stop()
+        fgExecutor.execute {
+            token?.let { listeners.forEach { it.onKeyRemoved(key, userInitiated) } }
+        }
+    }
+
+    @MainThread
+    private fun processSuggestionData(key: String, oldKey: String?, suggestion: SuggestionData?) {
+        listeners.forEach { it.onSuggestionDataChanged(key, oldKey, suggestion) }
+    }
+
+    @MainThread
+    private fun processMediaDeviceAndSuggestionData(
+        key: String,
+        oldKey: String?,
+        device: MediaDeviceData?,
+        suggestion: SuggestionData?,
+    ) {
+        listeners.forEach {
+            it.onMediaDeviceAndSuggestionDataChanged(key, oldKey, device, suggestion)
+        }
+    }
+
+    interface Listener {
+        /** Called when the route has changed for a given notification. */
+        fun onMediaDeviceChanged(key: String, oldKey: String?, data: MediaDeviceData?)
+
+        /** Called when the notification was removed. */
+        fun onKeyRemoved(key: String, userInitiated: Boolean)
+
+        /** Called when the suggested route has changed for a given notification. */
+        fun onSuggestionDataChanged(key: String, oldKey: String?, data: SuggestionData?)
+
+        /**
+         * Called when the both the route and the suggested route has changed for a given
+         * notification.
+         */
+        fun onMediaDeviceAndSuggestionDataChanged(
+            key: String,
+            oldKey: String?,
+            deviceData: MediaDeviceData?,
+            suggestionData: SuggestionData?,
+        )
+    }
+
+    private inner class Entry(
+        val key: String,
+        val oldKey: String?,
+        val controller: MediaController?,
+        val localMediaManager: LocalMediaManager,
+        val muteAwaitConnectionManager: MediaMuteAwaitConnectionManager,
+        val suggestedDeviceManager: SuggestedDeviceManager,
+        val isResumption: Boolean,
+    ) :
+        LocalMediaManager.DeviceCallback,
+        SuggestedDeviceManager.Listener,
+        MediaController.Callback() {
+
+        val token
+            get() = controller?.sessionToken
+
+        private var started = false
+        private var playbackType = PLAYBACK_TYPE_UNKNOWN
+        private var playbackVolumeControlId: String? = null
+        private val requestSuggestionRunnable = Runnable {
+            bgExecutor.execute { suggestedDeviceManager.requestDeviceSuggestion() }
+        }
+        private var current: MediaDeviceData? = null
+
+        private var suggestionData: SuggestionData? = null
+
+        // A device that is not yet connected but is expected to connect imminently. Because it's
+        // expected to connect imminently, it should be displayed as the current device.
+        private var aboutToConnectDeviceOverride: AboutToConnectDevice? = null
+        private val configListener =
+            object : ConfigurationController.ConfigurationListener {
+                override fun onLocaleListChanged() {
+                    updateCurrent()
+                }
+            }
+
+        @AnyThread
+        fun start() =
+            bgExecutor.execute {
+                if (!started) {
+                    localMediaManager.registerCallback(this)
+                    if (!Flags.removeUnnecessaryRouteScanning()) {
+                        localMediaManager.startScan()
+                    }
+                    muteAwaitConnectionManager.startListening()
+                    playbackType = controller?.playbackInfo?.playbackType ?: PLAYBACK_TYPE_UNKNOWN
+                    playbackVolumeControlId = controller?.playbackInfo?.volumeControlId
+                    controller?.registerCallback(this)
+                    if (enableSuggestedDeviceUi()) {
+                        updateCurrent(notifyListeners = false)
+                        if (isResumption) {
+                            // Set the onSuggestionSpaceVisible callback only.
+                            updateSuggestion(state = null, notifyListeners = false)
+                        } else {
+                            suggestedDeviceManager.addListener(this)
+                            // Fetch in case a suggestion already exists before requesting a new one
+                            updateSuggestion(
+                                state = suggestedDeviceManager.getSuggestedDevice(),
+                                notifyListeners = false,
+                            )
+                        }
+                        fgExecutor.execute {
+                            processMediaDeviceAndSuggestionData(
+                                key,
+                                oldKey,
+                                current,
+                                suggestionData,
+                            )
+                        }
+                    } else {
+                        updateCurrent()
+                    }
+                    started = true
+                    configurationController.addCallback(configListener)
+                }
+            }
+
+        @AnyThread
+        fun stop() =
+            bgExecutor.execute {
+                if (started) {
+                    started = false
+                    controller?.unregisterCallback(this)
+                    if (!Flags.removeUnnecessaryRouteScanning()) {
+                        localMediaManager.stopScan()
+                    }
+                    localMediaManager.unregisterCallback(this)
+                    suggestedDeviceManager.removeListener(this)
+                    suggestedDeviceManager.cancelAllRequests()
+                    muteAwaitConnectionManager.stopListening()
+                    configurationController.removeCallback(configListener)
+                }
+            }
+
+        fun dump(pw: PrintWriter) {
+            val routingSession =
+                controller?.let { mr2manager.get().getRoutingSessionForMediaController(it) }
+            val selectedRoutes = routingSession?.let { mr2manager.get().getSelectedRoutes(it) }
+            with(pw) {
+                println("    current device is ${current?.name}")
+                val type = controller?.playbackInfo?.playbackType
+                println("    PlaybackType=$type (1 for local, 2 for remote) cached=$playbackType")
+                val volumeControlId = controller?.playbackInfo?.volumeControlId
+                println("    volumeControlId=$volumeControlId cached= $playbackVolumeControlId")
+                println("    routingSession=$routingSession")
+                println("    selectedRoutes=$selectedRoutes")
+                println("    currentConnectedDevice=${localMediaManager.currentConnectedDevice}")
+            }
+        }
+
+        @WorkerThread
+        override fun onAudioInfoChanged(info: MediaController.PlaybackInfo) {
+            val newPlaybackType = info.playbackType
+            val newPlaybackVolumeControlId = info.volumeControlId
+            if (
+                newPlaybackType == playbackType &&
+                    newPlaybackVolumeControlId == playbackVolumeControlId
+            ) {
+                return
+            }
+            playbackType = newPlaybackType
+            playbackVolumeControlId = newPlaybackVolumeControlId
+            updateCurrent()
+        }
+
+        override fun onDeviceListUpdate(devices: List<MediaDevice>?) =
+            bgExecutor.execute { updateCurrent() }
+
+        override fun onSelectedDeviceStateChanged(device: MediaDevice, state: Int) {
+            bgExecutor.execute { updateCurrent() }
+        }
+
+        override fun onSuggestedDeviceStateUpdated(state: SuggestedDeviceState?) {
+            if (!enableSuggestedDeviceUi() || isResumption) {
+                return
+            }
+            bgExecutor.execute { updateSuggestion(state) }
+        }
+
+        override fun onAboutToConnectDeviceAdded(
+            deviceAddress: String,
+            deviceName: String,
+            deviceIcon: Drawable?,
+        ) {
+            aboutToConnectDeviceOverride =
+                AboutToConnectDevice(
+                    fullMediaDevice = localMediaManager.getMediaDeviceById(deviceAddress),
+                    backupMediaDeviceData =
+                        MediaDeviceData(
+                            /* enabled */ enabled = true,
+                            /* icon */ deviceIcon,
+                            /* name */ deviceName,
+                        ),
+                )
+            updateCurrent()
+        }
+
+        override fun onAboutToConnectDeviceRemoved() {
+            aboutToConnectDeviceOverride = null
+            updateCurrent()
+        }
+
+        @WorkerThread
+        private fun updateSuggestion(
+            state: SuggestedDeviceState?,
+            notifyListeners: Boolean = true,
+        ) {
+            val oldSuggestion = suggestionData
+            val newSuggestion =
+                SuggestionData(
+                    suggestedMediaDeviceData =
+                        state?.let {
+                            SuggestedMediaDeviceData(
+                                name = it.suggestedDeviceInfo.getDeviceDisplayName(),
+                                icon = it.getIcon(context),
+                                connectionState = it.connectionState,
+                                connect = {
+                                    suggestedDeviceManager.connectSuggestedDevice(
+                                        it,
+                                        RoutingChangeInfo(
+                                            ENTRY_POINT_SYSTEM_MEDIA_CONTROLS,
+                                            /* isSuggested= */ true,
+                                        ),
+                                    )
+                                },
+                            )
+                        },
+                    onSuggestionSpaceVisible = requestSuggestionRunnable,
+                )
+            val updated = !newSuggestion.equalsWithoutConnect(oldSuggestion)
+            if (updated) {
+                suggestionData = newSuggestion
+                if (notifyListeners) {
+                    fgExecutor.execute { processSuggestionData(key, oldKey, newSuggestion) }
+                }
+            }
+        }
+
+        @WorkerThread
+        private fun updateCurrent(notifyListeners: Boolean = true) {
+            val oldCurrent = current
+
+            // LocalMediaManager provides the connected device based on PlaybackInfo.
+            // TODO (b/342197065): Simplify nullability once we make
+            // currentConnectedDevice non-null.
+            val connectedDevice = localMediaManager.currentConnectedDevice?.toMediaDeviceData()
+            val newCurrent =
+                if (controller?.playbackInfo?.playbackType == PlaybackInfo.PLAYBACK_TYPE_REMOTE) {
+                    val routingSession =
+                        mr2manager.get().getRoutingSessionForMediaController(controller)
+
+                    routingSession?.let {
+                        val icon =
+                            if (it.selectedRoutes.size > 1) {
+                                MediaControlDrawables.getGroupDevice(context)
+                            } else {
+                                connectedDevice?.icon // Single route. We don't change the icon.
+                            }
+                        // For a remote session, always use the current device from
+                        // LocalMediaManager. Override with routing session information
+                        // if available:
+                        //   - Name: To show the dynamic group name.
+                        //   - Icon: To show the group icon if there's more than one
+                        // selected route.
+                        connectedDevice?.copy(name = it.name ?: connectedDevice.name, icon = icon)
+                    }
+                        ?: MediaDeviceData(
+                                enabled = false,
+                                icon = MediaControlDrawables.getHomeDevices(context),
+                                name = context.getString(R.string.media_seamless_other_device),
+                            )
+                            .also { logger.logRemoteDevice(routingSession?.name, connectedDevice) }
+                } else {
+                    // Prefer broadcast, then SASS, if available when playback is local.
+                    val broadcastDevice = getBroadcastDevice()
+                    val sassDevice = getSassDevice()
+                    broadcastDevice
+                        ?: (sassDevice ?: connectedDevice).also {
+                            logger.logLocalDevice(broadcastDevice, sassDevice, connectedDevice)
+                        }
+                }
+                    ?: EMPTY_AND_DISABLED_MEDIA_DEVICE_DATA.also {
+                        logger.logNewDeviceName(it.name?.toString())
+                    }
+
+            val updated = newCurrent == null || !newCurrent.equalsWithoutIcon(oldCurrent)
+            if (!started || updated) {
+                current = newCurrent
+                if (notifyListeners) {
+                    fgExecutor.execute { processDevice(key, oldKey, newCurrent) }
+                }
+            }
+        }
+
+        private fun getBroadcastDevice(): MediaDeviceData? =
+            if (inBroadcast())
+                MediaDeviceData(
+                    enabled = enableOutputSwitcherPersonalAudioSharing(),
+                    icon = MediaControlDrawables.getLeAudioSharing(context),
+                    name = context.getString(R.string.audio_sharing_description),
+                    intent = null,
+                )
+            else null
+
+        private fun getSassDevice(): MediaDeviceData? {
+            val sassDevice = aboutToConnectDeviceOverride ?: return null
+            return sassDevice.fullMediaDevice?.toMediaDeviceData()
+                ?: sassDevice.backupMediaDeviceData
+        }
+
+        private fun MediaDevice.toMediaDeviceData() =
+            MediaDeviceData(enabled = true, icon = iconWithoutBackground, name = name, id = id)
+
+        /** Return a display name for the current device / route, or null if not possible */
+        private fun getDeviceName(
+            device: MediaDevice?,
+            routingSession: RoutingSessionInfo?,
+        ): String? {
+            val selectedRoutes = routingSession?.let { mr2manager.get().getSelectedRoutes(it) }
+
+            logger.logDeviceName(
+                device,
+                controller,
+                routingSession?.name,
+                selectedRoutes?.firstOrNull()?.name,
+            )
+
+            if (controller == null) {
+                // In resume state, we don't have a controller - just use the device name
+                return device?.name
+            }
+
+            if (routingSession == null) {
+                // This happens when casting from apps that do not support MediaRouter2
+                // The output switcher can't show anything useful here, so set to null
+                return null
+            }
+
+            // If this is a user route (app / cast provided), use the provided name
+            if (!routingSession.isSystemSession) {
+                return routingSession.name?.toString() ?: device?.name
+            }
+
+            selectedRoutes?.firstOrNull()?.let {
+                if (device is PhoneMediaDevice) {
+                    // Get the (localized) name for this phone device
+                    return PhoneMediaDevice.getSystemRouteNameFromType(context, it)
+                } else {
+                    // If it's another type of device (in practice, Bluetooth), use the route name
+                    return it.name.toString()
+                }
+            }
+            return null
+        }
+
+        @WorkerThread
+        private fun inBroadcast(): Boolean {
+            if (!enableLeAudioSharing()) return false
+            val localBluetoothManager = localBluetoothManager.get()
+            if (localBluetoothManager != null) {
+                val profileManager = localBluetoothManager.profileManager
+                if (profileManager != null) {
+                    val bluetoothLeBroadcast = profileManager.leAudioBroadcastProfile
+                    if (bluetoothLeBroadcast != null && bluetoothLeBroadcast.isEnabled(null)) {
+                        return true
+                    } else if (DEBUG) {
+                        Log.d(TAG, "Can not get LocalBluetoothLeBroadcast")
+                    }
+                } else if (DEBUG) {
+                    Log.d(TAG, "Can not get LocalBluetoothProfileManager")
+                }
+            } else if (DEBUG) {
+                Log.d(TAG, "Can not get LocalBluetoothManager")
+            }
+            return false
+        }
+    }
+}
+
+/**
+ * A class storing information for the about-to-connect device. See
+ * [LocalMediaManager.DeviceCallback.onAboutToConnectDeviceAdded] for more information.
+ *
+ * @property fullMediaDevice a full-fledged [MediaDevice] object representing the device. If
+ *   non-null, prefer using [fullMediaDevice] over [backupMediaDeviceData].
+ * @property backupMediaDeviceData a backup [MediaDeviceData] object containing the minimum
+ *   information required to display the device. Only use if [fullMediaDevice] is null.
+ */
+private data class AboutToConnectDevice(
+    val fullMediaDevice: MediaDevice? = null,
+    val backupMediaDeviceData: MediaDeviceData? = null,
+)

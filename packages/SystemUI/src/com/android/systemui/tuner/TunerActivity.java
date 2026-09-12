@@ -1,0 +1,174 @@
+/*
+ * Copyright (C) 2015 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.android.systemui.tuner;
+
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Window;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.graphics.Insets;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceScreen;
+
+import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
+import com.android.systemui.Dependency;
+import com.android.systemui.demomode.DemoModeController;
+import com.android.systemui.fragments.FragmentService;
+import com.android.systemui.res.R;
+import com.android.systemui.util.settings.GlobalSettings;
+
+import com.google.android.material.color.DynamicColors;
+
+import javax.inject.Inject;
+
+public class TunerActivity extends CollapsingToolbarBaseActivity implements
+        PreferenceFragmentCompat.OnPreferenceStartFragmentCallback,
+        PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
+
+    private static final String TAG_TUNER = "tuner";
+
+    private final DemoModeController mDemoModeController;
+    private final GlobalSettings mGlobalSettings;
+
+    @Inject
+    TunerActivity(
+            DemoModeController demoModeController,
+            GlobalSettings globalSettings
+    ) {
+        super();
+        mDemoModeController = demoModeController;
+        mGlobalSettings = globalSettings;
+    }
+
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.tuner_activity);
+
+        DynamicColors.applyToActivityIfAvailable(this);
+
+        // Handle window insets for padding adjustments
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.content_frame),
+                (view, insets) -> {
+            Insets systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            view.setPadding(
+                view.getPaddingLeft(),
+                view.getPaddingTop(),
+                view.getPaddingRight(),
+                systemInsets.bottom
+            );
+            return insets;
+        });
+
+        if (getSupportFragmentManager().findFragmentByTag(TAG_TUNER) == null) {
+            final String action = getIntent().getAction();
+            final PreferenceFragmentCompat fragment;
+            if ("com.android.settings.action.DEMO_MODE".equals(action)) {
+                fragment = new DemoModeFragment(mDemoModeController, mGlobalSettings);
+            } else if ("com.android.settings.action.STATUS_BAR_TUNER".equals(action)) {
+                fragment = new StatusBarTuner();
+            } else {
+                fragment = new TunerFragment();
+            }
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,
+                    fragment, TAG_TUNER).commit();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Dependency.destroy(FragmentService.class, s -> s.destroyAll());
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!getSupportFragmentManager().popBackStackImmediate()) {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onPreferenceStartFragment(PreferenceFragmentCompat caller, Preference pref) {
+        try {
+            Class<?> cls = Class.forName(pref.getFragment());
+            PreferenceFragmentCompat fragment = (PreferenceFragmentCompat) cls.newInstance();
+            final Bundle b = new Bundle(1);
+            b.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, pref.getKey());
+            fragment.setArguments(b);
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            setTitle(pref.getTitle());
+            transaction.replace(R.id.content_frame, fragment);
+            transaction.commit();
+            return true;
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            Log.d("TunerActivity", "Problem launching fragment", e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        SubSettingsFragment fragment = new SubSettingsFragment();
+        final Bundle b = new Bundle(1);
+        b.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, pref.getKey());
+        fragment.setArguments(b);
+        fragment.setTargetFragment(caller, 0);
+        transaction.replace(R.id.content_frame, fragment);
+        transaction.commit();
+        return true;
+    }
+
+    public static class SubSettingsFragment extends PreferenceFragmentCompat {
+        private PreferenceScreen mParentScreen;
+
+        @Override
+        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+            mParentScreen =
+                    (PreferenceScreen) ((PreferenceFragmentCompat) getTargetFragment())
+                            .getPreferenceScreen().findPreference(rootKey);
+            PreferenceScreen screen =
+                    getPreferenceManager().createPreferenceScreen(
+                            getPreferenceManager().getContext());
+            setPreferenceScreen(screen);
+            // Copy all the preferences over to this screen so they go into the attached state.
+            while (mParentScreen.getPreferenceCount() > 0) {
+                Preference p = mParentScreen.getPreference(0);
+                mParentScreen.removePreference(p);
+                screen.addPreference(p);
+            }
+        }
+
+        @Override
+        public void onDestroy() {
+            super.onDestroy();
+            // Copy all the preferences back so we don't lose them.
+            PreferenceScreen screen = getPreferenceScreen();
+            while (screen.getPreferenceCount() > 0) {
+                Preference p = screen.getPreference(0);
+                screen.removePreference(p);
+                mParentScreen.addPreference(p);
+            }
+        }
+    }
+
+}

@@ -1,0 +1,15 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsPrintTestCases_Presubmit"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "PrintSpoolerOutOfProcessTests"
+    },
+    {
+      "name": "PrintSpoolerRobolectricTests"
+    }
+  ]
+}

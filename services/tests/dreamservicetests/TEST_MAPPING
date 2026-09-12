@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "DreamServiceTests_server_dreams"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "DreamServiceTests_server_dreams"
+    }
+  ]
+}

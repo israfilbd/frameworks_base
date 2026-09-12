@@ -1,0 +1,298 @@
+//
+// Copyright (C) 2020 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+package {
+    default_team: "trendy_team_multitasking_windowing",
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+filegroup {
+    name: "WMShellFlickerTestsPipApps-src",
+    srcs: ["src/**/apps/*.kt"],
+}
+
+filegroup {
+    name: "WMShellFlickerTestsPipCommon-src",
+    srcs: ["src/**/common/*.kt"],
+}
+
+android_test {
+    name: "WMShellFlickerTestsPip",
+    defaults: ["WMShellFlickerTestsDefault"],
+    manifest: "AndroidManifest.xml",
+    package_name: "com.android.wm.shell.flicker.pip",
+    instrumentation_target_package: "com.android.wm.shell.flicker.pip",
+    test_config_template: "AndroidTestTemplate.xml",
+    srcs: ["src/**/*.kt"],
+    exclude_srcs: [":WMShellFlickerTestsPipApps-src"],
+    static_libs: ["WMShellFlickerTestsBase"],
+    data: ["trace_config/*"],
+}
+
+android_test {
+    name: "WMShellFlickerTestsPipApps",
+    defaults: ["WMShellFlickerTestsDefault"],
+    manifest: "AndroidManifest.xml",
+    package_name: "com.android.wm.shell.flicker.pip.apps",
+    instrumentation_target_package: "com.android.wm.shell.flicker.pip.apps",
+    test_config_template: "AndroidTestTemplate.xml",
+    srcs: [
+        ":WMShellFlickerTestsPipApps-src",
+        ":WMShellFlickerTestsPipCommon-src",
+    ],
+    static_libs: ["WMShellFlickerTestsBase"],
+    data: ["trace_config/*"],
+}
+
+android_test {
+    name: "WMShellFlickerTestsPipAppsCSuite",
+    defaults: ["WMShellFlickerTestsDefault"],
+    additional_manifests: ["AndroidManifest.xml"],
+    package_name: "com.android.wm.shell.flicker.pip.apps",
+    instrumentation_target_package: "com.android.wm.shell.flicker.pip.apps",
+    test_config_template: "AndroidTestTemplate.xml",
+    srcs: [
+        ":WMShellFlickerTestsPipApps-src",
+        ":WMShellFlickerTestsPipCommon-src",
+    ],
+    static_libs: ["WMShellFlickerTestsBase"],
+    test_suites: [
+        "csuite",
+        "device-tests",
+    ],
+    data: ["trace_config/*"],
+}
+
+csuite_test {
+    name: "csuite-1p3p-pip-flickers",
+    test_plan_include: "csuitePlan.xml",
+    test_config_template: "csuiteDefaultTemplate.xml",
+}
+
+// Auto generated section, don't update it manually
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-AutoEnterPipOnGoToHomeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.AutoEnterPipOnGoToHomeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-AutoEnterPipWithSourceRectHintTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.AutoEnterPipWithSourceRectHintTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-CatchAll",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    exclude_filters: [
+        "com.android.wm.shell.flicker.pip.AutoEnterPipOnGoToHomeTest",
+        "com.android.wm.shell.flicker.pip.AutoEnterPipWithSourceRectHintTest",
+        "com.android.wm.shell.flicker.pip.ClosePipBySwipingDownTest",
+        "com.android.wm.shell.flicker.pip.ClosePipWithDismissButtonTest",
+        "com.android.wm.shell.flicker.pip.EnterPipOnUserLeaveHintTest",
+        "com.android.wm.shell.flicker.pip.EnterPipViaAppUiButtonTest",
+        "com.android.wm.shell.flicker.pip.ExitPipToAppViaExpandButtonTest",
+        "com.android.wm.shell.flicker.pip.ExitPipToAppViaIntentTest",
+        "com.android.wm.shell.flicker.pip.ExpandPipOnDoubleClickTest",
+        "com.android.wm.shell.flicker.pip.ExpandPipOnPinchOpenTest",
+        "com.android.wm.shell.flicker.pip.FromSplitScreenAutoEnterPipOnGoToHomeTest",
+        "com.android.wm.shell.flicker.pip.FromSplitScreenEnterPipOnUserLeaveHintTest",
+        "com.android.wm.shell.flicker.pip.MovePipOnImeVisibilityChangeTest",
+        "com.android.wm.shell.flicker.pip.MovePipUpOnShelfHeightChangeTest",
+        "com.android.wm.shell.flicker.pip.PipAspectRatioChangeTest",
+        "com.android.wm.shell.flicker.pip.PipDragTest",
+        "com.android.wm.shell.flicker.pip.PipDragThenSnapTest",
+        "com.android.wm.shell.flicker.pip.PipPinchInTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfAutoEnterPipOnGoToHomeTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfEnterPipOnUserLeaveHintTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfEnterPipViaAppUiButtonTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfExitPipToAppViaExpandButtonTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfExitPipToAppViaIntentTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfFromSplitScreenAutoEnterPipOnGoToHomeTest",
+        "com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfFromSplitScreenEnterPipOnUserLeaveHintTest",
+    ],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-ClosePipBySwipingDownTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.ClosePipBySwipingDownTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-ClosePipWithDismissButtonTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.ClosePipWithDismissButtonTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-EnterPipOnUserLeaveHintTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.EnterPipOnUserLeaveHintTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-EnterPipViaAppUiButtonTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.EnterPipViaAppUiButtonTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-ExitPipToAppViaExpandButtonTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.ExitPipToAppViaExpandButtonTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-ExitPipToAppViaIntentTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.ExitPipToAppViaIntentTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-ExpandPipOnDoubleClickTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.ExpandPipOnDoubleClickTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-ExpandPipOnPinchOpenTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.ExpandPipOnPinchOpenTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-FromSplitScreenAutoEnterPipOnGoToHomeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.FromSplitScreenAutoEnterPipOnGoToHomeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-FromSplitScreenEnterPipOnUserLeaveHintTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.FromSplitScreenEnterPipOnUserLeaveHintTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-MovePipOnImeVisibilityChangeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.MovePipOnImeVisibilityChangeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-MovePipUpOnShelfHeightChangeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.MovePipUpOnShelfHeightChangeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-PipAspectRatioChangeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.PipAspectRatioChangeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-PipDragTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.PipDragTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-PipDragThenSnapTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.PipDragThenSnapTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-PipPinchInTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.PipPinchInTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfAutoEnterPipOnGoToHomeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfAutoEnterPipOnGoToHomeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfEnterPipOnUserLeaveHintTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfEnterPipOnUserLeaveHintTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfEnterPipViaAppUiButtonTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfEnterPipViaAppUiButtonTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfExitPipToAppViaExpandButtonTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfExitPipToAppViaExpandButtonTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfExitPipToAppViaIntentTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfExitPipToAppViaIntentTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfFromSplitScreenAutoEnterPipOnGoToHomeTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfFromSplitScreenAutoEnterPipOnGoToHomeTest"],
+}
+
+test_module_config {
+    name: "WMShellFlickerTestsPip-nonmatchparent-BottomHalfFromSplitScreenEnterPipOnUserLeaveHintTest",
+    base: "WMShellFlickerTestsPip",
+    test_suites: ["device-tests"],
+    include_filters: ["com.android.wm.shell.flicker.pip.nonmatchparent.BottomHalfFromSplitScreenEnterPipOnUserLeaveHintTest"],
+}

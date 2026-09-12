@@ -1,0 +1,9 @@
+# Bug component: 24939
+
+include /graphics/java/android/graphics/CORE_GRAPHICS_OWNERS
+
+per-file BLASTBufferQueue.java = file:/services/core/java/com/android/server/wm/OWNERS
+per-file FontFamily.java = file:fonts/OWNERS
+per-file FontListParser.java = file:fonts/OWNERS
+per-file Typeface.java = file:fonts/OWNERS
+per-file Paint.java = file:fonts/OWNERS

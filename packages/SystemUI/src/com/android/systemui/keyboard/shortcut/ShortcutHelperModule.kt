@@ -1,0 +1,114 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.keyboard.shortcut
+
+import com.android.systemui.CoreStartable
+import com.android.systemui.Flags.keyboardShortcutHelperRewrite
+import com.android.systemui.keyboard.shortcut.data.repository.AppsShortcutCategoryRepository
+import com.android.systemui.keyboard.shortcut.data.repository.CustomShortcutCategoriesRepository
+import com.android.systemui.keyboard.shortcut.data.repository.DefaultShortcutCategoriesRepository
+import com.android.systemui.keyboard.shortcut.data.repository.ShortcutCategoriesRepository
+import com.android.systemui.keyboard.shortcut.data.source.AccessibilityShortcutsSource
+import com.android.systemui.keyboard.shortcut.data.source.AppCategoriesShortcutsSource
+import com.android.systemui.keyboard.shortcut.data.source.CurrentAppShortcutsSource
+import com.android.systemui.keyboard.shortcut.data.source.InputShortcutsSource
+import com.android.systemui.keyboard.shortcut.data.source.KeyboardShortcutGroupsSource
+import com.android.systemui.keyboard.shortcut.data.source.MultitaskingShortcutsSource
+import com.android.systemui.keyboard.shortcut.data.source.SystemShortcutsSource
+import com.android.systemui.keyboard.shortcut.qualifiers.AccessibilityShortcuts
+import com.android.systemui.keyboard.shortcut.qualifiers.AppCategoriesShortcuts
+import com.android.systemui.keyboard.shortcut.qualifiers.AppsShortcutCategories
+import com.android.systemui.keyboard.shortcut.qualifiers.CurrentAppShortcuts
+import com.android.systemui.keyboard.shortcut.qualifiers.CustomShortcutCategories
+import com.android.systemui.keyboard.shortcut.qualifiers.DefaultShortcutCategories
+import com.android.systemui.keyboard.shortcut.qualifiers.InputShortcuts
+import com.android.systemui.keyboard.shortcut.qualifiers.MultitaskingShortcuts
+import com.android.systemui.keyboard.shortcut.qualifiers.SystemShortcuts
+import dagger.Binds
+import dagger.Lazy
+import dagger.Module
+import dagger.Provides
+import dagger.multibindings.ClassKey
+import dagger.multibindings.IntoMap
+
+@Module
+interface ShortcutHelperModule {
+
+    @Binds
+    @SystemShortcuts
+    fun systemShortcutsSource(impl: SystemShortcutsSource): KeyboardShortcutGroupsSource
+
+    @Binds
+    @MultitaskingShortcuts
+    fun multitaskingShortcutsSource(impl: MultitaskingShortcutsSource): KeyboardShortcutGroupsSource
+
+    @Binds
+    @CurrentAppShortcuts
+    fun currentAppShortcutsSource(impl: CurrentAppShortcutsSource): KeyboardShortcutGroupsSource
+
+    @Binds
+    @InputShortcuts
+    fun inputShortcutsSources(impl: InputShortcutsSource): KeyboardShortcutGroupsSource
+
+    @Binds
+    @AppCategoriesShortcuts
+    fun appCategoriesShortcutsSource(
+        impl: AppCategoriesShortcutsSource
+    ): KeyboardShortcutGroupsSource
+
+    @Binds
+    @AccessibilityShortcuts
+    fun accessibilityShortcutsSource(
+        impl: AccessibilityShortcutsSource
+    ): KeyboardShortcutGroupsSource
+
+    @Binds
+    @DefaultShortcutCategories
+    fun defaultShortcutCategoriesRepository(
+        impl: DefaultShortcutCategoriesRepository
+    ): ShortcutCategoriesRepository
+
+    @Binds
+    @CustomShortcutCategories
+    fun customShortcutCategoriesRepository(
+        impl: CustomShortcutCategoriesRepository
+    ): ShortcutCategoriesRepository
+
+    @Binds
+    @AppsShortcutCategories
+    fun appsShortcutCategoriesRepository(
+        impl: AppsShortcutCategoryRepository
+    ): ShortcutCategoriesRepository
+
+    companion object {
+        @Provides
+        @IntoMap
+        @ClassKey(ShortcutHelperCoreStartable::class)
+        fun repo(implLazy: Lazy<ShortcutHelperCoreStartable>): CoreStartable {
+            return if (keyboardShortcutHelperRewrite()) {
+                implLazy.get()
+            } else {
+                // No-op implementation when the flag is disabled.
+                NoOpStartable
+            }
+        }
+    }
+}
+
+private object NoOpStartable : CoreStartable {
+    override fun start() {}
+}
